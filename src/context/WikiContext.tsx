@@ -50,6 +50,8 @@ interface WikiContextType {
   allUsers: User[];
   setAllUsers: (users: User[]) => void;
   updateUserTags: (username: string, tags: string[]) => void;
+  updateUserProfile: (userId: number, updates: Partial<User & { password?: string }>) => boolean;
+  deleteUserProfile: (userId: number) => boolean;
   hasPermission: (requiredTag: string) => boolean;
   canContribute: () => boolean;
   isAdmin: () => boolean;
@@ -683,6 +685,36 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUserProfile = (userId: number, updates: Partial<User & { password?: string }>): boolean => {
+    const success = authService.updateUser(userId, updates);
+    if (success) {
+      // Recharger les utilisateurs depuis authService
+      loadAllUsers();
+      
+      // Si c'est l'utilisateur connecté, mettre à jour sa session
+      if (user && user.id === userId) {
+        setUser(prev => prev ? { ...prev, ...updates } : null);
+      }
+    }
+    return success;
+  };
+
+  const deleteUserProfile = (userId: number): boolean => {
+    const success = authService.deleteUser(userId);
+    if (success) {
+      // Recharger les utilisateurs depuis authService
+      loadAllUsers();
+      
+      // Si c'est l'utilisateur connecté qui est supprimé, le déconnecter
+      if (user && user.id === userId) {
+        authService.logout();
+        setUser(null);
+        setIsLoggedIn(false);
+      }
+    }
+    return success;
+  };
+
   const hasPermission = (requiredTag: string): boolean => {
     if (!isLoggedIn || !user) return false;
     return user.tags.includes(requiredTag) || user.tags.includes('Administrateur');
@@ -800,6 +832,8 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       allUsers,
       setAllUsers,
       updateUserTags,
+      updateUserProfile,
+      deleteUserProfile,
       hasPermission,
       canContribute,
       isAdmin,

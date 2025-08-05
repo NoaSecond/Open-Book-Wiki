@@ -5,6 +5,8 @@ export interface User {
   id: number;
   username: string;
   tags: string[];
+  email?: string;
+  avatar?: string;
 }
 
 interface StoredUser {
@@ -12,6 +14,8 @@ interface StoredUser {
   username: string;
   password: string;
   tags: string[];
+  email?: string;
+  avatar?: string;
 }
 
 // Simulation d'une base de données locale (localStorage)
@@ -31,19 +35,25 @@ class AuthService {
           id: 1,
           username: 'admin',
           password: 'admin', // En production, ce serait hashé
-          tags: ['Administrateur', 'Contributeur']
+          tags: ['Administrateur', 'Contributeur'],
+          email: 'admin@stardeception.com',
+          avatar: undefined
         },
         {
           id: 2,
           username: 'contributeur1',
           password: 'contrib123',
-          tags: ['Contributeur']
+          tags: ['Contributeur'],
+          email: 'contrib@stardeception.com',
+          avatar: undefined
         },
         {
           id: 3,
           username: 'visiteur1',
           password: 'visit123',
-          tags: ['Visiteur']
+          tags: ['Visiteur'],
+          email: 'visitor@stardeception.com',
+          avatar: undefined
         }
       ];
       
@@ -98,7 +108,9 @@ class AuthService {
     return users.map(user => ({
       id: user.id,
       username: user.username,
-      tags: user.tags
+      tags: user.tags,
+      email: user.email,
+      avatar: user.avatar
     }));
   }
 
@@ -124,6 +136,55 @@ class AuthService {
       return false;
     } catch (error) {
       console.error('Erreur lors de la mise à jour des tags:', error);
+      return false;
+    }
+  }
+
+  // Mettre à jour complètement un utilisateur
+  updateUser(userId: number, updates: {
+    username?: string;
+    email?: string;
+    avatar?: string;
+    tags?: string[];
+    password?: string;
+  }): boolean {
+    try {
+      const users = this.getStoredUsers();
+      const userIndex = users.findIndex(u => u.id === userId);
+      
+      if (userIndex !== -1) {
+        // Vérifier si le nom d'utilisateur n'existe pas déjà (sauf pour le même utilisateur)
+        if (updates.username && users.some(u => u.username === updates.username && u.id !== userId)) {
+          return false; // Nom d'utilisateur déjà pris
+        }
+
+        const user = users[userIndex];
+        if (updates.username !== undefined) user.username = updates.username;
+        if (updates.email !== undefined) user.email = updates.email;
+        if (updates.avatar !== undefined) user.avatar = updates.avatar;
+        if (updates.tags !== undefined) user.tags = updates.tags;
+        if (updates.password !== undefined) user.password = updates.password;
+
+        this.saveUsers(users);
+        
+        // Mettre à jour la session si c'est l'utilisateur connecté
+        const currentUser = this.getCurrentUser();
+        if (currentUser && currentUser.id === userId) {
+          const updatedSession: User = {
+            id: user.id,
+            username: user.username,
+            tags: user.tags,
+            email: user.email,
+            avatar: user.avatar
+          };
+          localStorage.setItem(this.sessionKey, JSON.stringify(updatedSession));
+        }
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
       return false;
     }
   }
