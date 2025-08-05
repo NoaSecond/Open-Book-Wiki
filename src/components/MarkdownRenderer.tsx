@@ -12,6 +12,24 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
   const renderContent = (text: string) => {
     let processedText = text;
 
+    // Support du gras inline avec **texte**
+    processedText = processedText.replace(
+      /\*\*(.*?)\*\*/g,
+      '<strong class="font-bold">$1</strong>'
+    );
+
+    // Support de l'italique inline avec *texte*
+    processedText = processedText.replace(
+      /\*(.*?)\*/g,
+      '<em class="italic">$1</em>'
+    );
+
+    // Support du code inline avec `code`
+    processedText = processedText.replace(
+      /`([^`]+)`/g,
+      `<code class="${isDarkMode ? 'bg-slate-700 text-slate-200' : 'bg-gray-200 text-gray-800'} px-1 py-0.5 rounded text-sm font-mono">$1</code>`
+    );
+
     // Highlight search terms
     if (searchTerm) {
       const regex = new RegExp(`(${searchTerm})`, 'gi');
@@ -79,15 +97,6 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
       else if (trimmedLine.startsWith('- ')) {
         listItems.push(trimmedLine.slice(2));
         inList = true;
-      }
-      // Bold text
-      else if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
-        if (inList) flushList();
-        elements.push(
-          <p key={index} className={`font-bold mb-2 mt-4 ${isDarkMode ? 'text-cyan-300' : 'text-cyan-600'}`}>
-            <span dangerouslySetInnerHTML={{ __html: renderContent(trimmedLine.slice(2, -2)) }} />
-          </p>
-        );
       }
       // Regular paragraphs
       else {

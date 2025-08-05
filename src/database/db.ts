@@ -45,9 +45,7 @@ class WikiDatabase {
 
   private createDefaultUsers() {
     const users = [
-      { username: 'admin', password: 'admin123', tags: ['Administrateur'] },
-      { username: 'contributeur1', password: 'contrib123', tags: ['Contributeur'] },
-      { username: 'visiteur1', password: 'visit123', tags: ['Visiteur'] }
+      { username: 'admin', password: 'admin123', tags: ['Administrateur'] }
     ];
 
     const existingUsers = this.db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
@@ -63,7 +61,7 @@ class WikiDatabase {
         insertUser.run(user.username, hashedPassword, JSON.stringify(user.tags));
       });
 
-      console.log('✅ Utilisateurs par défaut créés');
+      console.log('✅ Utilisateur admin par défaut créé');
     }
   }
 

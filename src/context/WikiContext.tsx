@@ -89,7 +89,18 @@ Ce wiki contient uniquement deux catégories principales :
 - **Accueil** - Page d'accueil et informations générales
 - **Développement** - Informations sur le développement et les contributions
 
-Vous pouvez naviguer entre ces sections à l'aide du menu de gauche.`,
+Vous pouvez naviguer entre ces sections à l'aide du menu de gauche.
+
+## Tests du formatage
+
+Voici quelques tests de formatage **markdown** :
+
+- Texte en **gras** avec des étoiles
+- Texte en *italique* avec une étoile
+- Code inline avec \`backticks\`
+- Listes avec des tirets
+
+**Important** : Ce wiki supporte maintenant le formatage **inline** !`,
         lastModified: DateUtils.getCurrentDateISO(),
         author: "Admin"
       }

@@ -1,22 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Home, BookOpen, Clock, User, Code, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X } from 'lucide-react';
+import { 
+  User, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X, Clock
+} from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getConfigService } from '../services/configService';
 import activityService from '../services/activityService';
+import SvgIcon from './SvgIcon';
 
-const navigationItems = [
-  { id: 'home', label: 'Accueil', icon: Home },
-  { id: 'development', label: 'Développement', icon: Code },
+// Type pour les éléments de navigation
+type NavigationItem = {
+  id: string;
+  label: string;
+  title?: string;
+  iconName: string; // Toujours SVG maintenant
+  isDynamic?: boolean;
+};
+
+// Icônes disponibles pour les catégories
+const availableIcons = [
+  { name: 'home', label: 'Maison' },
+  { name: 'book-open', label: 'Livre' },
+  { name: 'code', label: 'Code' },
+  { name: 'star', label: 'Étoile' },
+  { name: 'heart', label: 'Cœur' },
+  { name: 'coffee', label: 'Café' },
+  { name: 'music', label: 'Musique' },
+  { name: 'camera', label: 'Caméra' },
+  { name: 'gamepad', label: 'Jeu' },
+  { name: 'palette', label: 'Palette' },
+  { name: 'mountain', label: 'Montagne' },
+  { name: 'compass', label: 'Boussole' },
+  { name: 'trophy', label: 'Trophée' },
+  { name: 'shield', label: 'Bouclier' },
+  { name: 'zap', label: 'Éclair' },
+  { name: 'globe', label: 'Globe' }
+];
+
+const navigationItems: NavigationItem[] = [
+  { id: 'home', label: 'Accueil', iconName: 'home' },
+  { id: 'development', label: 'Développement', iconName: 'code' },
 ];
 
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode, canContribute, addPage, renamePage, deletePage, isAdmin } = useWiki();
-  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
+  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode, canContribute, renamePage, deletePage, isAdmin, addPage } = useWiki();
   const [appVersion, setAppVersion] = useState('...');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageTitle, setEditingPageTitle] = useState('');
   const [showPageMenu, setShowPageMenu] = useState<string | null>(null);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [selectedIconIndex, setSelectedIconIndex] = useState(0);
 
   // Créer les éléments de navigation dynamiquement à partir de wikiData
   const createNavigationItems = () => {
@@ -40,7 +73,7 @@ export const Sidebar: React.FC = () => {
           id: pageId,
           label: pageData.title,
           title: pageData.title,
-          icon: BookOpen, // Icône par défaut pour les pages créées dynamiquement
+          iconName: 'book-open', // Icône par défaut pour les pages créées dynamiquement (SVG)
           isDynamic: true
         });
       }
@@ -64,16 +97,28 @@ export const Sidebar: React.FC = () => {
 
   const handleCreateCategory = () => {
     if (newCategoryName.trim()) {
+      // Créer une nouvelle page avec l'icône sélectionnée
+      const selectedIcon = availableIcons[selectedIconIndex];
+      
+      // Créer la nouvelle page via le contexte
       const newPageId = addPage(newCategoryName.trim());
-      setCurrentPage(newPageId); // Naviguer vers la nouvelle page
+      
+      // Naviguer vers la nouvelle page
+      setCurrentPage(newPageId);
+      
+      console.log(`Catégorie créée: ${newCategoryName.trim()} avec icône: ${selectedIcon.name}`);
+      
+      // Fermer la modal et réinitialiser
       setShowAddCategoryModal(false);
       setNewCategoryName('');
+      setSelectedIconIndex(0);
     }
   };
 
   const handleCancelAddCategory = () => {
     setShowAddCategoryModal(false);
     setNewCategoryName('');
+    setSelectedIconIndex(0);
   };
 
   const handleEditPage = (pageId: string, currentTitle: string) => {
@@ -103,12 +148,13 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className={`w-64 min-h-[calc(100vh-80px)] border-r transition-colors duration-300 content-scrollbar overflow-y-auto ${
+    <aside className={`w-64 h-screen flex flex-col border-r transition-colors duration-300 ${
       isDarkMode 
         ? 'bg-slate-800 border-slate-700' 
         : 'bg-white border-gray-200'
     }`}>
-      <nav className="p-4">
+      {/* Header fixe de la navigation */}
+      <div className="p-4 flex-shrink-0">
         <h2 className={`text-lg font-semibold mb-4 transition-colors duration-300 ${
           isDarkMode ? 'text-white' : 'text-gray-900'
         }`}>
@@ -131,10 +177,12 @@ export const Sidebar: React.FC = () => {
             </button>
           </div>
         )}
+      </div>
 
-        <ul className="space-y-2">
+      {/* Zone scrollable pour les catégories et sections */}
+      <div className="flex-1 overflow-y-auto content-scrollbar px-4">
+        <ul className="space-y-2 mb-6">
           {dynamicNavigationItems.map((item) => {
-            const Icon = item.icon;
             const isActive = currentPage === item.id;
             const isBeingEdited = editingPageId === item.id;
             
@@ -145,7 +193,12 @@ export const Sidebar: React.FC = () => {
                   <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${
                     isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
                   }`}>
-                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <SvgIcon 
+                      name={item.iconName!} 
+                      className={`w-5 h-5 flex-shrink-0 ${
+                        isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                      }`} 
+                    />
                     <input
                       type="text"
                       value={editingPageTitle}
@@ -192,7 +245,16 @@ export const Sidebar: React.FC = () => {
                             : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <SvgIcon 
+                        name={item.iconName!} 
+                        className={`w-5 h-5 ${
+                          isActive 
+                            ? 'text-white' 
+                            : isDarkMode 
+                              ? 'text-slate-300' 
+                              : 'text-gray-700'
+                        }`} 
+                      />
                       <span className="truncate">{item.label}</span>
                       {item.isDynamic && (
                         <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
@@ -391,43 +453,53 @@ export const Sidebar: React.FC = () => {
             Aidez à améliorer ce wiki en ajoutant du contenu et en corrigeant les erreurs.
           </p>
         </div>
+      </div>
 
-        {/* Lien GitHub avec version */}
-        <div className={`mt-4 pt-4 border-t text-center ${
-          isDarkMode ? 'border-slate-700' : 'border-gray-200'
+      {/* Footer fixe en bas */}
+      <div className={`flex-shrink-0 p-4 border-t text-center ${
+        isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'
+      }`}>
+        <a
+          href="https://github.com/NoaSecond/Open-Book-Wiki"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center space-x-2 text-xs transition-colors duration-300 hover:underline ${
+            isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <span>Projet sur GitHub</span>
+          <ExternalLink className="w-3 h-3" />
+        </a>
+        <div className={`text-xs transition-colors duration-300 ${
+          isDarkMode ? 'text-slate-500' : 'text-gray-400'
         }`}>
-          <a
-            href="https://github.com/NoaSecond/Open-Book-Wiki"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center space-x-2 text-xs transition-colors duration-300 hover:underline ${
-              isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <span>Projet sur GitHub</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
-          <span className={`text-xs transition-colors duration-300 ${
-            isDarkMode ? 'text-slate-500' : 'text-gray-400'
-          }`}>
-            {' '}v{appVersion}
-          </span>
+          v{appVersion}
         </div>
-      </nav>
+      </div>
 
       {/* Modal pour ajouter une catégorie */}
       {showAddCategoryModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-96 max-w-90vw">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+          <div className={`p-6 rounded-lg shadow-xl w-96 max-w-90vw max-h-80vh overflow-y-auto ${
+            isDarkMode ? 'bg-slate-800' : 'bg-white'
+          }`}>
+            <h2 className={`text-xl font-bold mb-4 ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
               Ajouter une nouvelle catégorie
             </h2>
+            
+            {/* Nom de la catégorie */}
             <input
               type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="Nom de la catégorie..."
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className={`w-full p-3 border rounded-lg mb-4 ${
+                isDarkMode 
+                  ? 'border-slate-600 bg-slate-700 text-white placeholder-slate-400' 
+                  : 'border-gray-300 bg-white text-gray-900 placeholder-gray-500'
+              }`}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -437,17 +509,58 @@ export const Sidebar: React.FC = () => {
                 }
               }}
             />
+            
+            {/* Sélecteur d'icône */}
+            <div className="mb-4">
+              <label className={`block text-sm font-medium mb-2 ${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`}>
+                Choisir une icône :
+              </label>
+              <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto">
+                {availableIcons.map((iconData, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedIconIndex(index)}
+                    className={`p-2 rounded-lg transition-colors border-2 ${
+                      selectedIconIndex === index
+                        ? 'border-cyan-500 bg-cyan-500/20'
+                        : isDarkMode
+                          ? 'border-slate-600 bg-slate-700 hover:bg-slate-600'
+                          : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                    }`}
+                    title={iconData.label}
+                  >
+                    <SvgIcon 
+                      name={iconData.name} 
+                      className={`w-5 h-5 ${
+                        selectedIconIndex === index
+                          ? 'text-cyan-400'
+                          : isDarkMode
+                            ? 'text-slate-400'
+                            : 'text-gray-600'
+                      }`} 
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            
             <div className="flex gap-3 justify-end">
               <button
                 onClick={handleCancelAddCategory}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  isDarkMode 
+                    ? 'bg-slate-600 text-white hover:bg-slate-500' 
+                    : 'bg-gray-500 text-white hover:bg-gray-600'
+                }`}
               >
                 Annuler
               </button>
               <button
                 onClick={handleCreateCategory}
                 disabled={!newCategoryName.trim()}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Créer
               </button>
