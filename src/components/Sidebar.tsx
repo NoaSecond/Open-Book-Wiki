@@ -12,12 +12,20 @@ const navigationItems = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, wikiData, isLoggedIn } = useWiki();
+  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode } = useWiki();
 
   return (
-    <aside className="w-64 bg-slate-800 min-h-[calc(100vh-80px)] border-r border-slate-700">
+    <aside className={`w-64 min-h-[calc(100vh-80px)] border-r transition-colors duration-300 ${
+      isDarkMode 
+        ? 'bg-slate-800 border-slate-700' 
+        : 'bg-white border-gray-200'
+    }`}>
       <nav className="p-4">
-        <h2 className="text-lg font-semibold text-white mb-4">Navigation</h2>
+        <h2 className={`text-lg font-semibold mb-4 transition-colors duration-300 ${
+          isDarkMode ? 'text-white' : 'text-gray-900'
+        }`}>
+          Navigation
+        </h2>
         <ul className="space-y-2">
           {navigationItems.map((item) => {
             const Icon = item.icon;
@@ -30,7 +38,9 @@ export const Sidebar: React.FC = () => {
                   className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-cyan-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                      : isDarkMode 
+                        ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -48,7 +58,9 @@ export const Sidebar: React.FC = () => {
                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                   currentPage === 'profile'
                     ? 'bg-cyan-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    : isDarkMode 
+                      ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 <User className="w-5 h-5" />
@@ -58,11 +70,19 @@ export const Sidebar: React.FC = () => {
           )}
         </ul>
 
-        <div className="mt-8 p-4 bg-slate-700 rounded-lg">
-          <h3 className="text-sm font-semibold text-white mb-2">Dernières modifications</h3>
+        <div className={`mt-8 p-4 rounded-lg transition-colors duration-300 ${
+          isDarkMode ? 'bg-slate-700' : 'bg-gray-100'
+        }`}>
+          <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            Dernières modifications
+          </h3>
           <div className="space-y-2">
             {Object.entries(wikiData).slice(0, 3).map(([key, page]) => (
-              <div key={key} className="text-xs text-slate-400">
+              <div key={key} className={`text-xs transition-colors duration-300 ${
+                isDarkMode ? 'text-slate-400' : 'text-gray-600'
+              }`}>
                 <div className="flex items-center space-x-1">
                   <Clock className="w-3 h-3" />
                   <span>{page.lastModified}</span>
@@ -71,15 +91,29 @@ export const Sidebar: React.FC = () => {
                   <User className="w-3 h-3" />
                   <span>{page.author}</span>
                 </div>
-                <div className="text-slate-300 truncate">{page.title}</div>
+                <div className={`truncate transition-colors duration-300 ${
+                  isDarkMode ? 'text-slate-300' : 'text-gray-800'
+                }`}>
+                  {page.title}
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mt-4 p-4 bg-gradient-to-br from-cyan-600/20 to-violet-600/20 rounded-lg border border-cyan-500/30">
-          <h3 className="text-sm font-semibold text-cyan-300 mb-2">Contribuer</h3>
-          <p className="text-xs text-slate-300">
+        <div className={`mt-4 p-4 bg-gradient-to-br rounded-lg border transition-colors duration-300 ${
+          isDarkMode 
+            ? 'from-cyan-600/20 to-violet-600/20 border-cyan-500/30' 
+            : 'from-cyan-100/80 to-violet-100/80 border-cyan-200/50'
+        }`}>
+          <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 ${
+            isDarkMode ? 'text-cyan-300' : 'text-cyan-700'
+          }`}>
+            Contribuer
+          </h3>
+          <p className={`text-xs transition-colors duration-300 ${
+            isDarkMode ? 'text-slate-300' : 'text-gray-700'
+          }`}>
             Aidez à améliorer ce wiki en ajoutant du contenu et en corrigeant les erreurs.
           </p>
         </div>

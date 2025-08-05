@@ -1,4 +1,5 @@
 import React from 'react';
+import { useWiki } from '../context/WikiContext';
 
 interface MarkdownRendererProps {
   content: string;
@@ -6,6 +7,8 @@ interface MarkdownRendererProps {
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, searchTerm }) => {
+  const { isDarkMode } = useWiki();
+  
   const renderContent = (text: string) => {
     let processedText = text;
 
@@ -30,7 +33,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
     const flushList = () => {
       if (listItems.length > 0) {
         elements.push(
-          <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-1 mb-4 text-slate-300">
+          <ul key={`list-${elements.length}`} className={`list-disc list-inside space-y-1 mb-4 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
             {listItems.map((item, idx) => (
               <li key={idx} dangerouslySetInnerHTML={{ __html: renderContent(item) }} />
             ))}
@@ -53,21 +56,21 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
       if (trimmedLine.startsWith('# ')) {
         if (inList) flushList();
         elements.push(
-          <h1 key={index} className="text-3xl font-bold text-white mb-6 pb-2 border-b border-slate-600">
+          <h1 key={index} className={`text-3xl font-bold mb-6 pb-2 border-b ${isDarkMode ? 'text-white border-slate-600' : 'text-gray-900 border-gray-300'}`}>
             <span dangerouslySetInnerHTML={{ __html: renderContent(trimmedLine.slice(2)) }} />
           </h1>
         );
       } else if (trimmedLine.startsWith('## ')) {
         if (inList) flushList();
         elements.push(
-          <h2 key={index} className="text-2xl font-semibold text-cyan-300 mb-4 mt-8">
+          <h2 key={index} className={`text-2xl font-semibold mb-4 mt-8 ${isDarkMode ? 'text-cyan-300' : 'text-cyan-600'}`}>
             <span dangerouslySetInnerHTML={{ __html: renderContent(trimmedLine.slice(3)) }} />
           </h2>
         );
       } else if (trimmedLine.startsWith('### ')) {
         if (inList) flushList();
         elements.push(
-          <h3 key={index} className="text-xl font-semibold text-violet-300 mb-3 mt-6">
+          <h3 key={index} className={`text-xl font-semibold mb-3 mt-6 ${isDarkMode ? 'text-violet-300' : 'text-violet-600'}`}>
             <span dangerouslySetInnerHTML={{ __html: renderContent(trimmedLine.slice(4)) }} />
           </h3>
         );
@@ -81,7 +84,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
       else if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
         if (inList) flushList();
         elements.push(
-          <p key={index} className="font-bold text-cyan-300 mb-2 mt-4">
+          <p key={index} className={`font-bold mb-2 mt-4 ${isDarkMode ? 'text-cyan-300' : 'text-cyan-600'}`}>
             <span dangerouslySetInnerHTML={{ __html: renderContent(trimmedLine.slice(2, -2)) }} />
           </p>
         );
@@ -90,7 +93,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
       else {
         if (inList) flushList();
         elements.push(
-          <p key={index} className="text-slate-300 mb-3 leading-relaxed">
+          <p key={index} className={`mb-3 leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
             <span dangerouslySetInnerHTML={{ __html: renderContent(trimmedLine) }} />
           </p>
         );
@@ -103,7 +106,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
   };
 
   return (
-    <div className="prose prose-invert max-w-none">
+    <div className={`prose max-w-none ${isDarkMode ? 'prose-invert' : ''}`}>
       {parseMarkdown(content)}
     </div>
   );

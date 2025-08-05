@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { User, Mail, Calendar, Edit3, Save, X, Award, Camera } from 'lucide-react';
+import { User, Mail, Calendar, Edit3, Save, X, Award } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { AvatarEditor } from './AvatarEditor';
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateUser } = useWiki();
+  const { user, updateUser, isDarkMode } = useWiki();
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [formData, setFormData] = useState({
@@ -15,12 +15,12 @@ export const ProfilePage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="flex-1 p-6 bg-slate-900">
+      <div className={`flex-1 p-6 ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
-            <User className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Profil non disponible</h2>
-            <p className="text-slate-400">Vous devez être connecté pour voir votre profil.</p>
+            <User className={`w-16 h-16 mx-auto mb-4 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
+            <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Profil non disponible</h2>
+            <p className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Vous devez être connecté pour voir votre profil.</p>
           </div>
         </div>
       </div>
@@ -58,10 +58,10 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-6 bg-slate-900">
+    <div className={`flex-1 p-6 ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
       <div className="max-w-4xl mx-auto">
         {/* En-tête du profil */}
-        <div className="bg-slate-800 rounded-lg p-6 mb-6">
+        <div className={`rounded-lg p-6 mb-6 ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-6">
               {/* Avatar */}
@@ -96,7 +96,11 @@ export const ProfilePage: React.FC = () => {
                       name="username"
                       value={formData.username}
                       onChange={handleChange}
-                      className="text-2xl font-bold bg-slate-700 text-white rounded px-3 py-1 w-full max-w-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className={`text-2xl font-bold rounded px-3 py-1 w-full max-w-md border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                        isDarkMode 
+                          ? 'bg-slate-700 text-white border-slate-600' 
+                          : 'bg-gray-100 text-gray-900 border-gray-300'
+                      }`}
                       placeholder="Nom d'utilisateur"
                     />
                     <input
@@ -104,21 +108,25 @@ export const ProfilePage: React.FC = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="bg-slate-700 text-slate-300 rounded px-3 py-1 w-full max-w-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className={`rounded px-3 py-1 w-full max-w-md border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                        isDarkMode 
+                          ? 'bg-slate-700 text-slate-300 border-slate-600' 
+                          : 'bg-gray-100 text-gray-700 border-gray-300'
+                      }`}
                       placeholder="Email"
                     />
                   </div>
                 ) : (
                   <div>
-                    <h1 className="text-2xl font-bold text-white mb-1">{user.username}</h1>
-                    <p className="text-slate-400 flex items-center">
+                    <h1 className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{user.username}</h1>
+                    <p className={`flex items-center ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                       <Mail className="w-4 h-4 mr-2" />
                       {user.email}
                     </p>
                   </div>
                 )}
                 
-                <div className="flex items-center space-x-4 mt-3 text-sm text-slate-400">
+                <div className={`flex items-center space-x-4 mt-3 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
                     Membre depuis {user.joinDate}
@@ -144,7 +152,11 @@ export const ProfilePage: React.FC = () => {
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="flex items-center space-x-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'bg-slate-600 hover:bg-slate-700 text-white' 
+                        : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
+                    }`}
                   >
                     <X className="w-4 h-4" />
                     <span>Annuler</span>
@@ -164,23 +176,27 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Biographie */}
-        <div className="bg-slate-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">À propos</h2>
+        <div className={`rounded-lg p-6 mb-6 ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
+          <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>À propos</h2>
           {isEditing ? (
             <textarea
               name="bio"
               value={formData.bio}
               onChange={handleChange}
               rows={4}
-              className="w-full bg-slate-700 text-white rounded-lg p-3 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
+              className={`w-full rounded-lg p-3 border focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none ${
+                isDarkMode 
+                  ? 'bg-slate-700 text-white border-slate-600' 
+                  : 'bg-gray-100 text-gray-900 border-gray-300'
+              }`}
               placeholder="Parlez-nous de vous..."
             />
           ) : (
-            <div className="text-slate-300">
+            <div className={isDarkMode ? 'text-slate-300' : 'text-gray-700'}>
               {user.bio ? (
                 <p className="whitespace-pre-wrap">{user.bio}</p>
               ) : (
-                <p className="text-slate-500 italic">Aucune biographie renseignée.</p>
+                <p className={`italic ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>Aucune biographie renseignée.</p>
               )}
             </div>
           )}
@@ -188,23 +204,23 @@ export const ProfilePage: React.FC = () => {
 
         {/* Statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-slate-800 rounded-lg p-6 text-center">
+          <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-cyan-400 mb-2">{user.contributions}</div>
-            <div className="text-slate-400">Contributions</div>
+            <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Contributions</div>
           </div>
           
-          <div className="bg-slate-800 rounded-lg p-6 text-center">
+          <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-violet-400 mb-2">
               {Math.floor(Math.random() * 50) + 10}
             </div>
-            <div className="text-slate-400">Articles édités</div>
+            <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Articles édités</div>
           </div>
           
-          <div className="bg-slate-800 rounded-lg p-6 text-center">
+          <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-green-400 mb-2">
               {user.joinDate}
             </div>
-            <div className="text-slate-400">Membre depuis</div>
+            <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Membre depuis</div>
           </div>
         </div>
       </div>

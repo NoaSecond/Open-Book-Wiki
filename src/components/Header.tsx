@@ -8,14 +8,19 @@ export const Header: React.FC = () => {
   const { 
     searchTerm, 
     setSearchTerm, 
-    isLoggedIn
+    isLoggedIn,
+    isDarkMode
   } = useWiki();
   
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   return (
     <>
-      <header className="bg-slate-800 shadow-lg border-b border-slate-700">
+      <header className={`shadow-lg border-b transition-colors duration-300 ${
+        isDarkMode 
+          ? 'bg-slate-800 border-slate-700' 
+          : 'bg-white border-gray-200'
+      }`}>
         <div className="max-w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -28,21 +33,35 @@ export const Header: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white">Star Deception Wiki</h1>
-                  <p className="text-slate-400 text-sm">Guide complet du jeu</p>
+                  <h1 className={`text-2xl font-bold transition-colors duration-300 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    Star Deception Wiki
+                  </h1>
+                  <p className={`text-sm transition-colors duration-300 ${
+                    isDarkMode ? 'text-slate-400' : 'text-gray-600'
+                  }`}>
+                    Guide complet du jeu
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 transition-colors duration-300 ${
+                  isDarkMode ? 'text-slate-400' : 'text-gray-400'
+                }`} />
                 <input
                   type="text"
                   placeholder="Rechercher dans le wiki..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-64"
+                  className={`pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-64 transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-slate-700 text-white border-slate-600' 
+                      : 'bg-gray-50 text-gray-900 border-gray-300'
+                  }`}
                 />
               </div>
 

@@ -35,6 +35,9 @@ interface WikiContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   updateUser: (updates: Partial<User>) => void;
+  // Thème
+  isDarkMode: boolean;
+  toggleTheme: () => void;
 }
 
 const WikiContext = createContext<WikiContextType | undefined>(undefined);
@@ -316,6 +319,13 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // États d'authentification
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  
+  // État du thème
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  const toggleTheme = () => {
+    setIsDarkMode(prev => !prev);
+  };
 
   const updateUser = (updates: Partial<User>) => {
     if (user) {
@@ -356,7 +366,9 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoggedIn,
       user,
       setUser,
-      updateUser
+      updateUser,
+      isDarkMode,
+      toggleTheme
     }}>
       {children}
     </WikiContext.Provider>
