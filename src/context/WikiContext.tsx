@@ -20,6 +20,11 @@ interface WikiContextType {
   setEditingPage: (page: string) => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  // États d'authentification
+  isLoggedIn: boolean;
+  setIsLoggedIn: (loggedIn: boolean) => void;
+  user: { username: string; email: string } | null;
+  setUser: (user: { username: string; email: string } | null) => void;
 }
 
 const WikiContext = createContext<WikiContextType | undefined>(undefined);
@@ -297,6 +302,10 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isEditing, setIsEditing] = useState(false);
   const [editingPage, setEditingPage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // États d'authentification
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
 
   const updatePage = (pageId: string, content: string) => {
     setWikiData(prev => ({
@@ -305,7 +314,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...prev[pageId],
         content,
         lastModified: new Date().toISOString().split('T')[0],
-        author: "Contributeur"
+        author: user?.username || "Contributeur"
       }
     }));
   };
@@ -321,7 +330,11 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       editingPage,
       setEditingPage,
       searchTerm,
-      setSearchTerm
+      setSearchTerm,
+      isLoggedIn,
+      setIsLoggedIn,
+      user,
+      setUser
     }}>
       {children}
     </WikiContext.Provider>
