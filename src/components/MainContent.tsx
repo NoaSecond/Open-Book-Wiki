@@ -1,0 +1,100 @@
+import React from 'react';
+import { Edit3, Calendar, User, Eye } from 'lucide-react';
+import { useWiki } from '../context/WikiContext';
+import { MarkdownRenderer } from './MarkdownRenderer';
+
+export const MainContent: React.FC = () => {
+  const { currentPage, wikiData, setIsEditing, setEditingPage, searchTerm } = useWiki();
+  
+  const currentPageData = wikiData[currentPage];
+  
+  if (!currentPageData) {
+    return (
+      <main className="flex-1 p-6">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-white mb-4">Page non trouvée</h2>
+          <p className="text-slate-400">La page demandée n'existe pas.</p>
+        </div>
+      </main>
+    );
+  }
+
+  const handleEdit = () => {
+    setEditingPage(currentPage);
+    setIsEditing(true);
+  };
+
+  // Filter content based on search term
+  const filteredContent = searchTerm 
+    ? currentPageData.content.split('\n').filter(line => 
+        line.toLowerCase().includes(searchTerm.toLowerCase())
+      ).join('\n')
+    : currentPageData.content;
+
+  return (
+    <main className="flex-1 bg-slate-900">
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Page Header */}
+        <div className="mb-6 pb-4 border-b border-slate-700">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold text-white">{currentPageData.title}</h1>
+            <button
+              onClick={handleEdit}
+              className="flex items-center space-x-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Modifier cette page</span>
+            </button>
+          </div>
+          
+          <div className="flex items-center space-x-6 text-sm text-slate-400">
+            <div className="flex items-center space-x-1">
+              <Calendar className="w-4 h-4" />
+              <span>Modifié le {currentPageData.lastModified}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <User className="w-4 h-4" />
+              <span>Par {currentPageData.author}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Eye className="w-4 h-4" />
+              <span>Lecture {Math.floor(Math.random() * 1000) + 100} vues</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Results Indicator */}
+        {searchTerm && (
+          <div className="mb-4 p-3 bg-cyan-600/20 border border-cyan-500/30 rounded-lg">
+            <p className="text-cyan-300 text-sm">
+              Résultats de recherche pour "{searchTerm}"
+            </p>
+          </div>
+        )}
+
+        {/* Page Content */}
+        <div className="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
+          <MarkdownRenderer content={filteredContent} searchTerm={searchTerm} />
+        </div>
+
+        {/* Page Footer */}
+        <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
+          <div className="flex items-center justify-between text-sm text-slate-400">
+            <div>
+              <p>Cette page fait partie du Wiki Star Deception</p>
+              <p>Contribuez en améliorant le contenu</p>
+            </div>
+            <div className="flex space-x-4">
+              <button className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                Signaler un problème
+              </button>
+              <button className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                Voir l'historique
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+};
