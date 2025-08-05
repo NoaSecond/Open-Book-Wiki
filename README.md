@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="public/Logo.svg" alt="Open Book Wiki Logo" width="120" height="120">
+  <img src="public/Logo.svg" alt="Open Book Wiki Logo" width="500">
   
   # Open Book Wiki
 
-  Un wiki interactif et moderne pour Star Deception, construit avec React, TypeScript et Tailwind CSS.
+  Un wiki interactif et moderne open source, construit avec React, TypeScript et Tailwind CSS.
 </div>
 
 ## 🛠️ Technologies utilisées
@@ -18,8 +18,8 @@
 
 1. Clonez le repository :
 ```bash
-git clone https://github.com/NoaSecond/StarDeception-Wiki.git
-cd StarDeception-Wiki
+git clone https://github.com/NoaSecond/Open-Book-Wiki
+cd Open-Book-Wiki
 ```
 
 2. Installez les dépendances :
