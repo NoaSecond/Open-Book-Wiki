@@ -148,7 +148,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className={`w-64 h-screen flex flex-col border-r transition-colors duration-300 ${
+    <aside className={`w-64 h-full flex flex-col border-r transition-colors duration-300 ${
       isDarkMode 
         ? 'bg-slate-800 border-slate-700' 
         : 'bg-white border-gray-200'

@@ -44,13 +44,13 @@ const AppContent: React.FC = () => {
   }, []);
   
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
       isDarkMode 
         ? 'dark bg-slate-900 text-slate-100' 
         : 'light bg-gray-50 text-gray-900'
     }`}>
       <Header />
-      <div className="flex">
+      <div className="flex flex-1 min-h-0">
         <Sidebar />
         <MainContent />
       </div>
