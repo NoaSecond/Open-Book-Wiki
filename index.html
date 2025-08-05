@@ -13,6 +13,33 @@
     <meta name="keywords" content="wiki, documentation, guide, open source" />
     <meta name="author" content="NoaSecond" />
     <title>Open Book Wiki - Simple et épuré</title>
+    <script>
+      // Dynamically update page title and loading screen when config is available
+      window.addEventListener('load', () => {
+        const checkConfig = () => {
+          try {
+            const config = JSON.parse(localStorage.getItem('appConfig') || '{}');
+            if (config.siteName) {
+              document.title = `${config.siteName} - Simple et épuré`;
+              const loadingTitle = document.getElementById('loading-title');
+              if (loadingTitle) {
+                loadingTitle.textContent = config.siteName;
+              }
+            }
+          } catch (e) {
+            // Fallback to default title if config is not available
+          }
+        };
+        // Check immediately and then periodically until config is loaded
+        checkConfig();
+        const interval = setInterval(() => {
+          checkConfig();
+          if (localStorage.getItem('appConfig')) {
+            clearInterval(interval);
+          }
+        }, 100);
+      });
+    </script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/ldrs/dist/auto/grid.js"></script>
     <style>
       /* Styles pour la page de chargement */
@@ -81,7 +108,7 @@
   <body>
     <!-- Page de chargement -->
     <div id="loading-screen">
-      <h1 class="loading-title">Star Deception Wiki</h1>
+      <h1 id="loading-title" class="loading-title">Open Book Wiki</h1>
       <p class="loading-subtitle">Chargement du guide complet<span class="loading-dots"></span></p>
       <l-grid size="60" speed="1.5" color="#06b6d4"></l-grid>
     </div>

@@ -8,16 +8,16 @@ import { WikiProvider, useWiki } from './context/WikiContext';
 import logger from './utils/logger';
 
 const AppContent: React.FC = () => {
-  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData } = useWiki();
+  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData, siteName } = useWiki();
   
   useEffect(() => {
-    logger.info('🚀 Application démarrée', 'Open Book Wiki');
+    logger.info('🚀 Application démarrée', siteName);
     const pageCount = Object.keys(wikiData).length;
     logger.debug('📄 Pages chargées', pageCount);
     if (user) {
       logger.user('👤 Utilisateur connecté', user.username);
     }
-  }, [user, wikiData]);
+  }, [user, wikiData, siteName]);
   
   useEffect(() => {
     // Signaler que l'application est prête

@@ -11,7 +11,9 @@ export const Header: React.FC = () => {
     setSearchTerm, 
     isLoggedIn,
     isDarkMode,
-    setCurrentPage
+    setCurrentPage,
+    siteName,
+    siteDescription
   } = useWiki();
   
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -37,7 +39,7 @@ export const Header: React.FC = () => {
                 <div className="w-10 h-10 flex items-center justify-center">
                   <img 
                     src="/Icon.svg" 
-                    alt="Open Book Wiki Icon" 
+                    alt={`${siteName} Icon`} 
                     className="w-10 h-10 object-contain"
                   />
                 </div>
@@ -45,12 +47,12 @@ export const Header: React.FC = () => {
                   <h1 className={`text-2xl font-bold transition-colors duration-300 ${
                     isDarkMode ? 'text-white' : 'text-gray-900'
                   }`}>
-                    Open Book Wiki
+                    {siteName || 'Open Book Wiki'}
                   </h1>
                   <p className={`text-sm transition-colors duration-300 ${
                     isDarkMode ? 'text-slate-400' : 'text-gray-600'
                   }`}>
-                    Wiki open source
+                    {siteDescription || 'Wiki open source'}
                   </p>
                 </div>
               </button>

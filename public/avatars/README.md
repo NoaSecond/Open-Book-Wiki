@@ -1,6 +1,6 @@
 # Avatars par défaut
 
-Ce dossier contient les avatars prédéfinis disponibles pour les utilisateurs du wiki Star Deception.
+Ce dossier contient les avatars prédéfinis disponibles pour les utilisateurs du wiki Open Book Wiki.
 
 ## 📁 Contenu
 
@@ -13,7 +13,7 @@ Ce dossier contient les avatars prédéfinis disponibles pour les utilisateurs d
 - `avatar-cyan.svg` - Avatar cyan
 
 ### Avatar spécial
-- `avatar-star-deception.svg` - Avatar thématique Star Deception avec étoile
+- `avatar-openbookwiki.svg` - Avatar thématique Open Book Wiki
 
 ## 🎨 Format
 
