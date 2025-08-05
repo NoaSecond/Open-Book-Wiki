@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import authService, { User as AuthUser } from '../services/authService';
 import activityService from '../services/activityService';
+import logger from '../utils/logger';
 
 interface ReadmeSection {
   id: string;
@@ -870,6 +871,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           
           // Logger l'activité d'édition de section
           if (user && sectionToUpdate) {
+            logger.info('✏️ Section modifiée', `"${sectionToUpdate.title}" dans "${currentPage.title}" par ${user.username}`);
             activityService.addLog({
               userId: user.id,
               username: user.username,
@@ -979,6 +981,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // Vérifier si la page existe déjà
     if (wikiData[pageId]) {
+      logger.warn('⚠️ Page déjà existante', pageTitle);
       console.warn(`La page "${pageTitle}" existe déjà`);
       return pageId;
     }
@@ -998,6 +1001,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Incrémenter le compteur de contributions
     if (user) {
       updateUser({ contributions: (user.contributions || 0) + 1 });
+      logger.success('📄 Nouvelle page créée', `"${pageTitle}" par ${user.username}`);
     }
 
     return pageId;

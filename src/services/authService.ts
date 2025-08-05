@@ -3,6 +3,7 @@
 
 import { CryptoUtils } from '../utils/cryptoUtils';
 import activityService from './activityService';
+import logger from '../utils/logger';
 
 export interface User {
   id: number;
@@ -133,6 +134,7 @@ class AuthService {
       localStorage.setItem(this.sessionKey, JSON.stringify(userSession));
       
       // Logger l'activité de connexion
+      logger.auth('✅ Connexion réussie', username);
       activityService.addLog({
         userId: user.id,
         username: user.username,
@@ -143,6 +145,7 @@ class AuthService {
       return userSession;
     }
     
+    logger.auth('❌ Échec de connexion', username);
     return null;
   }
 
@@ -158,6 +161,7 @@ class AuthService {
     
     // Logger l'activité de déconnexion
     if (currentUser) {
+      logger.auth('👋 Déconnexion', currentUser.username);
       activityService.addLog({
         userId: currentUser.id,
         username: currentUser.username,

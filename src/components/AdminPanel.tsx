@@ -7,6 +7,7 @@ import AdminService, {
   SystemInfo 
 } from '../services/adminService';
 import activityService, { ActivityLog } from '../services/activityService';
+import logger from '../utils/logger';
 
 export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => void }> = ({ 
   isOpenFromMenu = false, 
@@ -118,6 +119,7 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
   const processImportFile = async (file: File) => {
     // Vérifier le type de fichier
     if (!file.name.endsWith('.json')) {
+      logger.admin('❌ Tentative d\'import avec format invalide', file.name);
       alert('❌ Format de fichier non supporté. Seuls les fichiers .json sont acceptés.');
       return;
     }
@@ -125,11 +127,13 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
     // Vérifier la taille du fichier (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
+      logger.admin('❌ Fichier trop volumineux pour l\'import', `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
       alert('❌ Le fichier est trop volumineux (max 5MB)');
       return;
     }
     
     try {
+      logger.admin('📥 Début d\'importation', `${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
       const text = await file.text();
       const adminService = AdminService.getInstance();
       
@@ -143,11 +147,15 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
         `Continuer ?`
       );
       
-      if (!confirmImport) return;
+      if (!confirmImport) {
+        logger.admin('🚫 Import annulé par l\'utilisateur', file.name);
+        return;
+      }
       
       const result = await adminService.importData(text);
       
       if (result.success) {
+        logger.admin('✅ Import réussi', result.message || 'Données importées avec succès');
         alert(
           `✅ Importation réussie !\n\n` +
           `${result.message}\n\n` +
@@ -157,9 +165,11 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
         // Recharger les données
         await loadDatabaseInfo();
       } else {
+        logger.admin('❌ Erreur d\'import', result.message || 'Erreur inconnue');
         alert(`❌ Erreur d'importation :\n\n${result.message}`);
       }
     } catch (error) {
+      logger.admin('❌ Erreur lors de la lecture du fichier', `${file.name}: ${error}`);
       alert(`❌ Erreur lors de la lecture du fichier :\n\n${error}`);
     }
   };

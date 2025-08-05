@@ -5,9 +5,19 @@ import { MainContent } from './components/MainContent';
 import { EditModal } from './components/EditModal';
 import { AdminPanel } from './components/AdminPanel';
 import { WikiProvider, useWiki } from './context/WikiContext';
+import logger from './utils/logger';
 
 const AppContent: React.FC = () => {
-  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen } = useWiki();
+  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData } = useWiki();
+  
+  useEffect(() => {
+    logger.info('🚀 Application démarrée', 'StarDeception Wiki');
+    const pageCount = Object.keys(wikiData).length;
+    logger.debug('📄 Pages chargées', pageCount);
+    if (user) {
+      logger.user('👤 Utilisateur connecté', user.username);
+    }
+  }, [user, wikiData]);
   
   useEffect(() => {
     // Signaler que l'application est prête
@@ -24,6 +34,7 @@ const AppContent: React.FC = () => {
     // Attendre un court délai pour s'assurer que tout est rendu
     const timer = setTimeout(() => {
       hideLoadingScreen();
+      logger.success('✨ Interface utilisateur prête');
     }, 800);
     
     return () => clearTimeout(timer);
