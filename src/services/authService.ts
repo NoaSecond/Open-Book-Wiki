@@ -124,7 +124,9 @@ class AuthService {
       const userSession: User = {
         id: user.id,
         username: user.username,
-        tags: user.tags
+        tags: user.tags,
+        email: user.email,
+        avatar: user.avatar
       };
       
       // Sauvegarder la session

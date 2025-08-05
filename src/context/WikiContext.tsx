@@ -723,7 +723,8 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (currentUser) {
       const fullUser: User = {
         ...currentUser,
-        email: `${currentUser.username}@stardeception.com`,
+        email: currentUser.email || `${currentUser.username}@stardeception.com`,
+        avatar: currentUser.avatar, // Préserver l'avatar existant
         bio: getDefaultBio(currentUser.tags),
         joinDate: '2023-01-01',
         contributions: getDefaultContributions(currentUser.tags)

@@ -49,11 +49,11 @@ export const MembersPage: React.FC = () => {
     });
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!editingUserData) return;
     
     try {
-      const success = updateUserProfile(editingUserData.id, {
+      const success = await updateUserProfile(editingUserData.id, {
         username: editingUserData.username,
         email: editingUserData.email,
         avatar: editingUserData.avatar,

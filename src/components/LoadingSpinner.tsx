@@ -15,11 +15,15 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 }) => {
   return (
     <div className={`flex items-center justify-center ${className}`}>
-      <l-grid 
-        size={size} 
-        speed={speed} 
-        color={color}
-      ></l-grid>
+      <div 
+        className="animate-spin rounded-full border-4 border-t-transparent"
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderColor: `${color} transparent transparent transparent`,
+          animationDuration: `${speed}s`
+        }}
+      ></div>
     </div>
   );
 };

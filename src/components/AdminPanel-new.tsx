@@ -527,7 +527,7 @@ export const AdminPanel: React.FC = () => {
                             <td className={`px-6 py-4 whitespace-nowrap text-sm font-mono ${
                               isDarkMode ? 'text-slate-300' : 'text-gray-900'
                             }`}>
-                              {showPasswords ? dbUser.password : '••••••••'}
+                              {showPasswords ? (dbUser.passwordHash || '••••••••') : '••••••••'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
