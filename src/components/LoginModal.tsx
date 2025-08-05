@@ -27,7 +27,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         // Créer l'utilisateur avec les informations étendues pour le contexte
         const fullUser = {
           ...authenticatedUser,
-          email: `${authenticatedUser.username}@stardeception.com`,
+          email: `${authenticatedUser.username}@openbook.wiki`,
           bio: getBio(authenticatedUser.tags),
           joinDate: '2023-01-01',
           contributions: getContributions(authenticatedUser.tags)

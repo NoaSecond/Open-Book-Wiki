@@ -36,8 +36,8 @@ export const Header: React.FC = () => {
               >
                 <div className="w-10 h-10 flex items-center justify-center">
                   <img 
-                    src="/Star Deception Logo.svg" 
-                    alt="Star Deception Logo" 
+                    src="/Icon.svg" 
+                    alt="Open Book Wiki Icon" 
                     className="w-10 h-10 object-contain"
                   />
                 </div>
@@ -45,12 +45,12 @@ export const Header: React.FC = () => {
                   <h1 className={`text-2xl font-bold transition-colors duration-300 ${
                     isDarkMode ? 'text-white' : 'text-gray-900'
                   }`}>
-                    Star Deception Wiki
+                    Open Book Wiki
                   </h1>
                   <p className={`text-sm transition-colors duration-300 ${
                     isDarkMode ? 'text-slate-400' : 'text-gray-600'
                   }`}>
-                    Guide complet du jeu
+                    Wiki open source
                   </p>
                 </div>
               </button>

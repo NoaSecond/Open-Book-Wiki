@@ -11,7 +11,7 @@ const AppContent: React.FC = () => {
   const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData } = useWiki();
   
   useEffect(() => {
-    logger.info('🚀 Application démarrée', 'StarDeception Wiki');
+    logger.info('🚀 Application démarrée', 'Open Book Wiki');
     const pageCount = Object.keys(wikiData).length;
     logger.debug('📄 Pages chargées', pageCount);
     if (user) {

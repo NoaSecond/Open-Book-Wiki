@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Users, Gamepad2, BookOpen, Package, MapPin, Clock, User, Code, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X } from 'lucide-react';
+import { Home, BookOpen, Clock, User, Code, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import activityService from '../services/activityService';
 
 const navigationItems = [
   { id: 'home', label: 'Accueil', icon: Home },
-  { id: 'characters', label: 'Personnages', icon: Users },
-  { id: 'gameplay', label: 'Gameplay', icon: Gamepad2 },
-  { id: 'story', label: 'Histoire', icon: BookOpen },
-  { id: 'items', label: 'Objets', icon: Package },
-  { id: 'locations', label: 'Lieux', icon: MapPin },
   { id: 'development', label: 'Développement', icon: Code },
 ];
 
@@ -410,7 +405,7 @@ export const Sidebar: React.FC = () => {
           isDarkMode ? 'border-slate-700' : 'border-gray-200'
         }`}>
           <a
-            href="https://github.com/NoaSecond/StarDeception-Wiki"
+            href="https://github.com/NoaSecond/Open-Book-Wiki"
             target="_blank"
             rel="noopener noreferrer"
             className={`inline-flex items-center space-x-2 text-xs transition-colors duration-300 hover:underline ${

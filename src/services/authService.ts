@@ -53,10 +53,8 @@ class AuthService {
   private async initializeDefaultUsers() {
     const existingUsers = this.getStoredUsers();
     if (existingUsers.length === 0) {
-      // Créer les utilisateurs par défaut avec des mots de passe hachés
+      // Créer l'utilisateur admin par défaut avec un mot de passe haché
       const adminPassword = await CryptoUtils.hashPassword('admin');
-      const contribPassword = await CryptoUtils.hashPassword('contrib123');
-      const visitorPassword = await CryptoUtils.hashPassword('visit123');
 
       const defaultUsers: StoredUser[] = [
         {
@@ -65,40 +63,32 @@ class AuthService {
           passwordHash: adminPassword.hash,
           passwordSalt: adminPassword.salt,
           tags: ['Administrateur', 'Contributeur'],
-          email: 'admin@stardeception.com',
-          emailHash: await CryptoUtils.hashEmail('admin@stardeception.com'),
-          avatar: undefined,
-          createdAt: new Date().toISOString(),
-          lastLogin: undefined
-        },
-        {
-          id: 2,
-          username: 'contributeur1',
-          passwordHash: contribPassword.hash,
-          passwordSalt: contribPassword.salt,
-          tags: ['Contributeur'],
-          email: 'contrib@stardeception.com',
-          emailHash: await CryptoUtils.hashEmail('contrib@stardeception.com'),
-          avatar: undefined,
-          createdAt: new Date().toISOString(),
-          lastLogin: undefined
-        },
-        {
-          id: 3,
-          username: 'visiteur1',
-          passwordHash: visitorPassword.hash,
-          passwordSalt: visitorPassword.salt,
-          tags: ['Visiteur'],
-          email: 'visitor@stardeception.com',
-          emailHash: await CryptoUtils.hashEmail('visitor@stardeception.com'),
-          avatar: undefined,
+          email: 'admin@openbook.wiki',
+          emailHash: await CryptoUtils.hashEmail('admin@openbook.wiki'),
+          avatar: '/avatars/avatar-red.svg',
           createdAt: new Date().toISOString(),
           lastLogin: undefined
         }
       ];
       
       localStorage.setItem(this.storageKey, JSON.stringify(defaultUsers));
-      console.log('✅ Utilisateurs par défaut créés avec mots de passe sécurisés');
+      console.log('✅ Utilisateur admin par défaut créé avec mot de passe sécurisé');
+    } else {
+      // Mettre à jour l'avatar de l'admin s'il n'en a pas
+      let updated = false;
+      
+      existingUsers.forEach(user => {
+        if (!user.avatar && user.username === 'admin') {
+          user.avatar = '/avatars/avatar-red.svg';
+          updated = true;
+          console.log(`✅ Avatar ajouté pour ${user.username}: ${user.avatar}`);
+        }
+      });
+      
+      if (updated) {
+        localStorage.setItem(this.storageKey, JSON.stringify(existingUsers));
+        console.log('✅ Avatar mis à jour pour l\'utilisateur admin');
+      }
     }
   }
 
@@ -152,7 +142,42 @@ class AuthService {
   // Récupérer la session actuelle
   getCurrentUser(): User | null {
     const session = localStorage.getItem(this.sessionKey);
-    return session ? JSON.parse(session) : null;
+    if (!session) return null;
+    
+    const user = JSON.parse(session);
+    
+    // Si l'utilisateur n'a pas d'avatar, essayer de rafraîchir la session
+    if (!user.avatar) {
+      console.log(`🔄 Avatar manquant pour ${user.username}, rafraîchissement de la session...`);
+      return this.refreshUserSession();
+    }
+    
+    return user;
+  }
+
+  // Rafraîchir la session avec les données utilisateur les plus récentes
+  refreshUserSession(): User | null {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) return null;
+
+    const users = this.getStoredUsers();
+    const updatedUser = users.find(u => u.username === currentUser.username);
+    
+    if (updatedUser) {
+      const refreshedSession: User = {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        tags: updatedUser.tags,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar
+      };
+      
+      localStorage.setItem(this.sessionKey, JSON.stringify(refreshedSession));
+      console.log(`✅ Session rafraîchie pour ${updatedUser.username} avec avatar: ${updatedUser.avatar}`);
+      return refreshedSession;
+    }
+    
+    return currentUser;
   }
 
   // Déconnexion

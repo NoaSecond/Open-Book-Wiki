@@ -15,14 +15,13 @@ export const AvatarEditor: React.FC<AvatarEditorProps> = ({ currentAvatar, onSav
 
   // Images prédéfinies disponibles
   const predefinedAvatars = [
-    '/avatars/avatar-star-deception.svg',
+    '/avatars/avatar-openbookwiki.svg',
     '/avatars/avatar-blue.svg',
     '/avatars/avatar-green.svg',
     '/avatars/avatar-orange.svg',
     '/avatars/avatar-purple.svg',
     '/avatars/avatar-red.svg',
     '/avatars/avatar-cyan.svg',
-    '/Star Deception Logo.svg',
   ];
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
