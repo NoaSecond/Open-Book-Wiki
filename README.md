@@ -53,9 +53,18 @@ Le contenu du wiki peut être modifié via l'interface d'édition ou en modifian
 
 1. Fork le projet
 2. Créez votre branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commitez vos changements (`git commit -m 'Add some AmazingFeature'`)
+3. Commitez vos changements en utilisant **Gitmoji** (`git commit -m '✨ Add some AmazingFeature'`)
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
+
+### 🎨 Convention Gitmoji
+
+Ce projet utilise [Gitmoji](https://gitmoji.dev/) pour des messages de commit expressifs.
+Installez l'extension Gitmoji pour faciliter l'utilisation :
+```bash
+npm install -g gitmoji-cli
+gitmoji -c
+```
 
 ## 📝 Licence
 
