@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, BookOpen, Clock, User, Code, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
+import { getConfigService } from '../services/configService';
 import activityService from '../services/activityService';
 
 const navigationItems = [
@@ -12,7 +13,7 @@ export const Sidebar: React.FC = () => {
   const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode, canContribute, addPage, renamePage, deletePage, isAdmin } = useWiki();
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [commitHash, setCommitHash] = useState('...');
+  const [appVersion, setAppVersion] = useState('...');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageTitle, setEditingPageTitle] = useState('');
   const [showPageMenu, setShowPageMenu] = useState<string | null>(null);
@@ -50,20 +51,11 @@ export const Sidebar: React.FC = () => {
 
   const dynamicNavigationItems = createNavigationItems();
 
-  // Fonction pour récupérer le hash du dernier commit
+  // Fonction pour récupérer la version de l'application
   useEffect(() => {
-    // En production, vous pourriez récupérer cela depuis une API ou un endpoint
-    // Pour l'instant, on simule avec un hash aléatoire
-    const generateCommitHash = () => {
-      const chars = 'abcdef0123456789';
-      let result = '';
-      for (let i = 0; i < 7; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-    };
-    
-    setCommitHash(generateCommitHash());
+    const configService = getConfigService();
+    const version = configService.getConfig().version;
+    setAppVersion(version);
   }, []);
 
   const handleAddCategory = () => {
@@ -418,7 +410,7 @@ export const Sidebar: React.FC = () => {
           <span className={`text-xs transition-colors duration-300 ${
             isDarkMode ? 'text-slate-500' : 'text-gray-400'
           }`}>
-            {' '}- {commitHash}
+            {' '}v{appVersion}
           </span>
         </div>
       </nav>
