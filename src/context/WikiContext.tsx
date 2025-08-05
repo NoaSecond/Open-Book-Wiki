@@ -34,6 +34,11 @@ interface WikiContextType {
   wikiData: WikiData;
   updatePage: (pageId: string, content: string) => void;
   addSection: (pageId: string, sectionTitle: string) => string; // Retourne l'ID de la nouvelle section
+  addPage: (pageTitle: string) => string; // Ajouter une nouvelle page/catégorie
+  renamePage: (oldPageId: string, newTitle: string) => string; // Renommer une page
+  deletePage: (pageId: string) => boolean; // Supprimer une page
+  renameSection: (pageId: string, sectionId: string, newTitle: string) => boolean; // Renommer une section
+  deleteSection: (pageId: string, sectionId: string) => boolean; // Supprimer une section
   isEditing: boolean;
   setIsEditing: (editing: boolean) => void;
   editingPage: string;
@@ -65,15 +70,29 @@ const WikiContext = createContext<WikiContextType | undefined>(undefined);
 const initialWikiData: WikiData = {
   home: {
     title: "Accueil - Star Deception Wiki",
-    content: `# Bienvenue sur le Wiki Star Deception
+    sections: [
+      {
+        id: "welcome",
+        title: "Bienvenue sur le Wiki Star Deception",
+        content: `# Bienvenue sur le Wiki Star Deception
 
-Star Deception est un jeu vidéo de science-fiction captivant qui vous plonge dans un univers où la tromperie et la stratégie sont essentielles à la survie.
+Star Deception est un jeu vidéo de science-fiction captivant qui vous plonge dans un univers où la tromperie et la stratégie sont essentielles à la survie.`,
+        lastModified: "2025-01-27",
+        author: "Admin"
+      },
+      {
+        id: "about-game",
+        title: "À propos du jeu",
+        content: `# À propos du jeu
 
-## À propos du jeu
-
-Dans Star Deception, les joueurs naviguent dans un cosmos hostile où chaque décision peut changer le cours de l'histoire. Explorez des galaxies lointaines, rencontrez des civilisations alien, et découvrez les secrets cachés de l'univers.
-
-## Caractéristiques principales
+Dans Star Deception, les joueurs naviguent dans un cosmos hostile où chaque décision peut changer le cours de l'histoire. Explorez des galaxies lointaines, rencontrez des civilisations alien, et découvrez les secrets cachés de l'univers.`,
+        lastModified: "2025-01-27",
+        author: "Admin"
+      },
+      {
+        id: "main-features",
+        title: "Caractéristiques principales",
+        content: `# Caractéristiques principales
 
 - **Gameplay stratégique** : Chaque décision compte
 - **Univers riche** : Des dizaines de planètes à explorer
@@ -81,14 +100,20 @@ Dans Star Deception, les joueurs naviguent dans un cosmos hostile où chaque dé
 - **Histoire immersive** : Une narration profonde et engageante
 
 Explorez les différentes sections de ce wiki pour découvrir tous les secrets de Star Deception !`,
+        lastModified: "2025-01-27",
+        author: "Admin"
+      }
+    ],
     lastModified: "2025-01-27",
     author: "Admin"
   },
   characters: {
     title: "Personnages",
-    content: `# Personnages de Star Deception
-
-## Personnages Principaux
+    sections: [
+      {
+        id: "main-characters",
+        title: "Personnages Principaux",
+        content: `# Personnages Principaux
 
 ### Captain Nova Sterling
 Le protagoniste principal, un commandant expérimenté de la Flotte Stellaire. Nova est connu pour sa capacité à prendre des décisions difficiles sous pression.
@@ -115,11 +140,20 @@ Ancien allié devenu rival, Zephyr représente l'une des principales menaces du 
 - Âge : 42 ans
 - Origine : Inconnue
 - Spécialité : Combat rapproché
-- Statut : Antagoniste principal
-
-## Personnages Secondaires
+- Statut : Antagoniste principal`,
+        lastModified: "2025-01-27",
+        author: "GameMaster"
+      },
+      {
+        id: "secondary-characters",
+        title: "Personnages Secondaires",
+        content: `# Personnages Secondaires
 
 Les PNJ jouent un rôle crucial dans l'expérience de jeu, offrant des quêtes, des informations et des défis uniques.`,
+        lastModified: "2025-01-27",
+        author: "GameMaster"
+      }
+    ],
     lastModified: "2025-01-27",
     author: "GameMaster"
   },
@@ -260,31 +294,48 @@ Rejoignez ou créez des organisations de joueurs.
   },
   story: {
     title: "Histoire",
-    content: `# Histoire de Star Deception
+    sections: [
+      {
+        id: "context",
+        title: "Contexte",
+        content: `# Contexte
 
-## Contexte
-
-L'année 2387, l'humanité a colonisé plus de 200 systèmes stellaires. Mais une découverte bouleversante va changer le cours de l'histoire...
-
-## Acte I : La Découverte
+L'année 2387, l'humanité a colonisé plus de 200 systèmes stellaires. Mais une découverte bouleversante va changer le cours de l'histoire...`,
+        lastModified: "2025-01-27",
+        author: "StoryWriter"
+      },
+      {
+        id: "act-1",
+        title: "Acte I : La Découverte",
+        content: `# Acte I : La Découverte
 
 Tout commence lorsque Captain Nova Sterling découvre un signal mystérieux provenant des confins de la galaxie. Ce signal semble contenir des informations sur une civilisation ancienne disparue depuis des millénaires.
 
 ### Chapitres principaux :
 1. **Premier Contact** - La découverte du signal
 2. **L'Expédition** - Formation de l'équipe d'exploration
-3. **Secrets Cachés** - Premières révélations troublantes
-
-## Acte II : La Révélation
+3. **Secrets Cachés** - Premières révélations troublantes`,
+        lastModified: "2025-01-27",
+        author: "StoryWriter"
+      },
+      {
+        id: "act-2",
+        title: "Acte II : La Révélation",
+        content: `# Acte II : La Révélation
 
 L'équipe découvre que cette civilisation ancienne avait développé une technologie capable de manipuler la réalité elle-même. Mais cette découverte attire l'attention d'ennemis redoutables.
 
 ### Chapitres principaux :
 4. **La Technologie Perdue** - Découverte des artefacts
 5. **Trahison** - Un allié révèle sa vraie nature
-6. **La Fuite** - Échapper aux forces ennemies
-
-## Acte III : La Confrontation finale
+6. **La Fuite** - Échapper aux forces ennemies`,
+        lastModified: "2025-01-27",
+        author: "StoryWriter"
+      },
+      {
+        id: "act-3",
+        title: "Acte III : La Confrontation finale",
+        content: `# Acte III : La Confrontation finale
 
 Nova et son équipe doivent empêcher que cette technologie tombe entre de mauvaises mains, même si cela signifie affronter leurs propres démons.
 
@@ -292,6 +343,10 @@ Nova et son équipe doivent empêcher que cette technologie tombe entre de mauva
 7. **Préparatifs** - Rassembler les alliés
 8. **La Bataille finale** - Confrontation épique
 9. **Épilogue** - Les conséquences des choix du joueur`,
+        lastModified: "2025-01-27",
+        author: "StoryWriter"
+      }
+    ],
     lastModified: "2025-01-27",
     author: "StoryWriter"
   },
@@ -402,9 +457,11 @@ Protection standard contre les environnements hostiles.
   },
   locations: {
     title: "Lieux",
-    content: `# Lieux de Star Deception
-
-## Systèmes Stellaires
+    sections: [
+      {
+        id: "stellar-systems",
+        title: "Systèmes Stellaires",
+        content: `# Systèmes Stellaires
 
 ### Système Sol (Système de départ)
 
@@ -434,9 +491,14 @@ Protection standard contre les environnements hostiles.
 - Population : 200 millions
 - Environnement : Planète jungle luxuriante
 - Particularités : Biodiversité exceptionnelle
-- Lieux secrets : Temples aliens cachés
-
-## Stations Spatiales
+- Lieux secrets : Temples aliens cachés`,
+        lastModified: "2025-01-27",
+        author: "Explorer"
+      },
+      {
+        id: "space-stations",
+        title: "Stations Spatiales",
+        content: `# Stations Spatiales
 
 ### Station Nexus Alpha
 - Type : Station commerciale
@@ -448,9 +510,14 @@ Protection standard contre les environnements hostiles.
 - Type : Base militaire
 - Population : 50 000
 - Fonction : Surveillance des frontières
-- Particularités : Technologie de pointe
-
-## Lieux Mystérieux
+- Particularités : Technologie de pointe`,
+        lastModified: "2025-01-27",
+        author: "Explorer"
+      },
+      {
+        id: "mysterious-places",
+        title: "Lieux Mystérieux",
+        content: `# Lieux Mystérieux
 
 ### La Nébuleuse Émeraude
 - Type : Phénomène spatial
@@ -461,20 +528,33 @@ Protection standard contre les environnements hostiles.
 - Type : Région d'espace vide
 - Particularités : Communications impossibles
 - Mystère : Disparitions inexpliquées de vaisseaux`,
+        lastModified: "2025-01-27",
+        author: "Explorer"
+      }
+    ],
     lastModified: "2025-01-27",
     author: "Explorer"
   },
   development: {
     title: "Développement Open Source",
-    content: `# 🌌 Développement de Star Deception
+    sections: [
+      {
+        id: "github-organization",
+        title: "Organisation GitHub StarDeception",
+        content: `# 🌌 Développement de Star Deception
 
 ## Organisation GitHub StarDeception
 
 Star Deception est un projet de jeu **100% open source** développé de manière collaborative et transparente. Toute l'organisation du développement est accessible publiquement sur GitHub.
 
-🔗 **[Organisation StarDeception sur GitHub](https://github.com/orgs/StarDeception/)**
-
-## 🎯 Vision du Projet
+🔗 **[Organisation StarDeception sur GitHub](https://github.com/orgs/StarDeception/)**`,
+        lastModified: "2025-08-05",
+        author: "DevTeam"
+      },
+      {
+        id: "project-vision",
+        title: "🎯 Vision du Projet",
+        content: `# 🎯 Vision du Projet
 
 Star Deception est un **MMO spatial immersif et communautaire** qui vise à offrir une alternative indépendante aux grands titres du genre. Le projet est construit **par et pour les passionnés**, avec une philosophie d'ouverture totale.
 
@@ -484,9 +564,14 @@ Star Deception est un **MMO spatial immersif et communautaire** qui vise à offr
 - 🛠️ **100% open source** — transparent, forkable, participatif
 - 🤝 **Développement communautaire**, inclusif et organique
 - 🪐 **Univers vivant**, construit avec les idées de chacun
-- 🎯 **Propulsé par Godot Engine** — open source, flexible et communautaire
-
-## 📂 Repositories Principaux
+- 🎯 **Propulsé par Godot Engine** — open source, flexible et communautaire`,
+        lastModified: "2025-08-05",
+        author: "DevTeam"
+      },
+      {
+        id: "repositories",
+        title: "📂 Repositories Principaux",
+        content: `# 📂 Repositories Principaux
 
 ### [StarDeception/StarDeception](https://github.com/StarDeception/StarDeception)
 🏷️ **Repository principal du jeu**
@@ -518,9 +603,14 @@ Star Deception est un **MMO spatial immersif et communautaire** qui vise à offr
 
 ### [StarDeception/.github](https://github.com/StarDeception/.github)
 🏷️ **Configuration de l'organisation**
-- **Description :** Profil et configuration de l'organisation GitHub
-
-## 🎮 Éléments Clés du Jeu
+- **Description :** Profil et configuration de l'organisation GitHub`,
+        lastModified: "2025-08-05",
+        author: "DevTeam"
+      },
+      {
+        id: "game-features",
+        title: "🎮 Éléments Clés du Jeu",
+        content: `# 🎮 Éléments Clés du Jeu
 
 ### Gameplay Varié
 - ⛏️ **Minage** et extraction de ressources
@@ -542,9 +632,14 @@ L'équipe de développement vise :
 - 🔹 **Dizaines de systèmes stellaires** explorables
 - 🔹 **Multiples profils de joueurs** (civils, techniciens, dissidents...)
 - 🔹 **Milliers de joueurs connectés** simultanément
-- 🔹 **Un jeu qui évolue constamment** avec sa communauté ❤️
-
-## 🧑‍🚀 Rejoindre le Projet
+- 🔹 **Un jeu qui évolue constamment** avec sa communauté ❤️`,
+        lastModified: "2025-08-05",
+        author: "DevTeam"
+      },
+      {
+        id: "join-project",
+        title: "🧑‍🚀 Rejoindre le Projet",
+        content: `# 🧑‍🚀 Rejoindre le Projet
 
 **Vous êtes :**
 - 💻 Développeur
@@ -590,6 +685,10 @@ Consultez les repositories selon vos compétences :
 ---
 
 > **Star Deception** — *Un opéra spatial libre, construit ensemble, parmi les étoiles.*`,
+        lastModified: "2025-08-05",
+        author: "DevTeam"
+      }
+    ],
     lastModified: "2025-08-05",
     author: "DevCommunity"
   }
@@ -764,7 +863,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return prev;
       });
     } else {
-      // Mise à jour normale pour les pages simples
+      // Mise à jour normale pour les pages simples (cas rare maintenant)
       setWikiData(prev => ({
         ...prev,
         [pageId]: {
@@ -817,6 +916,184 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return newSectionId;
   };
 
+  const addPage = (pageTitle: string): string => {
+    // Créer un ID unique basé sur le titre
+    const pageId = pageTitle.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    
+    // Vérifier si la page existe déjà
+    if (wikiData[pageId]) {
+      console.warn(`La page "${pageTitle}" existe déjà`);
+      return pageId;
+    }
+
+    const newPage = {
+      title: pageTitle,
+      sections: [], // Commencer avec une page vide avec sections
+      lastModified: new Date().toISOString().split('T')[0],
+      author: user?.username || "Contributeur"
+    };
+
+    setWikiData(prev => ({
+      ...prev,
+      [pageId]: newPage
+    }));
+
+    // Incrémenter le compteur de contributions
+    if (user) {
+      updateUser({ contributions: (user.contributions || 0) + 1 });
+    }
+
+    return pageId;
+  };
+
+  const renamePage = (oldPageId: string, newTitle: string): string => {
+    // Créer un nouvel ID basé sur le nouveau titre
+    const newPageId = newTitle.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    
+    // Vérifier si la page existe
+    if (!wikiData[oldPageId]) {
+      console.warn(`La page "${oldPageId}" n'existe pas`);
+      return oldPageId;
+    }
+
+    // Vérifier si le nouvel ID est différent et n'existe pas déjà
+    if (newPageId !== oldPageId && wikiData[newPageId]) {
+      console.warn(`Une page avec l'ID "${newPageId}" existe déjà`);
+      return oldPageId;
+    }
+
+    setWikiData(prev => {
+      const updatedData = { ...prev };
+      
+      // Si l'ID change, créer une nouvelle entrée et supprimer l'ancienne
+      if (newPageId !== oldPageId) {
+        updatedData[newPageId] = {
+          ...updatedData[oldPageId],
+          title: newTitle,
+          lastModified: new Date().toISOString().split('T')[0],
+        };
+        delete updatedData[oldPageId];
+      } else {
+        // Si seul le titre change
+        updatedData[oldPageId] = {
+          ...updatedData[oldPageId],
+          title: newTitle,
+          lastModified: new Date().toISOString().split('T')[0],
+        };
+      }
+      
+      return updatedData;
+    });
+
+    // Si l'ID a changé et que c'est la page actuelle, naviguer vers le nouvel ID
+    if (newPageId !== oldPageId && currentPage === oldPageId) {
+      setCurrentPage(newPageId);
+    }
+
+    return newPageId;
+  };
+
+  const deletePage = (pageId: string): boolean => {
+    // Vérifier si la page existe
+    if (!wikiData[pageId]) {
+      console.warn(`La page "${pageId}" n'existe pas`);
+      return false;
+    }
+
+    // Empêcher la suppression des pages essentielles
+    const protectedPages = ['home', 'characters', 'gameplay', 'story', 'items', 'locations', 'development'];
+    if (protectedPages.includes(pageId)) {
+      console.warn(`La page "${pageId}" est protégée et ne peut pas être supprimée`);
+      return false;
+    }
+
+    setWikiData(prev => {
+      const updatedData = { ...prev };
+      delete updatedData[pageId];
+      return updatedData;
+    });
+
+    // Si c'est la page actuelle qui est supprimée, naviguer vers l'accueil
+    if (currentPage === pageId) {
+      setCurrentPage('home');
+    }
+
+    return true;
+  };
+
+  const renameSection = (pageId: string, sectionId: string, newTitle: string): boolean => {
+    if (!wikiData[pageId]?.sections) {
+      console.warn(`La page "${pageId}" n'a pas de sections`);
+      return false;
+    }
+
+    setWikiData(prev => {
+      const currentPage = prev[pageId];
+      if (currentPage?.sections) {
+        const updatedSections = currentPage.sections.map(section =>
+          section.id === sectionId
+            ? {
+                ...section,
+                title: newTitle,
+                lastModified: new Date().toISOString().split('T')[0],
+                author: user?.username || "Contributeur"
+              }
+            : section
+        );
+
+        return {
+          ...prev,
+          [pageId]: {
+            ...currentPage,
+            sections: updatedSections,
+            lastModified: new Date().toISOString().split('T')[0],
+          }
+        };
+      }
+      return prev;
+    });
+
+    return true;
+  };
+
+  const deleteSection = (pageId: string, sectionId: string): boolean => {
+    if (!wikiData[pageId]?.sections) {
+      console.warn(`La page "${pageId}" n'a pas de sections`);
+      return false;
+    }
+
+    const sections = wikiData[pageId].sections!;
+    
+    // Empêcher la suppression s'il ne reste qu'une section
+    if (sections.length <= 1) {
+      console.warn(`Impossible de supprimer la dernière section de la page "${pageId}"`);
+      return false;
+    }
+
+    setWikiData(prev => {
+      const currentPage = prev[pageId];
+      if (currentPage?.sections) {
+        const updatedSections = currentPage.sections.filter(section => section.id !== sectionId);
+
+        return {
+          ...prev,
+          [pageId]: {
+            ...currentPage,
+            sections: updatedSections,
+            lastModified: new Date().toISOString().split('T')[0],
+          }
+        };
+      }
+      return prev;
+    });
+
+    return true;
+  };
+
   return (
     <WikiContext.Provider value={{
       currentPage,
@@ -824,6 +1101,11 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       wikiData,
       updatePage,
       addSection,
+      addPage,
+      renamePage,
+      deletePage,
+      renameSection,
+      deleteSection,
       isEditing,
       setIsEditing,
       editingPage,

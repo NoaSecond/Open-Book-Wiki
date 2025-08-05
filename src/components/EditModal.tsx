@@ -29,7 +29,7 @@ export const EditModal: React.FC = () => {
           }
         }
       } else {
-        // Page simple
+        // Page simple (cas rare maintenant)
         const page = wikiData[editingPage];
         if (page?.content) {
           setContent(page.content);

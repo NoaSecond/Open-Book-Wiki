@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Users, Gamepad2, BookOpen, Package, MapPin, Clock, User, Code, Plus, ExternalLink } from 'lucide-react';
+import { Home, Users, Gamepad2, BookOpen, Package, MapPin, Clock, User, Code, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 const navigationItems = [
@@ -13,10 +13,46 @@ const navigationItems = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode, canContribute } = useWiki();
+  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode, canContribute, addPage, renamePage, deletePage, isAdmin } = useWiki();
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [commitHash, setCommitHash] = useState('...');
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editingPageTitle, setEditingPageTitle] = useState('');
+  const [showPageMenu, setShowPageMenu] = useState<string | null>(null);
+
+  // Créer les éléments de navigation dynamiquement à partir de wikiData
+  const createNavigationItems = () => {
+    const items = [];
+    
+    // Ajouter les pages statiques d'abord
+    for (const navItem of navigationItems) {
+      if (wikiData[navItem.id]) {
+        items.push({
+          ...navItem,
+          title: wikiData[navItem.id].title
+        });
+      }
+    }
+    
+    // Ajouter les pages dynamiques créées par les utilisateurs
+    for (const [pageId, pageData] of Object.entries(wikiData)) {
+      // Skip les pages qui sont déjà dans les navigationItems statiques
+      if (!navigationItems.find(item => item.id === pageId)) {
+        items.push({
+          id: pageId,
+          label: pageData.title,
+          title: pageData.title,
+          icon: BookOpen, // Icône par défaut pour les pages créées dynamiquement
+          isDynamic: true
+        });
+      }
+    }
+    
+    return items;
+  };
+
+  const dynamicNavigationItems = createNavigationItems();
 
   // Fonction pour récupérer le hash du dernier commit
   useEffect(() => {
@@ -40,8 +76,8 @@ export const Sidebar: React.FC = () => {
 
   const handleCreateCategory = () => {
     if (newCategoryName.trim()) {
-      // Ici vous pourriez ajouter la logique pour créer une nouvelle catégorie
-      console.log('Nouvelle catégorie:', newCategoryName.trim());
+      const newPageId = addPage(newCategoryName.trim());
+      setCurrentPage(newPageId); // Naviguer vers la nouvelle page
       setShowAddCategoryModal(false);
       setNewCategoryName('');
     }
@@ -50,6 +86,32 @@ export const Sidebar: React.FC = () => {
   const handleCancelAddCategory = () => {
     setShowAddCategoryModal(false);
     setNewCategoryName('');
+  };
+
+  const handleEditPage = (pageId: string, currentTitle: string) => {
+    setEditingPageId(pageId);
+    setEditingPageTitle(currentTitle);
+    setShowPageMenu(null);
+  };
+
+  const handleSavePageEdit = () => {
+    if (editingPageId && editingPageTitle.trim()) {
+      renamePage(editingPageId, editingPageTitle.trim());
+      setEditingPageId(null);
+      setEditingPageTitle('');
+    }
+  };
+
+  const handleCancelPageEdit = () => {
+    setEditingPageId(null);
+    setEditingPageTitle('');
+  };
+
+  const handleDeletePage = (pageId: string, pageTitle: string) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer la page "${pageTitle}" ? Cette action est irréversible.`)) {
+      deletePage(pageId);
+      setShowPageMenu(null);
+    }
   };
 
   return (
@@ -83,25 +145,128 @@ export const Sidebar: React.FC = () => {
         )}
 
         <ul className="space-y-2">
-          {navigationItems.map((item) => {
+          {dynamicNavigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
+            const isBeingEdited = editingPageId === item.id;
             
             return (
-              <li key={item.id}>
-                <button
-                  onClick={() => setCurrentPage(item.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-cyan-600 text-white'
-                      : isDarkMode 
-                        ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
-                </button>
+              <li key={item.id} className="relative">
+                {isBeingEdited ? (
+                  // Mode édition
+                  <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${
+                    isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
+                  }`}>
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <input
+                      type="text"
+                      value={editingPageTitle}
+                      onChange={(e) => setEditingPageTitle(e.target.value)}
+                      className={`flex-1 px-2 py-1 text-sm rounded border-0 bg-transparent focus:outline-none ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSavePageEdit();
+                        } else if (e.key === 'Escape') {
+                          handleCancelPageEdit();
+                        }
+                      }}
+                    />
+                    <div className="flex space-x-1">
+                      <button
+                        onClick={handleSavePageEdit}
+                        className={`p-1 rounded hover:bg-green-600 text-green-400 hover:text-white transition-colors`}
+                        title="Sauvegarder"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={handleCancelPageEdit}
+                        className={`p-1 rounded hover:bg-red-600 text-red-400 hover:text-white transition-colors`}
+                        title="Annuler"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // Mode normal
+                  <div className="flex items-center group">
+                    <button
+                      onClick={() => setCurrentPage(item.id)}
+                      className={`flex-1 flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-cyan-600 text-white'
+                          : isDarkMode 
+                            ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="truncate">{item.label}</span>
+                      {item.isDynamic && (
+                        <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
+                          isDarkMode ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
+                        }`}>
+                          Nouveau
+                        </span>
+                      )}
+                    </button>
+                    
+                    {/* Options d'administration pour les pages dynamiques */}
+                    {isAdmin() && item.isDynamic && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowPageMenu(showPageMenu === item.id ? null : item.id)}
+                          className={`p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${
+                            isDarkMode 
+                              ? 'hover:bg-slate-600 text-slate-400 hover:text-slate-300' 
+                              : 'hover:bg-gray-200 text-gray-500 hover:text-gray-700'
+                          }`}
+                          title="Options"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                        
+                        {/* Menu déroulant */}
+                        {showPageMenu === item.id && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-10" 
+                              onClick={() => setShowPageMenu(null)}
+                            />
+                            <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 ${
+                              isDarkMode 
+                                ? 'bg-slate-800 border-slate-700' 
+                                : 'bg-white border-gray-200'
+                            }`}>
+                              <button
+                                onClick={() => handleEditPage(item.id, item.label)}
+                                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${
+                                  isDarkMode 
+                                    ? 'text-slate-300 hover:bg-slate-700 hover:text-white' 
+                                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                }`}
+                              >
+                                <Edit3 className="w-4 h-4" />
+                                <span>Renommer</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeletePage(item.id, item.label)}
+                                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-600 hover:text-white`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span>Supprimer</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -125,6 +290,50 @@ export const Sidebar: React.FC = () => {
             </li>
           )}
         </ul>
+
+        {/* Afficher les sections de la page actuelle */}
+        {wikiData[currentPage]?.sections && wikiData[currentPage].sections!.length > 0 && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between px-3 mb-2">
+              <h3 className={`text-sm font-semibold ${
+                isDarkMode ? 'text-slate-300' : 'text-gray-600'
+              }`}>
+                Sections
+              </h3>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {wikiData[currentPage].sections!.length}
+              </span>
+            </div>
+            <ul className="space-y-1">
+              {wikiData[currentPage].sections!.map((section) => (
+                <li key={section.id}>
+                  <button
+                    onClick={() => {
+                      // Faire défiler vers la section
+                      const sectionElement = document.getElementById(section.id);
+                      if (sectionElement) {
+                        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }}
+                    className={`w-full flex items-center space-x-2 px-6 py-1.5 text-sm rounded-lg transition-colors ${
+                      isDarkMode 
+                        ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-300'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                    }`}
+                    title={`Aller à la section: ${section.title}`}
+                  >
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                      isDarkMode ? 'bg-cyan-400' : 'bg-cyan-500'
+                    }`} />
+                    <span className="truncate text-left">{section.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className={`mt-8 p-4 rounded-lg transition-colors duration-300 ${
           isDarkMode ? 'bg-slate-700' : 'bg-gray-100'
