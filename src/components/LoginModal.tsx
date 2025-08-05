@@ -21,18 +21,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     
     // Simulation d'une connexion réussie
+    const userData = {
+      username: formData.username || 'Utilisateur',
+      email: formData.email || 'user@example.com',
+      bio: '',
+      joinDate: new Date().toISOString().split('T')[0],
+      contributions: 0
+    };
+    
     if (isLogin) {
-      // Connexion
+      // Connexion - on peut simuler la récupération d'un utilisateur existant
       setUser({
-        username: formData.username || 'Utilisateur',
-        email: formData.email || 'user@example.com'
+        ...userData,
+        contributions: Math.floor(Math.random() * 20) + 1, // Simule des contributions existantes
+        joinDate: '2024-01-15' // Date d'inscription simulée
       });
     } else {
-      // Inscription
-      setUser({
-        username: formData.username,
-        email: formData.email
-      });
+      // Inscription - nouvel utilisateur
+      setUser(userData);
     }
     
     setIsLoggedIn(true);

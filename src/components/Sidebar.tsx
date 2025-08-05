@@ -12,7 +12,7 @@ const navigationItems = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, wikiData } = useWiki();
+  const { currentPage, setCurrentPage, wikiData, isLoggedIn } = useWiki();
 
   return (
     <aside className="w-64 bg-slate-800 min-h-[calc(100vh-80px)] border-r border-slate-700">
@@ -39,6 +39,23 @@ export const Sidebar: React.FC = () => {
               </li>
             );
           })}
+          
+          {/* Lien vers le profil si connecté */}
+          {isLoggedIn && (
+            <li>
+              <button
+                onClick={() => setCurrentPage('profile')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                  currentPage === 'profile'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                <User className="w-5 h-5" />
+                <span>Mon Profil</span>
+              </button>
+            </li>
+          )}
         </ul>
 
         <div className="mt-8 p-4 bg-slate-700 rounded-lg">

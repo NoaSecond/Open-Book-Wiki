@@ -2,9 +2,15 @@ import React from 'react';
 import { Edit3, Calendar, User, Eye } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { ProfilePage } from './ProfilePage';
 
 export const MainContent: React.FC = () => {
   const { currentPage, wikiData, setIsEditing, setEditingPage, searchTerm } = useWiki();
+  
+  // Si c'est la page profil, afficher le composant ProfilePage
+  if (currentPage === 'profile') {
+    return <ProfilePage />;
+  }
   
   const currentPageData = wikiData[currentPage];
   

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, LogIn, Edit3 } from 'lucide-react';
+import { Search, LogIn } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { UserMenu } from './UserMenu';
 import { LoginModal } from './LoginModal';
@@ -8,9 +8,7 @@ export const Header: React.FC = () => {
   const { 
     searchTerm, 
     setSearchTerm, 
-    isLoggedIn, 
-    isEditing, 
-    setIsEditing 
+    isLoggedIn
   } = useWiki();
   
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -49,20 +47,7 @@ export const Header: React.FC = () => {
               </div>
 
               {isLoggedIn ? (
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => setIsEditing(!isEditing)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                      isEditing
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-cyan-600 hover:bg-cyan-700 text-white'
-                    }`}
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    <span>{isEditing ? 'Arrêter' : 'Modifier'}</span>
-                  </button>
-                  <UserMenu />
-                </div>
+                <UserMenu />
               ) : (
                 <button
                   onClick={() => setShowLoginModal(true)}

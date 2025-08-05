@@ -9,6 +9,15 @@ interface WikiData {
   };
 }
 
+interface User {
+  username: string;
+  email: string;
+  avatar?: string;
+  bio?: string;
+  joinDate: string;
+  contributions: number;
+}
+
 interface WikiContextType {
   currentPage: string;
   setCurrentPage: (page: string) => void;
@@ -23,8 +32,9 @@ interface WikiContextType {
   // États d'authentification
   isLoggedIn: boolean;
   setIsLoggedIn: (loggedIn: boolean) => void;
-  user: { username: string; email: string } | null;
-  setUser: (user: { username: string; email: string } | null) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 const WikiContext = createContext<WikiContextType | undefined>(undefined);
@@ -305,7 +315,13 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   // États d'authentification
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  const updateUser = (updates: Partial<User>) => {
+    if (user) {
+      setUser(prev => ({ ...prev!, ...updates }));
+    }
+  };
 
   const updatePage = (pageId: string, content: string) => {
     setWikiData(prev => ({
@@ -317,6 +333,11 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         author: user?.username || "Contributeur"
       }
     }));
+    
+    // Incrémenter le compteur de contributions
+    if (user) {
+      updateUser({ contributions: user.contributions + 1 });
+    }
   };
 
   return (
@@ -334,7 +355,8 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isLoggedIn,
       setIsLoggedIn,
       user,
-      setUser
+      setUser,
+      updateUser
     }}>
       {children}
     </WikiContext.Provider>

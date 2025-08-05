@@ -3,7 +3,7 @@ import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
-  const { user, setUser, setIsLoggedIn } = useWiki();
+  const { user, setUser, setIsLoggedIn, setCurrentPage } = useWiki();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -23,6 +23,12 @@ export const UserMenu: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     setIsLoggedIn(false);
+    setCurrentPage('home');
+    setIsOpen(false);
+  };
+
+  const handleProfileClick = () => {
+    setCurrentPage('profile');
     setIsOpen(false);
   };
 
@@ -32,8 +38,16 @@ export const UserMenu: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-white"
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center">
-          <User className="w-4 h-4 text-white" />
+        <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
+          {user?.avatar ? (
+            <img 
+              src={user.avatar} 
+              alt="Avatar utilisateur" 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-4 h-4 text-white" />
+          )}
         </div>
         <span className="text-sm font-medium">{user?.username}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -48,7 +62,7 @@ export const UserMenu: React.FC = () => {
             </div>
             
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={handleProfileClick}
               className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
             >
               <User className="w-4 h-4" />
