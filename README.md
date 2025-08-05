@@ -1,15 +1,10 @@
-# StarDeception Wiki
-
-Un wiki interactif et moderne pour Star Deception, construit avec React, TypeScript et Tailwind CSS.
-
-## 🚀 Fonctionnalités
-
-- **Interface moderne** : Design sombre et épuré avec Tailwind CSS
-- **Navigation intuitive** : Sidebar avec structure hiérarchique
-- **Édition en temps réel** : Modal d'édition pour modifier le contenu
-- **Rendu Markdown** : Support complet du Markdown pour le contenu
-- **Responsive** : Compatible avec tous les appareils
-- **Performance** : Construit avec Vite pour un développement rapide
+<div align="center">
+  <img src="public/Star Deception Logo.svg" alt="Star Deception Logo" width="120" height="120">
+  
+  # StarDeception Wiki
+  
+  Un wiki interactif et moderne pour Star Deception, construit avec React, TypeScript et Tailwind CSS.
+</div>
 
 ## 🛠️ Technologies utilisées
 
@@ -46,27 +41,6 @@ npm run dev
 - `npm run preview` : Prévisualise la version de production
 - `npm run lint` : Vérifie le code avec ESLint
 
-## 📁 Structure du projet
-
-```
-StarDeception-Wiki/
-├── src/
-│   ├── components/          # Composants React réutilisables
-│   │   ├── EditModal.tsx    # Modal d'édition
-│   │   ├── Header.tsx       # En-tête de l'application
-│   │   ├── MainContent.tsx  # Contenu principal
-│   │   ├── MarkdownRenderer.tsx # Rendu Markdown
-│   │   └── Sidebar.tsx      # Barre latérale de navigation
-│   ├── context/
-│   │   └── WikiContext.tsx  # Contexte global de l'application
-│   ├── App.tsx              # Composant principal
-│   ├── main.tsx             # Point d'entrée
-│   └── index.css            # Styles globaux
-├── public/                  # Fichiers statiques
-├── index.html              # Template HTML
-└── package.json            # Dépendances et scripts
-```
-
 ## 🎨 Personnalisation
 
 ### Thème
@@ -86,13 +60,3 @@ Le contenu du wiki peut être modifié via l'interface d'édition ou en modifian
 ## 📝 Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 📞 Contact
-
-**NoaSecond** - [@NoaSecond](https://github.com/NoaSecond)
-
-Lien du projet : [https://github.com/NoaSecond/StarDeception-Wiki](https://github.com/NoaSecond/StarDeception-Wiki)
-
----
-
-⭐ N'hésitez pas à donner une étoile au projet si vous l'aimez !
