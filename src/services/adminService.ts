@@ -2,6 +2,7 @@
 // En production, ceci communiquerait avec un vrai backend
 
 import authService from './authService';
+import type { WikiData } from '../context/WikiContext';
 
 export interface DatabaseUser {
   id: number;
@@ -73,18 +74,18 @@ class AdminService {
     }));
   }
 
-  public async getStats(wikiData: any): Promise<DatabaseStats> {
+  public async getStats(wikiData: WikiData): Promise<DatabaseStats> {
     await this.delay(200);
     
     const realUsers = await authService.getAdminUserList();
     const totalPages = Object.keys(wikiData).length;
-    const totalSections = Object.values(wikiData).reduce((acc: number, page: any) => {
+    const totalSections = Object.values(wikiData).reduce((acc: number, page) => {
       return acc + (page.sections?.length || 0);
     }, 0);
 
-    const totalContent = Object.values(wikiData).reduce((acc: number, page: any) => {
+    const totalContent = Object.values(wikiData).reduce((acc: number, page) => {
       if (page.sections) {
-        return acc + page.sections.reduce((sectionAcc: number, section: any) => {
+        return acc + page.sections.reduce((sectionAcc: number, section) => {
           return sectionAcc + (section.content?.length || 0);
         }, 0);
       }
@@ -99,9 +100,9 @@ class AdminService {
     });
 
     // Trouver la page la plus grande
-    const largestPage = Object.entries(wikiData).reduce((prev, [key, page]: [string, any]) => {
-      const pageSize = page.sections?.reduce((acc: number, section: any) => acc + (section.content?.length || 0), 0) || page.content?.length || 0;
-      const prevSize = wikiData[prev]?.sections?.reduce((acc: number, section: any) => acc + (section.content?.length || 0), 0) || wikiData[prev]?.content?.length || 0;
+    const largestPage = Object.entries(wikiData).reduce((prev, [key, page]) => {
+      const pageSize = page.sections?.reduce((acc: number, section) => acc + (section.content?.length || 0), 0) || page.content?.length || 0;
+      const prevSize = wikiData[prev]?.sections?.reduce((acc: number, section) => acc + (section.content?.length || 0), 0) || wikiData[prev]?.content?.length || 0;
       return pageSize > prevSize ? key : prev;
     }, Object.keys(wikiData)[0]);
 
@@ -304,7 +305,7 @@ class AdminService {
   }
 
   // Méthodes pour les logs d'activité (simulées)
-  public async getActivityLogs(): Promise<any[]> {
+  public async getActivityLogs(): Promise<unknown[]> {
     await this.delay(300);
     
     return [

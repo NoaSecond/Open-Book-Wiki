@@ -139,7 +139,7 @@ export class DateUtils {
       const date = new Date(dateString);
       const today = new Date();
       return date.toDateString() === today.toDateString();
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -151,7 +151,7 @@ export class DateUtils {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       return date >= weekAgo;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

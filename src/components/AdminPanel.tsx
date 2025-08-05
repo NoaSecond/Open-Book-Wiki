@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Database, Users, FileText, Settings, X, Eye, EyeOff, Trash2, Activity, Download, Upload, RefreshCw } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import AdminService, { 
@@ -13,7 +13,7 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
   isOpenFromMenu = false, 
   onClose 
 }) => {
-  const { isDarkMode, user, wikiData } = useWiki();
+  const { isDarkMode, user, wikiData, isAdmin } = useWiki();
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
   const [activeTab, setActiveTab] = useState<'users' | 'pages' | 'stats' | 'activity'>('stats');
   const [users, setUsers] = useState<AdminDatabaseUser[]>([]);
@@ -40,9 +40,6 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Vérifier si l'utilisateur est admin
-  const isAdmin = () => user?.tags?.includes('Administrateur');
-
   // Formater la taille en octets avec les unités appropriées
   const formatFileSize = (characters: number): string => {
     // UTF-8: en moyenne 1 caractère = 1-4 octets, on estime 1.5 octets par caractère
@@ -57,17 +54,7 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
     return `${formattedSize} ${sizes[i]}`;
   };
 
-  useEffect(() => {
-    setIsOpen(isOpenFromMenu);
-  }, [isOpenFromMenu]);
-
-  useEffect(() => {
-    if (isOpen && isAdmin()) {
-      loadDatabaseInfo();
-    }
-  }, [isOpen]);
-
-  const loadDatabaseInfo = async () => {
+  const loadDatabaseInfo = useCallback(async () => {
     setIsLoading(true);
     const adminService = AdminService.getInstance();
     
@@ -90,7 +77,17 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [wikiData]);
+
+  useEffect(() => {
+    setIsOpen(isOpenFromMenu);
+  }, [isOpenFromMenu]);
+
+  useEffect(() => {
+    if (isOpen && isAdmin()) {
+      loadDatabaseInfo();
+    }
+  }, [isOpen, isAdmin, loadDatabaseInfo]);
 
   const handleDeleteUser = async (userId: number) => {
     const adminService = AdminService.getInstance();

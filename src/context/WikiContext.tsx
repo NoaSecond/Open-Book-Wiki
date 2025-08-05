@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import authService, { User as AuthUser } from '../services/authService';
 import activityService from '../services/activityService';
 import logger from '../utils/logger';
@@ -12,7 +12,7 @@ interface ReadmeSection {
   author: string;
 }
 
-interface WikiData {
+export interface WikiData {
   [key: string]: {
     title: string;
     content?: string; // Pour les pages simples
@@ -238,8 +238,14 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Si c'est l'utilisateur connecté, mettre à jour ses données
       if (user && user.id === userId) {
         const updatedUser = { ...user, ...updates };
-        delete (updatedUser as any).password; // Ne pas stocker le mot de passe
-        setUser(updatedUser);
+        // Ne pas stocker le mot de passe
+        if ('password' in updatedUser) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { password: _, ...userWithoutPassword } = updatedUser;
+          setUser(userWithoutPassword as User);
+        } else {
+          setUser(updatedUser);
+        }
       }
     }
     return success;
@@ -256,18 +262,18 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Gestion des permissions
-  const hasPermission = (requiredTag: string): boolean => {
+  const hasPermission = useCallback((requiredTag: string): boolean => {
     if (!user || !user.tags) return false;
     return user.tags.includes(requiredTag) || user.tags.includes('Administrateur');
-  };
+  }, [user]);
 
-  const canContribute = (): boolean => {
+  const canContribute = useCallback((): boolean => {
     return hasPermission('Contributeur');
-  };
+  }, [hasPermission]);
 
-  const isAdmin = (): boolean => {
+  const isAdmin = useCallback((): boolean => {
     return hasPermission('Administrateur');
-  };
+  }, [hasPermission]);
 
   // Fonction pour ouvrir le panel d'administration
   const openAdminPanel = () => {

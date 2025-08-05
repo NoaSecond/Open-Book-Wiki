@@ -26,7 +26,7 @@ export const MainContent: React.FC = () => {
       
       logger.debug('📊 Page vue', `${currentPage} (${views} vues)`);
     }
-  }, [currentPage]);
+  }, [currentPage, wikiData]);
   
   // Si c'est la page profil, afficher le composant ProfilePage
   if (currentPage === 'profile') {

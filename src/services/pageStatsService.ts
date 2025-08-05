@@ -23,7 +23,7 @@ class PageStatsService {
       const stored = localStorage.getItem(this.storageKey);
       return stored ? JSON.parse(stored) : {};
     } catch (error) {
-      logger.error('❌ Erreur lors de la lecture des stats', error);
+      logger.error('❌ Erreur lors de la lecture des stats', error as Error);
       return {};
     }
   }
@@ -34,7 +34,7 @@ class PageStatsService {
       localStorage.setItem(this.storageKey, JSON.stringify(stats));
       logger.debug('💾 Stats sauvegardées', Object.keys(stats).length + ' pages');
     } catch (error) {
-      logger.error('❌ Erreur lors de la sauvegarde des stats', error);
+      logger.error('❌ Erreur lors de la sauvegarde des stats', error as Error);
     }
   }
 
@@ -43,7 +43,7 @@ class PageStatsService {
     try {
       const stored = sessionStorage.getItem(this.sessionKey);
       return new Set(stored ? JSON.parse(stored) : []);
-    } catch (error) {
+    } catch {
       return new Set();
     }
   }
@@ -53,7 +53,7 @@ class PageStatsService {
     try {
       sessionStorage.setItem(this.sessionKey, JSON.stringify([...views]));
     } catch (error) {
-      logger.warn('⚠️ Impossible de sauvegarder les vues de session', error);
+      logger.warn('⚠️ Impossible de sauvegarder les vues de session', error as Error);
     }
   }
 

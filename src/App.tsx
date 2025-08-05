@@ -5,10 +5,13 @@ import { MainContent } from './components/MainContent';
 import { EditModal } from './components/EditModal';
 import { AdminPanel } from './components/AdminPanel';
 import { WikiProvider, useWiki } from './context/WikiContext';
+import { getConfigService } from './services/configService';
 import logger from './utils/logger';
 
 const AppContent: React.FC = () => {
-  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData, siteName } = useWiki();
+  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData } = useWiki();
+  const configService = getConfigService();
+  const siteName = configService.getSiteName();
   
   useEffect(() => {
     logger.info('🚀 Application démarrée', siteName);

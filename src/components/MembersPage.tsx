@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Edit3, Calendar, Trophy, Shield, UserCheck, Eye, Trash2 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
+import type { User } from '../services/authService';
+
+// Type étendu pour l'affichage des membres avec propriétés optionnelles
+type DisplayUser = User & {
+  joinDate?: string;
+  contributions?: number;
+  bio?: string;
+};
 
 interface EditingUserData {
   id: number;
@@ -38,7 +46,7 @@ export const MembersPage: React.FC = () => {
     );
   }
 
-  const handleEditProfile = (user: any) => {
+  const handleEditProfile = (user: DisplayUser) => {
     setEditingUserData({
       id: user.id,
       username: user.username,
@@ -122,7 +130,7 @@ export const MembersPage: React.FC = () => {
         </h1>
 
         <div className="space-y-6">
-          {allUsers.map((user: any) => (
+          {allUsers.map((user: DisplayUser) => (
             <div
               key={user.id}
               className={`p-6 rounded-lg border transition-all duration-200 ${

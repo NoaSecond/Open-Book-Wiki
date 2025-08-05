@@ -41,7 +41,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       } else {
         setError('Identifiant ou mot de passe incorrect');
       }
-    } catch (err) {
+    } catch {
       setError('Erreur de connexion');
     } finally {
       setIsLoading(false);

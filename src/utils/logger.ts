@@ -15,6 +15,9 @@ interface LogConfig {
   groupCollapsed: boolean;
 }
 
+// Type pour les données de log
+type LogData = string | number | boolean | object | Error | null | undefined;
+
 class Logger {
   private config: LogConfig = {
     level: LogLevel.DEBUG,
@@ -98,7 +101,7 @@ class Logger {
     return `${timestamp} ${levelEmoji} ${componentPart} ${message}`;
   }
 
-  private log(level: LogLevel, component: string, message: string, data?: any, emoji?: string): void {
+  private log(level: LogLevel, component: string, message: string, data?: LogData, emoji?: string): void {
     if (!this.shouldLog(level)) return;
 
     const formattedMessage = this.formatMessage(level, component, message, emoji);
@@ -115,77 +118,77 @@ class Logger {
   }
 
   // Méthodes principales
-  debug(message: string, data?: any, component = '', emoji?: string): void {
+  debug(message: string, data?: LogData, component = '', emoji?: string): void {
     this.log(LogLevel.DEBUG, component, message, data, emoji);
   }
 
-  info(message: string, data?: any, component = '', emoji?: string): void {
+  info(message: string, data?: LogData, component = '', emoji?: string): void {
     this.log(LogLevel.INFO, component, message, data, emoji);
   }
 
-  warn(message: string, data?: any, component = '', emoji?: string): void {
+  warn(message: string, data?: LogData, component = '', emoji?: string): void {
     this.log(LogLevel.WARN, component, message, data, emoji);
   }
 
-  error(message: string, data?: any, component = '', emoji?: string): void {
+  error(message: string, data?: LogData, component = '', emoji?: string): void {
     this.log(LogLevel.ERROR, component, message, data, emoji);
   }
 
-  success(message: string, data?: any, component = '', emoji?: string): void {
+  success(message: string, data?: LogData, component = '', emoji?: string): void {
     this.log(LogLevel.SUCCESS, component, message, data, emoji);
   }
 
   // Méthodes spécialisées avec emojis prédéfinis
-  auth(message: string, data?: any, component = 'Auth'): void {
+  auth(message: string, data?: LogData, component = 'Auth'): void {
     this.info(message, data, component, this.emojis.auth);
   }
 
-  user(message: string, data?: any, component = 'User'): void {
+  user(message: string, data?: LogData, component = 'User'): void {
     this.info(message, data, component, this.emojis.user);
   }
 
-  admin(message: string, data?: any, component = 'Admin'): void {
+  admin(message: string, data?: LogData, component = 'Admin'): void {
     this.info(message, data, component, this.emojis.admin);
   }
 
-  database(message: string, data?: any, component = 'Database'): void {
+  database(message: string, data?: LogData, component = 'Database'): void {
     this.info(message, data, component, this.emojis.database);
   }
 
-  network(message: string, data?: any, component = 'Network'): void {
+  network(message: string, data?: LogData, component = 'Network'): void {
     this.info(message, data, component, this.emojis.network);
   }
 
-  file(message: string, data?: any, component = 'File'): void {
+  file(message: string, data?: LogData, component = 'File'): void {
     this.info(message, data, component, this.emojis.file);
   }
 
-  performance(message: string, data?: any, component = 'Performance'): void {
+  performance(message: string, data?: LogData, component = 'Performance'): void {
     this.info(message, data, component, this.emojis.performance);
   }
 
-  security(message: string, data?: any, component = 'Security'): void {
+  security(message: string, data?: LogData, component = 'Security'): void {
     this.warn(message, data, component, this.emojis.security);
   }
 
   // Méthodes d'actions avec emojis
-  create(message: string, data?: any, component = ''): void {
+  create(message: string, data?: LogData, component = ''): void {
     this.success(message, data, component, this.emojis.create);
   }
 
-  update(message: string, data?: any, component = ''): void {
+  update(message: string, data?: LogData, component = ''): void {
     this.info(message, data, component, this.emojis.update);
   }
 
-  delete(message: string, data?: any, component = ''): void {
+  delete(message: string, data?: LogData, component = ''): void {
     this.warn(message, data, component, this.emojis.delete);
   }
 
-  edit(message: string, data?: any, component = ''): void {
+  edit(message: string, data?: LogData, component = ''): void {
     this.info(message, data, component, this.emojis.edit);
   }
 
-  search(message: string, data?: any, component = ''): void {
+  search(message: string, data?: LogData, component = ''): void {
     this.debug(message, data, component, this.emojis.search);
   }
 
@@ -214,7 +217,7 @@ class Logger {
   }
 
   // Table de données
-  table(data: any, label?: string): void {
+  table(data: LogData, label?: string): void {
     if (label) {
       this.info(`Tableau: ${label}`, undefined, 'Data', '📊');
     }
@@ -263,6 +266,6 @@ export default logger;
 
 // Exposer le logger globalement en développement
 if (process.env.NODE_ENV === 'development') {
-  (window as any).logger = logger;
-  (window as any).LogLevel = LogLevel;
+  (window as typeof window & { logger: typeof logger; LogLevel: typeof LogLevel }).logger = logger;
+  (window as typeof window & { logger: typeof logger; LogLevel: typeof LogLevel }).LogLevel = LogLevel;
 }

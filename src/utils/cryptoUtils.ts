@@ -120,7 +120,7 @@ export class CryptoUtils {
       feedback.push('Ajoutez des chiffres');
     }
 
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       score += 1;
     } else {
       feedback.push('Ajoutez des caractères spéciaux (!@#$%^&*...)');

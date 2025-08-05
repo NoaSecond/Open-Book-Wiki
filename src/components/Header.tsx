@@ -3,6 +3,7 @@ import { Search, LogIn } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { UserMenu } from './UserMenu';
 import { LoginModal } from './LoginModal';
+import { getConfigService } from '../services/configService';
 import logger from '../utils/logger';
 
 export const Header: React.FC = () => {
@@ -11,10 +12,12 @@ export const Header: React.FC = () => {
     setSearchTerm, 
     isLoggedIn,
     isDarkMode,
-    setCurrentPage,
-    siteName,
-    siteDescription
+    setCurrentPage
   } = useWiki();
+  
+  const configService = getConfigService();
+  const siteName = configService.getSiteName();
+  const siteDescription = configService.getSiteDescription();
   
   const [showLoginModal, setShowLoginModal] = useState(false);
 
