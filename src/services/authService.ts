@@ -2,6 +2,7 @@
 // En production, ceci communiquerait avec un vrai backend
 
 import { CryptoUtils } from '../utils/cryptoUtils';
+import activityService from './activityService';
 
 export interface User {
   id: number;
@@ -128,6 +129,15 @@ class AuthService {
       
       // Sauvegarder la session
       localStorage.setItem(this.sessionKey, JSON.stringify(userSession));
+      
+      // Logger l'activité de connexion
+      activityService.addLog({
+        userId: user.id,
+        username: user.username,
+        action: 'login',
+        details: `Connexion réussie`
+      });
+      
       return userSession;
     }
     
@@ -142,6 +152,18 @@ class AuthService {
 
   // Déconnexion
   logout() {
+    const currentUser = this.getCurrentUser();
+    
+    // Logger l'activité de déconnexion
+    if (currentUser) {
+      activityService.addLog({
+        userId: currentUser.id,
+        username: currentUser.username,
+        action: 'logout',
+        details: `Déconnexion`
+      });
+    }
+    
     localStorage.removeItem(this.sessionKey);
   }
 
@@ -271,6 +293,14 @@ class AuthService {
       
       users.push(newUser);
       this.saveUsers(users);
+      
+      // Logger l'activité d'inscription
+      activityService.addLog({
+        userId: newUser.id,
+        username: newUser.username,
+        action: 'register',
+        details: `Nouvel utilisateur inscrit avec les rôles: ${tags.join(', ')}`
+      });
       
       return {
         id: newUser.id,

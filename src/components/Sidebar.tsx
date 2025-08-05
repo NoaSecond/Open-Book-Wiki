@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Users, Gamepad2, BookOpen, Package, MapPin, Clock, User, Code, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
+import activityService from '../services/activityService';
 
 const navigationItems = [
   { id: 'home', label: 'Accueil', icon: Home },
@@ -344,25 +345,46 @@ export const Sidebar: React.FC = () => {
             Dernières modifications
           </h3>
           <div className="space-y-2">
-            {Object.entries(wikiData).slice(0, 3).map(([key, page]) => (
-              <div key={key} className={`text-xs transition-colors duration-300 ${
+            {activityService.getRecentLogs(3).filter(log => 
+              ['edit_page', 'edit_section', 'create_page', 'create_section'].includes(log.action)
+            ).map((log) => (
+              <div key={log.id} className={`text-xs transition-colors duration-300 ${
                 isDarkMode ? 'text-slate-400' : 'text-gray-600'
               }`}>
                 <div className="flex items-center space-x-1">
-                  <Clock className="w-3 h-3" />
-                  <span>{page.lastModified}</span>
+                  <span className="text-sm">{activityService.getActionIcon(log.action)}</span>
+                  <span className={`transition-colors duration-300 ${
+                    isDarkMode ? 'text-slate-300' : 'text-gray-800'
+                  }`}>
+                    {activityService.formatAction(log.action)}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-1 mt-1">
                   <User className="w-3 h-3" />
-                  <span>{page.author}</span>
+                  <span>{log.username}</span>
                 </div>
-                <div className={`truncate transition-colors duration-300 ${
-                  isDarkMode ? 'text-slate-300' : 'text-gray-800'
-                }`}>
-                  {page.title}
+                {log.target && (
+                  <div className={`truncate transition-colors duration-300 ${
+                    isDarkMode ? 'text-slate-300' : 'text-gray-800'
+                  }`}>
+                    {log.target}
+                  </div>
+                )}
+                <div className="flex items-center space-x-1 mt-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{new Date(log.timestamp).toLocaleDateString('fr-FR')}</span>
                 </div>
               </div>
             ))}
+            {activityService.getRecentLogs(3).filter(log => 
+              ['edit_page', 'edit_section', 'create_page', 'create_section'].includes(log.action)
+            ).length === 0 && (
+              <div className={`text-xs transition-colors duration-300 ${
+                isDarkMode ? 'text-slate-500' : 'text-gray-500'
+              }`}>
+                Aucune modification récente
+              </div>
+            )}
           </div>
         </div>
 

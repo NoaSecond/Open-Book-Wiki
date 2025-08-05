@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Users, FileText, Settings, X, Eye, EyeOff, Trash2, Activity, Download, RefreshCw } from 'lucide-react';
+import { Database, Users, FileText, Settings, X, Eye, EyeOff, Trash2, Activity, Download, Upload, RefreshCw } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import AdminService, { 
   DatabaseUser as AdminDatabaseUser, 
   DatabaseStats as AdminDatabaseStats, 
   SystemInfo 
 } from '../services/adminService';
-
-interface ActivityLog {
-  id: number;
-  timestamp: string;
-  user: string;
-  action: string;
-  details: string;
-  ip: string;
-}
+import activityService, { ActivityLog } from '../services/activityService';
 
 export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => void }> = ({ 
   isOpenFromMenu = false, 
@@ -45,9 +37,24 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
   });
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Vérifier si l'utilisateur est admin
   const isAdmin = () => user?.tags?.includes('Administrateur');
+
+  // Formater la taille en octets avec les unités appropriées
+  const formatFileSize = (characters: number): string => {
+    // UTF-8: en moyenne 1 caractère = 1-4 octets, on estime 1.5 octets par caractère
+    const bytes = Math.round(characters * 1.5);
+    
+    if (bytes === 0) return '0 B';
+    
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const formattedSize = (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1);
+    
+    return `${formattedSize} ${sizes[i]}`;
+  };
 
   useEffect(() => {
     setIsOpen(isOpenFromMenu);
@@ -64,12 +71,14 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
     const adminService = AdminService.getInstance();
     
     try {
-      const [usersData, statsData, systemData, activityData] = await Promise.all([
+      const [usersData, statsData, systemData] = await Promise.all([
         adminService.getUsers(),
         adminService.getStats(wikiData),
-        adminService.getSystemInfo(),
-        adminService.getActivityLogs()
+        adminService.getSystemInfo()
       ]);
+      
+      // Charger les vraies données d'activité
+      const activityData = activityService.getRecentLogs(50);
       
       setUsers(usersData);
       setStats(statsData);
@@ -106,6 +115,101 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
     URL.revokeObjectURL(url);
   };
 
+  const processImportFile = async (file: File) => {
+    // Vérifier le type de fichier
+    if (!file.name.endsWith('.json')) {
+      alert('❌ Format de fichier non supporté. Seuls les fichiers .json sont acceptés.');
+      return;
+    }
+    
+    // Vérifier la taille du fichier (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('❌ Le fichier est trop volumineux (max 5MB)');
+      return;
+    }
+    
+    try {
+      const text = await file.text();
+      const adminService = AdminService.getInstance();
+      
+      // Afficher une confirmation avant l'importation
+      const confirmImport = confirm(
+        `⚠️ Confirmation d'importation\n\n` +
+        `Fichier : ${file.name}\n` +
+        `Taille : ${(file.size / 1024).toFixed(1)} KB\n\n` +
+        `Cette action va importer de nouveaux utilisateurs dans la base de données.\n` +
+        `Les utilisateurs existants ne seront pas modifiés.\n\n` +
+        `Continuer ?`
+      );
+      
+      if (!confirmImport) return;
+      
+      const result = await adminService.importData(text);
+      
+      if (result.success) {
+        alert(
+          `✅ Importation réussie !\n\n` +
+          `${result.message}\n\n` +
+          `📌 Note importante :\n` +
+          `Les utilisateurs importés ont un mot de passe temporaire "temp123" qu'ils devront changer lors de leur première connexion.`
+        );
+        // Recharger les données
+        await loadDatabaseInfo();
+      } else {
+        alert(`❌ Erreur d'importation :\n\n${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Erreur lors de la lecture du fichier :\n\n${error}`);
+    }
+  };
+
+  const handleImportData = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      await processImportFile(file);
+    };
+    input.click();
+  };
+
+  // Gestionnaires d'événements pour le drag & drop
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Vérifier que nous quittons vraiment la zone (pas un enfant)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    // Ne traiter que le premier fichier
+    const file = files[0];
+    await processImportFile(file);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       year: 'numeric',
@@ -120,28 +224,6 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
     if (tags.includes('Administrateur')) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
     if (tags.includes('Contributeur')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
     return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-  };
-
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case 'page_edit': return '✏️';
-      case 'section_created': return '➕';
-      case 'user_login': return '🔑';
-      case 'page_deleted': return '🗑️';
-      case 'section_renamed': return '📝';
-      default: return '📋';
-    }
-  };
-
-  const getActionColor = (action: string) => {
-    switch (action) {
-      case 'page_edit': return 'text-blue-600 dark:text-blue-400';
-      case 'section_created': return 'text-green-600 dark:text-green-400';
-      case 'user_login': return 'text-purple-600 dark:text-purple-400';
-      case 'page_deleted': return 'text-red-600 dark:text-red-400';
-      case 'section_renamed': return 'text-orange-600 dark:text-orange-400';
-      default: return 'text-gray-600 dark:text-gray-400';
-    }
   };
 
   if (!isAdmin()) {
@@ -166,9 +248,26 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
       {/* Panel d'administration */}
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`rounded-lg shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col ${
-            isDarkMode ? 'bg-slate-800' : 'bg-white'
-          }`}>
+          <div 
+            className={`rounded-lg shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col relative ${
+              isDarkMode ? 'bg-slate-800' : 'bg-white'
+            }`}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {/* Drag & Drop Overlay */}
+            {isDragOver && (
+              <div className="absolute inset-0 bg-blue-500 bg-opacity-90 flex items-center justify-center z-10 rounded-lg border-4 border-dashed border-white">
+                <div className="text-center">
+                  <Upload className="w-16 h-16 text-white mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-white mb-2">Déposez votre fichier ici</h3>
+                  <p className="text-white text-lg">Fichiers .json acceptés (max 5MB)</p>
+                </div>
+              </div>
+            )}
+
             {/* Header */}
             <div className={`flex items-center justify-between p-6 border-b ${
               isDarkMode ? 'border-slate-700' : 'border-gray-200'
@@ -205,6 +304,18 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                 >
                   <Download className="w-4 h-4" />
                   <span>Exporter</span>
+                </button>
+                <button
+                  onClick={handleImportData}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                    isDarkMode 
+                      ? 'bg-green-700 hover:bg-green-600 text-white' 
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                  title="Importer un fichier .json ou glisser-déposer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Importer</span>
                 </button>
                 <button
                   onClick={() => {
@@ -327,7 +438,7 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                             {(stats.totalContent / 1000).toFixed(1)}k
                           </p>
                           <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                            Caractères
+                            Caractères ({formatFileSize(stats.totalContent)})
                           </p>
                           <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
                             Contenu total
@@ -437,6 +548,14 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                         </div>
                         <div className="flex justify-between">
                           <span className={`font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                            Taille totale estimée:
+                          </span>
+                          <span className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                            {formatFileSize(stats.totalContent)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={`font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                             Sections moyennes/page:
                           </span>
                           <span className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
@@ -449,9 +568,71 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                           </span>
                           <span className={`${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                             {stats.totalSections > 0 ? Math.round(stats.totalContent / stats.totalSections) : 0} chars
+                            <span className={`text-xs ml-2 ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
+                              ({formatFileSize(stats.totalSections > 0 ? Math.round(stats.totalContent / stats.totalSections) : 0)})
+                            </span>
                           </span>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Section Import/Export */}
+                  <div className={`p-6 rounded-lg border ${
+                    isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <h4 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Import/Export des données
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Section Export */}
+                      <div>
+                        <h5 className={`text-md font-medium mb-2 flex items-center ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+                          <Download className="w-4 h-4 mr-2" />
+                          Exportation
+                        </h5>
+                        <p className={`text-sm mb-3 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                          Téléchargez une sauvegarde complète des données utilisateur au format JSON.
+                        </p>
+                        <ul className={`text-xs space-y-1 mb-3 ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
+                          <li>• Inclut tous les utilisateurs et leurs permissions</li>
+                          <li>• Les mots de passe sont masqués pour la sécurité</li>
+                          <li>• Format compatible pour la réimportation</li>
+                          <li>• Horodatage automatique du fichier</li>
+                        </ul>
+                      </div>
+
+                      {/* Section Import */}
+                      <div>
+                        <h5 className={`text-md font-medium mb-2 flex items-center ${isDarkMode ? 'text-green-300' : 'text-green-600'}`}>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Importation
+                        </h5>
+                        <p className={`text-sm mb-3 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                          Importez des utilisateurs depuis un fichier JSON d'export précédent.
+                        </p>
+                        <ul className={`text-xs space-y-1 mb-3 ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
+                          <li>• Cliquez sur "Importer" ou glissez-déposez un fichier .json</li>
+                          <li>• Seuls les nouveaux utilisateurs sont ajoutés</li>
+                          <li>• Les utilisateurs existants ne sont pas modifiés</li>
+                          <li>• Mot de passe temporaire "temp123" assigné</li>
+                          <li>• Limite de fichier : 5MB maximum</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Avertissement de sécurité */}
+                    <div className={`mt-4 p-3 rounded-md border-l-4 ${
+                      isDarkMode 
+                        ? 'bg-yellow-900/20 border-yellow-500 text-yellow-300' 
+                        : 'bg-yellow-50 border-yellow-400 text-yellow-800'
+                    }`}>
+                      <p className="text-sm font-medium">⚠️ Avertissement de sécurité</p>
+                      <p className="text-xs mt-1">
+                        Les fichiers d'export peuvent contenir des informations sensibles. 
+                        Stockez-les en sécurité et ne les partagez qu'avec des administrateurs autorisés.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -648,21 +829,26 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                       }`}>
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-3">
-                            <span className="text-2xl">{getActionIcon(log.action)}</span>
+                            <span className="text-2xl">{activityService.getActionIcon(log.action)}</span>
                             <div>
                               <div className="flex items-center space-x-2">
                                 <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                  {log.user}
+                                  {log.username}
                                 </span>
-                                <span className={`text-sm px-2 py-1 rounded-full ${getActionColor(log.action)} bg-opacity-20`}>
-                                  {log.action.replace('_', ' ')}
+                                <span className={`text-sm px-2 py-1 rounded-full ${activityService.getActionColor(log.action)} bg-opacity-20`}>
+                                  {activityService.formatAction(log.action)}
                                 </span>
                               </div>
                               <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
                                 {log.details}
                               </p>
+                              {log.target && (
+                                <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                                  Cible: {log.target}
+                                </p>
+                              )}
                               <div className={`text-xs mt-2 ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                                {formatDate(log.timestamp)} • IP: {log.ip}
+                                {formatDate(log.timestamp)} • IP: {log.ip || 'N/A'}
                               </div>
                             </div>
                           </div>

@@ -204,6 +204,93 @@ class AdminService {
     return JSON.stringify(exportData, null, 2);
   }
 
+  public async importData(jsonData: string): Promise<{ success: boolean; message: string; imported: number }> {
+    await this.delay(1000);
+    
+    try {
+      const data = JSON.parse(jsonData);
+      
+      // Vérifier la structure des données
+      if (!data.users || !Array.isArray(data.users)) {
+        return {
+          success: false,
+          message: 'Format de données invalide : propriété "users" manquante ou incorrecte',
+          imported: 0
+        };
+      }
+      
+      // Vérifier la version si présente
+      if (data.version && data.version !== '1.0.0') {
+        return {
+          success: false,
+          message: `Version non supportée : ${data.version}. Version supportée : 1.0.0`,
+          imported: 0
+        };
+      }
+      
+      let importedCount = 0;
+      const errors: string[] = [];
+      
+      // Importer chaque utilisateur
+      for (const userData of data.users) {
+        try {
+          // Vérifier les champs requis
+          if (!userData.username || !userData.tags) {
+            errors.push(`Utilisateur ignoré : champs manquants (username: ${userData.username})`);
+            continue;
+          }
+          
+          // Vérifier si l'utilisateur existe déjà
+          const existingUsers = authService.getAllUsers();
+          const userExists = existingUsers.some(u => 
+            u.username.toLowerCase() === userData.username.toLowerCase()
+          );
+          
+          if (userExists) {
+            errors.push(`Utilisateur "${userData.username}" ignoré : existe déjà`);
+            continue;
+          }
+          
+          // Créer l'utilisateur (avec un mot de passe temporaire)
+          const newUser = await authService.createUser(
+            userData.username,
+            'temp123', // Mot de passe temporaire, l'utilisateur devra le changer
+            userData.tags || ['Membre']
+          );
+          
+          if (newUser) {
+            importedCount++;
+          } else {
+            errors.push(`Échec de l'importation de l'utilisateur "${userData.username}"`);
+          }
+        } catch (error) {
+          errors.push(`Erreur lors de l'importation de "${userData.username}": ${error}`);
+        }
+      }
+      
+      let message = `${importedCount} utilisateur(s) importé(s) avec succès.`;
+      if (errors.length > 0) {
+        message += ` ${errors.length} erreur(s) : ${errors.slice(0, 3).join(', ')}`;
+        if (errors.length > 3) {
+          message += `... et ${errors.length - 3} autre(s)`;
+        }
+      }
+      
+      return {
+        success: importedCount > 0,
+        message,
+        imported: importedCount
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        message: `Erreur lors du parsing JSON : ${error}`,
+        imported: 0
+      };
+    }
+  }
+
   private formatUptime(milliseconds: number): string {
     const seconds = Math.floor(milliseconds / 1000);
     const minutes = Math.floor(seconds / 60);

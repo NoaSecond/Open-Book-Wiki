@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import authService, { User as AuthUser } from '../services/authService';
+import activityService from '../services/activityService';
 
 interface ReadmeSection {
   id: string;
@@ -50,7 +51,7 @@ interface WikiContextType {
   setIsLoggedIn: (loggedIn: boolean) => void;
   user: User | null;
   setUser: (user: User | null) => void;
-  updateUser: (updates: Partial<User>) => void;
+  updateUser: (updates: Partial<User>) => Promise<void>;
   // Panel d'administration
   isAdminPanelOpen: boolean;
   setIsAdminPanelOpen: (open: boolean) => void;
@@ -58,9 +59,9 @@ interface WikiContextType {
   // Gestion des utilisateurs et permissions
   allUsers: User[];
   setAllUsers: (users: User[]) => void;
-  updateUserTags: (username: string, tags: string[]) => void;
-  updateUserProfile: (userId: number, updates: Partial<User & { password?: string }>) => boolean;
-  deleteUserProfile: (userId: number) => boolean;
+  updateUserTags: (username: string, tags: string[]) => Promise<void>;
+  updateUserProfile: (userId: number, updates: Partial<User & { password?: string }>) => Promise<boolean>;
+  deleteUserProfile: (userId: number) => Promise<boolean>;
   hasPermission: (requiredTag: string) => boolean;
   canContribute: () => boolean;
   isAdmin: () => boolean;
@@ -766,10 +767,10 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsDarkMode(prev => !prev);
   };
 
-  const updateUser = (updates: Partial<User>) => {
+  const updateUser = async (updates: Partial<User>) => {
     if (user) {
       // Mettre à jour via authService pour persister les changements
-      const success = authService.updateUser(user.id, updates);
+      const success = await authService.updateUser(user.id, updates);
       if (success) {
         setUser(prev => ({ ...prev!, ...updates }));
         // Recharger les utilisateurs pour mettre à jour la liste globale
@@ -779,12 +780,12 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Fonctions de gestion des permissions
-  const updateUserTags = (username: string, tags: string[]) => {
+  const updateUserTags = async (username: string, tags: string[]) => {
     // Trouver l'utilisateur par username et obtenir son ID
     const targetUser = allUsers.find(u => u.username === username);
     if (targetUser) {
       // Mettre à jour dans authService
-      const success = authService.updateUserTags(targetUser.id, tags);
+      const success = await authService.updateUserTags(targetUser.id, tags);
       if (success) {
         // Recharger les utilisateurs depuis authService
         loadAllUsers();
@@ -797,8 +798,8 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateUserProfile = (userId: number, updates: Partial<User & { password?: string }>): boolean => {
-    const success = authService.updateUser(userId, updates);
+  const updateUserProfile = async (userId: number, updates: Partial<User & { password?: string }>): Promise<boolean> => {
+    const success = await authService.updateUser(userId, updates);
     if (success) {
       // Recharger les utilisateurs depuis authService
       loadAllUsers();
@@ -811,8 +812,8 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return success;
   };
 
-  const deleteUserProfile = (userId: number): boolean => {
-    const success = authService.deleteUser(userId);
+  const deleteUserProfile = async (userId: number): Promise<boolean> => {
+    const success = await authService.deleteUser(userId);
     if (success) {
       // Recharger les utilisateurs depuis authService
       loadAllUsers();
@@ -854,6 +855,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setWikiData(prev => {
         const currentPage = prev[mainPageId];
         if (currentPage?.sections) {
+          const sectionToUpdate = currentPage.sections.find(s => s.id === sectionId);
           const updatedSections = currentPage.sections.map(section =>
             section.id === sectionId
               ? {
@@ -864,6 +866,17 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
               : section
           );
+          
+          // Logger l'activité d'édition de section
+          if (user && sectionToUpdate) {
+            activityService.addLog({
+              userId: user.id,
+              username: user.username,
+              action: 'edit_section',
+              target: currentPage.title,
+              details: `Modification de la section "${sectionToUpdate.title}"`
+            });
+          }
           
           return {
             ...prev,
@@ -878,15 +891,30 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     } else {
       // Mise à jour normale pour les pages simples (cas rare maintenant)
-      setWikiData(prev => ({
-        ...prev,
-        [pageId]: {
-          ...prev[pageId],
-          content,
-          lastModified: new Date().toISOString().split('T')[0],
-          author: user?.username || "Contributeur"
+      setWikiData(prev => {
+        const currentPage = prev[pageId];
+        
+        // Logger l'activité d'édition de page
+        if (user && currentPage) {
+          activityService.addLog({
+            userId: user.id,
+            username: user.username,
+            action: 'edit_page',
+            target: currentPage.title,
+            details: `Modification de la page "${currentPage.title}"`
+          });
         }
-      }));
+        
+        return {
+          ...prev,
+          [pageId]: {
+            ...prev[pageId],
+            content,
+            lastModified: new Date().toISOString().split('T')[0],
+            author: user?.username || "Contributeur"
+          }
+        };
+      });
     }
     
     // Incrémenter le compteur de contributions
@@ -910,6 +938,18 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (currentPage) {
         // Si la page n'a pas encore de sections, en créer un tableau
         const sections = currentPage.sections || [];
+        
+        // Logger l'activité de création de section
+        if (user) {
+          activityService.addLog({
+            userId: user.id,
+            username: user.username,
+            action: 'create_section',
+            target: currentPage.title,
+            details: `Création de la section "${sectionTitle}"`
+          });
+        }
+        
         return {
           ...prev,
           [pageId]: {
