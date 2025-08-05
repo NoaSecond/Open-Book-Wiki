@@ -49,27 +49,35 @@ export const MembersPage: React.FC = () => {
     });
   };
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = () => {
     if (!editingUserData) return;
     
     try {
-      await updateUserProfile(editingUserData.id, {
+      const success = updateUserProfile(editingUserData.id, {
         username: editingUserData.username,
         email: editingUserData.email,
         avatar: editingUserData.avatar,
         tags: editingUserData.tags,
         password: editingUserData.password || undefined
       });
-      setEditingUserData(null);
+      
+      if (success) {
+        setEditingUserData(null);
+      } else {
+        alert('Erreur lors de la mise à jour du profil');
+      }
     } catch (error) {
       console.error('Erreur lors de la mise à jour du profil:', error);
       alert('Erreur lors de la mise à jour du profil');
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = (userId: number) => {
     try {
-      await deleteUserProfile(userId);
+      const success = deleteUserProfile(userId);
+      if (!success) {
+        alert('Erreur lors de la suppression du compte');
+      }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       alert('Erreur lors de la suppression du compte');

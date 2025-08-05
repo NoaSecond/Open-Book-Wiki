@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ChevronDown, LogOut, Settings, Users } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Users } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
@@ -46,10 +46,16 @@ export const UserMenu: React.FC = () => {
             : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
         }`}
       >
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-          isDarkMode ? 'bg-slate-600' : 'bg-gray-300'
-        }`}>
-          <User className="w-4 h-4" />
+        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
+          {user?.avatar ? (
+            <img 
+              src={user.avatar} 
+              alt={user.username} 
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            user?.username.charAt(0).toUpperCase()
+          )}
         </div>
         <span className="font-medium">{user?.username}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -70,10 +76,16 @@ export const UserMenu: React.FC = () => {
               isDarkMode ? 'border-slate-700' : 'border-gray-200'
             }`}>
               <div className="flex items-center space-x-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  isDarkMode ? 'bg-slate-600' : 'bg-gray-300'
-                }`}>
-                  <User className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                  {user?.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt={user.username} 
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    user?.username.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div>
                   <div className={`font-medium ${

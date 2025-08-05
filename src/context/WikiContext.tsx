@@ -662,7 +662,13 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateUser = (updates: Partial<User>) => {
     if (user) {
-      setUser(prev => ({ ...prev!, ...updates }));
+      // Mettre à jour via authService pour persister les changements
+      const success = authService.updateUser(user.id, updates);
+      if (success) {
+        setUser(prev => ({ ...prev!, ...updates }));
+        // Recharger les utilisateurs pour mettre à jour la liste globale
+        loadAllUsers();
+      }
     }
   };
 
