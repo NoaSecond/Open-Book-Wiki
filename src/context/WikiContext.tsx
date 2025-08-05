@@ -51,6 +51,10 @@ interface WikiContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   updateUser: (updates: Partial<User>) => void;
+  // Panel d'administration
+  isAdminPanelOpen: boolean;
+  setIsAdminPanelOpen: (open: boolean) => void;
+  openAdminPanel: () => void;
   // Gestion des utilisateurs et permissions
   allUsers: User[];
   setAllUsers: (users: User[]) => void;
@@ -705,6 +709,9 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   
+  // Panel d'administration
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  
   // État des utilisateurs et permissions - maintenant synchronisé avec authService
   const [allUsers, setAllUsers] = useState<User[]>([]);
   
@@ -831,6 +838,13 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const isAdmin = (): boolean => {
     return hasPermission('Administrateur');
+  };
+
+  // Fonction pour ouvrir le panel d'administration
+  const openAdminPanel = () => {
+    if (isAdmin()) {
+      setIsAdminPanelOpen(true);
+    }
   };
 
   const updatePage = (pageId: string, content: string) => {
@@ -1117,6 +1131,9 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       user,
       setUser,
       updateUser,
+      isAdminPanelOpen,
+      setIsAdminPanelOpen,
+      openAdminPanel,
       allUsers,
       setAllUsers,
       updateUserTags,

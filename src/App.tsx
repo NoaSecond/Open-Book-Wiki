@@ -3,10 +3,11 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { EditModal } from './components/EditModal';
+import { AdminPanel } from './components/AdminPanel';
 import { WikiProvider, useWiki } from './context/WikiContext';
 
 const AppContent: React.FC = () => {
-  const { isDarkMode } = useWiki();
+  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen } = useWiki();
   
   useEffect(() => {
     // Signaler que l'application est prête
@@ -40,6 +41,10 @@ const AppContent: React.FC = () => {
         <MainContent />
       </div>
       <EditModal />
+      <AdminPanel 
+        isOpenFromMenu={isAdminPanelOpen}
+        onClose={() => setIsAdminPanelOpen(false)}
+      />
     </div>
   );
 };

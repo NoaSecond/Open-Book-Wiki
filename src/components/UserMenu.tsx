@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronDown, LogOut, Settings, Users } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Users, Database } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
-  const { user, setUser, setIsLoggedIn, isDarkMode, setCurrentPage, isAdmin } = useWiki();
+  const { user, setUser, setIsLoggedIn, isDarkMode, setCurrentPage, isAdmin, openAdminPanel } = useWiki();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
@@ -20,6 +20,11 @@ export const UserMenu: React.FC = () => {
 
   const handleMembers = () => {
     setCurrentPage('members');
+    setIsOpen(false);
+  };
+
+  const handleAdminPanel = () => {
+    openAdminPanel();
     setIsOpen(false);
   };
 
@@ -131,6 +136,20 @@ export const UserMenu: React.FC = () => {
                 >
                   <Users className="w-4 h-4" />
                   <span>Gestion des membres</span>
+                </button>
+              )}
+
+              {isAdmin() && (
+                <button
+                  onClick={handleAdminPanel}
+                  className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${
+                    isDarkMode 
+                      ? 'hover:bg-slate-700 text-white' 
+                      : 'hover:bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <Database className="w-4 h-4" />
+                  <span>Base de données</span>
                 </button>
               )}
 
