@@ -53,7 +53,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className={`w-64 min-h-[calc(100vh-80px)] border-r transition-colors duration-300 ${
+    <aside className={`w-64 min-h-[calc(100vh-80px)] border-r transition-colors duration-300 content-scrollbar overflow-y-auto ${
       isDarkMode 
         ? 'bg-slate-800 border-slate-700' 
         : 'bg-white border-gray-200'

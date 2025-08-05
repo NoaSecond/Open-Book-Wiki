@@ -118,7 +118,7 @@ export const EditModal: React.FC = () => {
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className={`w-full h-full border rounded-lg p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                className={`w-full h-full border rounded-lg p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 mini-scrollbar ${
                   isDarkMode 
                     ? 'bg-slate-900 text-white border-slate-600' 
                     : 'bg-gray-50 text-gray-900 border-gray-300'
@@ -130,7 +130,7 @@ export const EditModal: React.FC = () => {
 
           {/* Preview */}
           {isPreview && (
-            <div className="w-full p-6 overflow-y-auto">
+            <div className="w-full p-6 overflow-y-auto content-scrollbar">
               <div className="mb-4">
                 <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Aperçu</h3>
                 <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>

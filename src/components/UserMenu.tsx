@@ -61,7 +61,7 @@ export const UserMenu: React.FC = () => {
             className="fixed inset-0 z-10" 
             onClick={() => setIsOpen(false)}
           />
-          <div className={`absolute right-0 mt-2 w-64 rounded-lg shadow-lg border z-20 ${
+          <div className={`absolute right-0 mt-2 w-64 rounded-lg shadow-lg border z-20 mini-scrollbar ${
             isDarkMode 
               ? 'bg-slate-800 border-slate-700' 
               : 'bg-white border-gray-200'

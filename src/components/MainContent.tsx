@@ -64,7 +64,7 @@ export const MainContent: React.FC = () => {
   // Si la page a des sections, utiliser le composant CollapsibleSections
   if (currentPageData.sections) {
     return (
-      <main className={`flex-1 ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+      <main className={`flex-1 content-scrollbar overflow-y-auto ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
         <div className="max-w-4xl mx-auto p-6">
           {/* Page Header */}
           <div className={`mb-6 pb-4 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
@@ -163,7 +163,7 @@ export const MainContent: React.FC = () => {
     : content;
 
   return (
-    <main className={`flex-1 ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+    <main className={`flex-1 content-scrollbar overflow-y-auto ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
       <div className="max-w-4xl mx-auto p-6">
         {/* Page Header */}
         <div className={`mb-6 pb-4 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>

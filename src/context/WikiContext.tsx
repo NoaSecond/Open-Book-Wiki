@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import authService, { User as AuthUser } from '../services/authService';
 
 interface ReadmeSection {
   id: string;
@@ -18,14 +19,13 @@ interface WikiData {
   };
 }
 
-interface User {
-  username: string;
-  email: string;
+// Utilisation de l'interface User du service d'authentification
+interface User extends AuthUser {
+  email?: string;
   avatar?: string;
   bio?: string;
-  joinDate: string;
-  contributions: number;
-  tags: string[]; // Les tags du utilisateur
+  joinDate?: string;
+  contributions?: number;
 }
 
 interface WikiContextType {
@@ -604,33 +604,52 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   
-  // État des utilisateurs et permissions
-  const [allUsers, setAllUsers] = useState<User[]>([
-    {
-      username: 'admin',
-      email: 'admin@stardeception.com',
-      bio: 'Administrateur principal du wiki',
-      joinDate: '2023-01-01',
-      contributions: 150,
-      tags: ['Administrateur']
-    },
-    {
-      username: 'contributeur1',
-      email: 'contrib@stardeception.com',
-      bio: 'Contributeur actif',
-      joinDate: '2023-06-15',
-      contributions: 45,
-      tags: ['Contributeur']
-    },
-    {
-      username: 'visiteur1',
-      email: 'visitor@stardeception.com',
-      bio: 'Nouveau membre',
-      joinDate: '2024-01-15',
-      contributions: 5,
-      tags: ['Visiteur']
+  // État des utilisateurs et permissions - maintenant synchronisé avec authService
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  
+  // Initialisation et synchronisation avec authService
+  useEffect(() => {
+    // Vérifier si un utilisateur est déjà connecté
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      const fullUser: User = {
+        ...currentUser,
+        email: `${currentUser.username}@stardeception.com`,
+        bio: getDefaultBio(currentUser.tags),
+        joinDate: '2023-01-01',
+        contributions: getDefaultContributions(currentUser.tags)
+      };
+      setUser(fullUser);
+      setIsLoggedIn(true);
     }
-  ]);
+
+    // Charger tous les utilisateurs
+    loadAllUsers();
+  }, []);
+
+  const getDefaultBio = (tags: string[]): string => {
+    if (tags.includes('Administrateur')) return 'Administrateur principal du wiki';
+    if (tags.includes('Contributeur')) return 'Contributeur actif';
+    return 'Nouveau membre';
+  };
+
+  const getDefaultContributions = (tags: string[]): number => {
+    if (tags.includes('Administrateur')) return 150;
+    if (tags.includes('Contributeur')) return 45;
+    return 5;
+  };
+
+  const loadAllUsers = () => {
+    const authUsers = authService.getAllUsers();
+    const fullUsers: User[] = authUsers.map(authUser => ({
+      ...authUser,
+      email: `${authUser.username}@stardeception.com`,
+      bio: getDefaultBio(authUser.tags),
+      joinDate: '2023-01-01',
+      contributions: getDefaultContributions(authUser.tags)
+    }));
+    setAllUsers(fullUsers);
+  };
   
   // État du thème
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -647,13 +666,21 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Fonctions de gestion des permissions
   const updateUserTags = (username: string, tags: string[]) => {
-    setAllUsers(prev => 
-      prev.map(u => 
-        u.username === username 
-          ? { ...u, tags }
-          : u
-      )
-    );
+    // Trouver l'utilisateur par username et obtenir son ID
+    const targetUser = allUsers.find(u => u.username === username);
+    if (targetUser) {
+      // Mettre à jour dans authService
+      const success = authService.updateUserTags(targetUser.id, tags);
+      if (success) {
+        // Recharger les utilisateurs depuis authService
+        loadAllUsers();
+        
+        // Si c'est l'utilisateur connecté, mettre à jour sa session
+        if (user && user.username === username) {
+          setUser(prev => prev ? { ...prev, tags } : null);
+        }
+      }
+    }
   };
 
   const hasPermission = (requiredTag: string): boolean => {
@@ -713,7 +740,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // Incrémenter le compteur de contributions
     if (user) {
-      updateUser({ contributions: user.contributions + 1 });
+      updateUser({ contributions: (user.contributions || 0) + 1 });
     }
   };
 
@@ -746,7 +773,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Incrémenter le compteur de contributions
     if (user) {
-      updateUser({ contributions: user.contributions + 1 });
+      updateUser({ contributions: (user.contributions || 0) + 1 });
     }
 
     return newSectionId;
