@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="public/Star Deception Logo.svg" alt="Star Deception Logo" width="120" height="120">
+  <img src="public/Logo.svg" alt="Open Book Wiki Logo" width="120" height="120">
   
-  # StarDeception Wiki
-  
+  # Open Book Wiki
+
   Un wiki interactif et moderne pour Star Deception, construit avec React, TypeScript et Tailwind CSS.
 </div>
 
