@@ -17,8 +17,24 @@ export const EditModal: React.FC = () => {
   const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
-    if (isEditing && editingPage && wikiData[editingPage]) {
-      setContent(wikiData[editingPage].content);
+    if (isEditing && editingPage) {
+      // Si c'est une section (format: "pageId:sectionId")
+      if (editingPage.includes(':')) {
+        const [mainPageId, sectionId] = editingPage.split(':');
+        const mainPage = wikiData[mainPageId];
+        if (mainPage?.sections) {
+          const section = mainPage.sections.find(s => s.id === sectionId);
+          if (section) {
+            setContent(section.content);
+          }
+        }
+      } else {
+        // Page simple
+        const page = wikiData[editingPage];
+        if (page?.content) {
+          setContent(page.content);
+        }
+      }
     }
   }, [isEditing, editingPage, wikiData]);
 
@@ -38,13 +54,26 @@ export const EditModal: React.FC = () => {
     return null;
   }
 
+  // Déterminer le titre à afficher
+  const getEditingTitle = () => {
+    if (editingPage.includes(':')) {
+      const [mainPageId, sectionId] = editingPage.split(':');
+      const mainPage = wikiData[mainPageId];
+      if (mainPage?.sections) {
+        const section = mainPage.sections.find(s => s.id === sectionId);
+        return section ? `${mainPage.title} - ${section.title}` : 'Section inconnue';
+      }
+    }
+    return wikiData[editingPage]?.title || 'Page inconnue';
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className={`rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
         {/* Header */}
         <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
           <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Modifier : {wikiData[editingPage]?.title}
+            Modifier : {getEditingTitle()}
           </h2>
           <div className="flex items-center space-x-3">
             <button

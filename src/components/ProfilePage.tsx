@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Mail, Calendar, Edit3, Save, X, Award } from 'lucide-react';
+import { User, Mail, Calendar, Edit3, Save, X, Award, Tag, Shield, UserCheck, Eye } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { AvatarEditor } from './AvatarEditor';
 
@@ -12,6 +12,32 @@ export const ProfilePage: React.FC = () => {
     email: user?.email || '',
     bio: user?.bio || ''
   });
+
+  const getTagColor = (tag: string) => {
+    switch (tag) {
+      case 'Administrateur':
+        return isDarkMode ? 'bg-red-600' : 'bg-red-500';
+      case 'Contributeur':
+        return isDarkMode ? 'bg-blue-600' : 'bg-blue-500';
+      case 'Visiteur':
+        return isDarkMode ? 'bg-gray-600' : 'bg-gray-500';
+      default:
+        return isDarkMode ? 'bg-slate-600' : 'bg-slate-500';
+    }
+  };
+
+  const getTagIcon = (tag: string) => {
+    switch (tag) {
+      case 'Administrateur':
+        return <Shield className="w-3 h-3" />;
+      case 'Contributeur':
+        return <UserCheck className="w-3 h-3" />;
+      case 'Visiteur':
+        return <Eye className="w-3 h-3" />;
+      default:
+        return <Tag className="w-3 h-3" />;
+    }
+  };
 
   if (!user) {
     return (
@@ -135,6 +161,21 @@ export const ProfilePage: React.FC = () => {
                     <Award className="w-4 h-4 mr-1" />
                     {user.contributions} contributions
                   </span>
+                </div>
+
+                {/* Tags utilisateur */}
+                <div className="mt-3">
+                  <div className="flex flex-wrap gap-2">
+                    {user.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white ${getTagColor(tag)}`}
+                      >
+                        {getTagIcon(tag)}
+                        <span>{tag}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

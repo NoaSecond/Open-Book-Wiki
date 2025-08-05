@@ -1,5 +1,5 @@
-import React from 'react';
-import { Home, Users, Gamepad2, BookOpen, Package, MapPin, Clock, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, Users, Gamepad2, BookOpen, Package, MapPin, Clock, User, Code, Plus, ExternalLink } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 const navigationItems = [
@@ -9,10 +9,48 @@ const navigationItems = [
   { id: 'story', label: 'Histoire', icon: BookOpen },
   { id: 'items', label: 'Objets', icon: Package },
   { id: 'locations', label: 'Lieux', icon: MapPin },
+  { id: 'development', label: 'Développement', icon: Code },
 ];
 
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode } = useWiki();
+  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode, canContribute } = useWiki();
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [commitHash, setCommitHash] = useState('...');
+
+  // Fonction pour récupérer le hash du dernier commit
+  useEffect(() => {
+    // En production, vous pourriez récupérer cela depuis une API ou un endpoint
+    // Pour l'instant, on simule avec un hash aléatoire
+    const generateCommitHash = () => {
+      const chars = 'abcdef0123456789';
+      let result = '';
+      for (let i = 0; i < 7; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+    
+    setCommitHash(generateCommitHash());
+  }, []);
+
+  const handleAddCategory = () => {
+    setShowAddCategoryModal(true);
+  };
+
+  const handleCreateCategory = () => {
+    if (newCategoryName.trim()) {
+      // Ici vous pourriez ajouter la logique pour créer une nouvelle catégorie
+      console.log('Nouvelle catégorie:', newCategoryName.trim());
+      setShowAddCategoryModal(false);
+      setNewCategoryName('');
+    }
+  };
+
+  const handleCancelAddCategory = () => {
+    setShowAddCategoryModal(false);
+    setNewCategoryName('');
+  };
 
   return (
     <aside className={`w-64 min-h-[calc(100vh-80px)] border-r transition-colors duration-300 ${
@@ -26,6 +64,24 @@ export const Sidebar: React.FC = () => {
         }`}>
           Navigation
         </h2>
+        
+        {/* Bouton Ajouter une catégorie */}
+        {canContribute() && (
+          <div className="mb-4">
+            <button
+              onClick={handleAddCategory}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg border-2 border-dashed transition-colors ${
+                isDarkMode 
+                  ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500' 
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
+              }`}
+            >
+              <Plus className="w-5 h-5" />
+              <span>Ajouter une catégorie</span>
+            </button>
+          </div>
+        )}
+
         <ul className="space-y-2">
           {navigationItems.map((item) => {
             const Icon = item.icon;
@@ -117,7 +173,70 @@ export const Sidebar: React.FC = () => {
             Aidez à améliorer ce wiki en ajoutant du contenu et en corrigeant les erreurs.
           </p>
         </div>
+
+        {/* Lien GitHub avec version */}
+        <div className={`mt-4 pt-4 border-t text-center ${
+          isDarkMode ? 'border-slate-700' : 'border-gray-200'
+        }`}>
+          <a
+            href="https://github.com/NoaSecond/StarDeception-Wiki"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center space-x-2 text-xs transition-colors duration-300 hover:underline ${
+              isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span>Projet sur GitHub</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+          <span className={`text-xs transition-colors duration-300 ${
+            isDarkMode ? 'text-slate-500' : 'text-gray-400'
+          }`}>
+            {' '}- {commitHash}
+          </span>
+        </div>
       </nav>
+
+      {/* Modal pour ajouter une catégorie */}
+      {showAddCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-96 max-w-90vw">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Ajouter une nouvelle catégorie
+            </h2>
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Nom de la catégorie..."
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleCreateCategory();
+                } else if (e.key === 'Escape') {
+                  handleCancelAddCategory();
+                }
+              }}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelAddCategory}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateCategory}
+                disabled={!newCategoryName.trim()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

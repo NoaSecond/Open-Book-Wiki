@@ -9,7 +9,8 @@ export const Header: React.FC = () => {
     searchTerm, 
     setSearchTerm, 
     isLoggedIn,
-    isDarkMode
+    isDarkMode,
+    setCurrentPage
   } = useWiki();
   
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -24,7 +25,11 @@ export const Header: React.FC = () => {
         <div className="max-w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setCurrentPage('home')}
+                className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
+                title="Retour à l'accueil"
+              >
                 <div className="w-10 h-10 flex items-center justify-center">
                   <img 
                     src="/Star Deception Logo.svg" 
@@ -44,7 +49,7 @@ export const Header: React.FC = () => {
                     Guide complet du jeu
                   </p>
                 </div>
-              </div>
+              </button>
             </div>
 
             <div className="flex items-center space-x-4">

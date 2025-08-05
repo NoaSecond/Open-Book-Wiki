@@ -1,9 +1,18 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+interface ReadmeSection {
+  id: string;
+  title: string;
+  content: string;
+  lastModified: string;
+  author: string;
+}
+
 interface WikiData {
   [key: string]: {
     title: string;
-    content: string;
+    content?: string; // Pour les pages simples
+    sections?: ReadmeSection[]; // Pour les pages avec sections multiples
     lastModified: string;
     author: string;
   };
@@ -16,6 +25,7 @@ interface User {
   bio?: string;
   joinDate: string;
   contributions: number;
+  tags: string[]; // Les tags du utilisateur
 }
 
 interface WikiContextType {
@@ -23,6 +33,7 @@ interface WikiContextType {
   setCurrentPage: (page: string) => void;
   wikiData: WikiData;
   updatePage: (pageId: string, content: string) => void;
+  addSection: (pageId: string, sectionTitle: string) => string; // Retourne l'ID de la nouvelle section
   isEditing: boolean;
   setIsEditing: (editing: boolean) => void;
   editingPage: string;
@@ -35,6 +46,13 @@ interface WikiContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   updateUser: (updates: Partial<User>) => void;
+  // Gestion des utilisateurs et permissions
+  allUsers: User[];
+  setAllUsers: (users: User[]) => void;
+  updateUserTags: (username: string, tags: string[]) => void;
+  hasPermission: (requiredTag: string) => boolean;
+  canContribute: () => boolean;
+  isAdmin: () => boolean;
   // Thème
   isDarkMode: boolean;
   toggleTheme: () => void;
@@ -105,41 +123,138 @@ Les PNJ jouent un rôle crucial dans l'expérience de jeu, offrant des quêtes, 
   },
   gameplay: {
     title: "Gameplay",
-    content: `# Gameplay de Star Deception
+    sections: [
+      {
+        id: "combat-system",
+        title: "Système de Combat",
+        content: `# Système de Combat
 
-## Mécaniques de base
-
-### Système de Combat
 Le combat dans Star Deception combine stratégie et action en temps réel.
 
-- **Combat spatial** : Pilotez votre vaisseau dans des batailles épiques
-- **Combat au sol** : Affrontements tactiques sur les planètes
-- **Système de couverture** : Utilisez l'environnement à votre avantage
+## Combat Spatial
+Pilotez votre vaisseau dans des batailles épiques contre d'autres joueurs ou des flottes aliens.
 
-### Exploration
+### Mécaniques clés :
+- **Manœuvres évasives** : Esquivez les tirs ennemis avec des mouvements précis
+- **Systèmes d'armement** : Lasers, missiles, torpilles à plasma
+- **Boucliers énergétiques** : Gérez votre énergie entre attaque et défense
+- **Ciblage tactique** : Visez les points faibles des vaisseaux ennemis
+
+## Combat au Sol
+Affrontements tactiques sur les planètes avec votre équipage.
+
+### Caractéristiques :
+- **Système de couverture** : Utilisez l'environnement à votre avantage
+- **Équipes tactiques** : Coordonnez vos compagnons d'équipe
+- **Armes variées** : Du pistolet laser au canon à plasma lourd
+- **Environnements destructibles** : Créez vos propres couverts`,
+        lastModified: "2025-08-05",
+        author: "CombatExpert"
+      },
+      {
+        id: "exploration",
+        title: "Exploration et Découverte",
+        content: `# Exploration et Découverte
+
 L'exploration est au cœur de l'expérience Star Deception.
 
-- **Planètes procédurales** : Chaque monde est unique
-- **Ressources à collecter** : Minerais, technologies alien
-- **Découvertes cachées** : Temples anciens et artefacts mystérieux
+## Planètes Procédurales
+Chaque monde est généré de manière unique avec ses propres biomes et secrets.
 
-### Progression du personnage
-- **Système de niveaux** : Gagnez de l'expérience en explorant et combattant
-- **Compétences** : Débloquez de nouvelles capacités
-- **Équipement** : Améliorez vos armes et votre vaisseau
+### Types de planètes :
+- **Mondes désertiques** : Vastes étendues sablonneuses avec oasis cachées
+- **Planètes océaniques** : Archipels flottants et cités sous-marines
+- **Stations spatiales abandonnées** : Mystères technologiques à découvrir
+- **Zones interdites** : Régions dangereuses avec récompenses exceptionnelles
 
-## Modes de jeu
+## Ressources et Collecte
+- **Minerais rares** : Nécessaires pour améliorer votre équipement
+- **Technologies alien** : Artefacts mystérieux aux pouvoirs inconnus
+- **Données historiques** : Reconstituez l'histoire de civilisations perdues
+- **Crédits galactiques** : La monnaie universelle pour le commerce
 
-### Mode Campagne
-L'histoire principale de Star Deception, avec plus de 40 heures de contenu.
+## Découvertes Cachées
+- **Temples anciens** : Structures mystérieuses laissées par des civilisations disparues
+- **Portails dimensionnels** : Raccourcis vers des systèmes éloignés
+- **Épaves de vaisseaux** : Vestiges de batailles passées contenant des trésors`,
+        lastModified: "2025-08-05",
+        author: "ExplorerPro"
+      },
+      {
+        id: "progression",
+        title: "Progression du Personnage",
+        content: `# Progression du Personnage
 
-### Mode Exploration libre
-Explorez l'univers à votre rythme sans contraintes narratives.
+Développez votre personnage et votre équipement au fil de vos aventures.
 
-### Mode Multijoueur
-Affrontez d'autres joueurs dans des batailles spatiales intenses.`,
-    lastModified: "2025-01-27",
-    author: "ProGamer"
+## Système de Niveaux
+Gagnez de l'expérience en explorant, combattant et accomplissant des missions.
+
+### Sources d'expérience :
+- **Exploration** : Découverte de nouveaux lieux (+50-200 XP)
+- **Combat** : Victoires contre ennemis (+25-100 XP par ennemi)
+- **Missions** : Complétion d'objectifs (+100-500 XP)
+- **Découvertes** : Artefacts et secrets (+75-300 XP)
+
+## Arbres de Compétences
+Trois branches principales à développer :
+
+### 🚀 Pilotage
+- **Manœuvres avancées** : Mouvements évasifs améliorés
+- **Efficacité énergétique** : Consommation réduite des systèmes
+- **Ciblage de précision** : Amélioration de la précision des tirs
+
+### 🔬 Science
+- **Analyse alien** : Déchiffrage plus rapide des technologies
+- **Réparations d'urgence** : Soins rapides en combat
+- **Recherche avancée** : Découverte de nouveaux équipements
+
+### ⚔️ Combat
+- **Expertise martiale** : Dégâts au corps à corps augmentés
+- **Tactiques d'équipe** : Bonus pour les compagnons
+- **Résistance** : Points de vie et armure améliorés`,
+        lastModified: "2025-08-05",
+        author: "GameMaster"
+      },
+      {
+        id: "multiplayer",
+        title: "Modes Multijoueur",
+        content: `# Modes Multijoueur
+
+Star Deception offre plusieurs façons de jouer avec d'autres joueurs.
+
+## Coopération
+Explorez l'univers avec vos amis dans des missions coopératives.
+
+### Fonctionnalités coop :
+- **Équipages partagés** : Jusqu'à 4 joueurs par vaisseau
+- **Missions d'équipe** : Objectifs nécessitant la coopération
+- **Partage de ressources** : Économie commune pour l'équipe
+- **Communication intégrée** : Chat vocal et textuel
+
+## PvP (Joueur contre Joueur)
+Affrontez d'autres capitaines dans des batailles intenses.
+
+### Modes PvP :
+- **Duels spatiaux** : Combats 1v1 dans l'espace
+- **Batailles de flotte** : Affrontements massifs jusqu'à 20v20
+- **Contrôle de territoire** : Capturez et défendez des systèmes stellaires
+- **Tournois** : Compétitions organisées avec récompenses
+
+## Guildes et Alliances
+Rejoignez ou créez des organisations de joueurs.
+
+### Avantages des guildes :
+- **Base partagée** : Station spatiale commune
+- **Missions de guilde** : Objectifs à long terme
+- **Commerce interne** : Marché privé entre membres
+- **Classements** : Compétition entre guildes`,
+        lastModified: "2025-08-05",
+        author: "MultiplayerDev"
+      }
+    ],
+    lastModified: "2025-08-05",
+    author: "GameDesignTeam"
   },
   story: {
     title: "Histoire",
@@ -180,68 +295,108 @@ Nova et son équipe doivent empêcher que cette technologie tombe entre de mauva
   },
   items: {
     title: "Objets et Équipements",
-    content: `# Objets et Équipements
+    sections: [
+      {
+        id: "weapons",
+        title: "Armes et Armements",
+        content: `# Armes et Armements
 
-## Armes
+## Armes Primaires
 
-### Armes Primaires
+### Blaster Plasma MK-VII
+L'arme standard de la Flotte Stellaire, fiable et efficace.
 
-**Blaster Plasma MK-VII**
-- Dégâts : 45-60
-- Portée : Moyenne
-- Cadence : Rapide
-- Spécial : Peut surcharger pour plus de dégâts
+**Caractéristiques :**
+- **Dégâts :** 45-60 points
+- **Portée :** Moyenne (150m)
+- **Cadence :** Rapide (3 tirs/seconde)
+- **Énergie :** 15% par tir
+- **Spécial :** Mode surcharge (+50% dégâts, consomme 40% énergie)
 
-**Fusil à Ions Quantique**
-- Dégâts : 80-120
-- Portée : Longue
-- Cadence : Lente
-- Spécial : Ignore les boucliers énergétiques
+### Fusil à Ions Quantique
+Arme de précision utilisant la technologie quantique avancée.
 
-### Armes Secondaires
+**Caractéristiques :**
+- **Dégâts :** 80-120 points
+- **Portée :** Longue (300m)
+- **Cadence :** Lente (1 tir/2 secondes)
+- **Énergie :** 35% par tir
+- **Spécial :** Ignore les boucliers énergétiques
 
-**Grenades Plasma**
-- Dégâts de zone
-- Effet : Brûlure continue
-- Quantité max : 6
+## Armes Secondaires
 
-## Équipements défensifs
+### Grenades Plasma
+Explosifs à énergie plasma pour contrôle de zone.
 
-### Boucliers Énergétiques
+**Effets :**
+- **Dégâts initiaux :** 75-100 points
+- **Zone d'effet :** Rayon de 5 mètres
+- **Effet brûlure :** 10 points/seconde pendant 5 secondes
+- **Quantité max :** 6 grenades
 
-**Bouclier Personnel Standard**
-- Protection : 100 points
-- Régénération : 5 points/seconde
-- Résistance : Énergétique
+### Mines Électromagnétiques
+Pièges défensifs pour sécuriser une zone.
 
-**Bouclier Adaptatif Alien**
-- Protection : 150 points
-- Régénération : 8 points/seconde
-- Spécial : S'adapte au type de dégâts reçus
+**Propriétés :**
+- **Activation :** Détection de mouvement
+- **Dégâts :** 150 points + paralysie 3 secondes
+- **Portée détection :** 8 mètres
+- **Durée de vie :** 5 minutes`,
+        lastModified: "2025-08-05",
+        author: "WeaponExpert"
+      },
+      {
+        id: "equipment",
+        title: "Équipements Défensifs",
+        content: `# Équipements Défensifs
 
-## Objets de mission
+## Boucliers Énergétiques
 
-### Artefacts Anciens
+### Bouclier Personnel Standard
+Le bouclier de base fourni à tous les explorateurs.
 
-**Cristal de Résonance**
-- Permet de déchiffrer les textes aliens
-- Nécessaire pour la progression de l'histoire
+**Spécifications :**
+- **Protection :** 100 points de bouclier
+- **Régénération :** 5 points/seconde (après 3 sec sans dégât)
+- **Résistance :** +25% contre dégâts énergétiques
+- **Poids :** 2.5 kg
+- **Autonomie :** 4 heures d'utilisation continue
 
-**Clé Dimensionnelle**
-- Ouvre les portails vers d'autres dimensions
-- Objet rare et précieux
+### Bouclier Adaptatif Alien
+Technologie alien récupérée et reverse-engineered.
 
-## Consommables
+**Capacités avancées :**
+- **Protection :** 150 points de bouclier
+- **Régénération :** 8 points/seconde (après 2 sec sans dégât)
+- **Adaptation :** +15% résistance au type de dégât le plus reçu
+- **Absorption :** Convertit 10% des dégâts reçus en énergie
+- **Rareté :** Très rare, trouvé dans les ruines aliens
 
-**Stimpacks**
-- Restaure 50 points de vie
-- Effet instantané
+## Armures
 
-**Boosters d'Énergie**
-- Restaure l'énergie du bouclier
-- Durée : 30 secondes`,
-    lastModified: "2025-01-27",
-    author: "ItemMaster"
+### Exo-Combinaison Spatiale
+Protection standard contre les environnements hostiles.
+
+**Protection :**
+- **Armure physique :** 25 points
+- **Survie spatiale :** 2 heures d'oxygène
+- **Régulation thermique :** -50°C à +80°C
+- **Radiation :** Protection contre radiations faibles
+
+### Armure de Combat Lourde
+Équipement militaire pour les missions dangereuses.
+
+**Avantages :**
+- **Armure physique :** 75 points
+- **Réduction dégâts :** -20% tous dégâts physiques
+- **Système d'arme intégré :** Lance-grenades d'épaule
+- **Inconvénient :** -30% vitesse de déplacement`,
+        lastModified: "2025-08-05",
+        author: "DefenseSpecialist"
+      }
+    ],
+    lastModified: "2025-08-05",
+    author: "EquipmentTeam"
   },
   locations: {
     title: "Lieux",
@@ -306,6 +461,135 @@ Nova et son équipe doivent empêcher que cette technologie tombe entre de mauva
 - Mystère : Disparitions inexpliquées de vaisseaux`,
     lastModified: "2025-01-27",
     author: "Explorer"
+  },
+  development: {
+    title: "Développement Open Source",
+    content: `# 🌌 Développement de Star Deception
+
+## Organisation GitHub StarDeception
+
+Star Deception est un projet de jeu **100% open source** développé de manière collaborative et transparente. Toute l'organisation du développement est accessible publiquement sur GitHub.
+
+🔗 **[Organisation StarDeception sur GitHub](https://github.com/orgs/StarDeception/)**
+
+## 🎯 Vision du Projet
+
+Star Deception est un **MMO spatial immersif et communautaire** qui vise à offrir une alternative indépendante aux grands titres du genre. Le projet est construit **par et pour les passionnés**, avec une philosophie d'ouverture totale.
+
+### Principes Fondamentaux
+- 🎮 **Un vrai jeu complet**, pas seulement un bac à sable technique
+- 🌍 **MMO modulaire** centré sur la simulation, la narration, la coopération et l'exploration
+- 🛠️ **100% open source** — transparent, forkable, participatif
+- 🤝 **Développement communautaire**, inclusif et organique
+- 🪐 **Univers vivant**, construit avec les idées de chacun
+- 🎯 **Propulsé par Godot Engine** — open source, flexible et communautaire
+
+## 📂 Repositories Principaux
+
+### [StarDeception/StarDeception](https://github.com/StarDeception/StarDeception)
+🏷️ **Repository principal du jeu**
+- **Langage :** GDScript (Godot Engine)
+- **Stars :** ⭐ 19
+- **Licence :** MIT
+- **Statut :** Activement développé
+- **Description :** Code source principal du jeu Star Deception
+
+### [StarDeception/SDO](https://github.com/StarDeception/SDO)
+🏷️ **StarDeception Orchestrator**
+- **Fonction :** Orchestrateur du projet
+- **Stars :** ⭐ 1
+- **Statut :** En développement
+- **Description :** Système de coordination et d'orchestration pour le développement
+
+### [StarDeception/Lore](https://github.com/StarDeception/Lore)
+🏷️ **Univers et Histoire**
+- **Langage :** Makefile
+- **Licence :** CC0-1.0 (Domaine public)
+- **Stars :** ⭐ 1
+- **Description :** Toute la lore et l'univers narratif de Star Deception
+
+### [StarDeception/Plan](https://github.com/StarDeception/Plan)
+🏷️ **Roadmap et Planification**
+- **Stars :** ⭐ 6
+- **Description :** Le plan de développement complet du jeu
+- **Contenu :** Objectifs, milestones, vision à long terme
+
+### [StarDeception/.github](https://github.com/StarDeception/.github)
+🏷️ **Configuration de l'organisation**
+- **Description :** Profil et configuration de l'organisation GitHub
+
+## 🎮 Éléments Clés du Jeu
+
+### Gameplay Varié
+- ⛏️ **Minage** et extraction de ressources
+- 🌍 **Exploration** de systèmes stellaires
+- 🚛 **Transport** et commerce galactique
+- 🏔️ **Survie** dans des environnements hostiles
+- ⚔️ **Factions** et diplomatie interstellaire
+
+### Univers Immersif
+- 🌍 **Planètes uniques** : déserts, océans, zones interdites, archipels flottants
+- 🎭 **Création de personnage** via une interface narrative jouable
+- 🛰️ **Univers persistant** avec une lore évolutive et des intrigues cachées
+- 📦 **Contenu modulaire** : chaque système peut évoluer ou être ajouté librement
+
+## 🔭 Vision à Long Terme
+
+L'équipe de développement vise :
+
+- 🔹 **Dizaines de systèmes stellaires** explorables
+- 🔹 **Multiples profils de joueurs** (civils, techniciens, dissidents...)
+- 🔹 **Milliers de joueurs connectés** simultanément
+- 🔹 **Un jeu qui évolue constamment** avec sa communauté ❤️
+
+## 🧑‍🚀 Rejoindre le Projet
+
+**Vous êtes :**
+- 💻 Développeur
+- 🎨 Game designer
+- 🖼️ Illustrateur
+- 🎯 Artiste 3D
+- 🎬 Animateur
+- ✍️ Écrivain
+- 🎵 Sound designer
+- 🎼 Musicien
+- 🤔 Ou simplement curieux
+
+**👉 Vous êtes les bienvenus !**
+
+Star Deception est une aventure ouverte. **Forkez. Contribuez. Rêvons grand. Ensemble.**
+
+## 📚 Liens Utiles
+
+- 🌐 [Site Web](https://stardeception.com/) *(bientôt disponible)*
+- 💬 [Discord Communautaire](https://discord.gg/YKKTZtuN)
+- 📂 [Tous les repositories](https://github.com/orgs/StarDeception/repositories)
+- 📖 Documentation technique *(bientôt disponible)*
+- 🗺️ Roadmap détaillée *(bientôt disponible)*
+
+## 🤝 Comment Contribuer
+
+### 1. Choisissez votre domaine
+Consultez les repositories selon vos compétences :
+- **Code :** [StarDeception/StarDeception](https://github.com/StarDeception/StarDeception)
+- **Lore :** [StarDeception/Lore](https://github.com/StarDeception/Lore)
+- **Planification :** [StarDeception/Plan](https://github.com/StarDeception/Plan)
+
+### 2. Rejoignez la communauté
+- Rejoignez le [Discord](https://discord.gg/YKKTZtuN) pour discuter
+- Consultez les issues ouvertes sur GitHub
+- Participez aux discussions de design
+
+### 3. Contribuez
+- Forkez le repository qui vous intéresse
+- Créez votre branche feature
+- Soumettez une Pull Request
+
+---
+
+> **Star Deception** — *Un opéra spatial libre, construit ensemble, parmi les étoiles.*`,
+    lastModified: "2025-08-05",
+    author: "DevCommunity"
   }
 };
 
@@ -320,6 +604,34 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   
+  // État des utilisateurs et permissions
+  const [allUsers, setAllUsers] = useState<User[]>([
+    {
+      username: 'admin',
+      email: 'admin@stardeception.com',
+      bio: 'Administrateur principal du wiki',
+      joinDate: '2023-01-01',
+      contributions: 150,
+      tags: ['Administrateur']
+    },
+    {
+      username: 'contributeur1',
+      email: 'contrib@stardeception.com',
+      bio: 'Contributeur actif',
+      joinDate: '2023-06-15',
+      contributions: 45,
+      tags: ['Contributeur']
+    },
+    {
+      username: 'visiteur1',
+      email: 'visitor@stardeception.com',
+      bio: 'Nouveau membre',
+      joinDate: '2024-01-15',
+      contributions: 5,
+      tags: ['Visiteur']
+    }
+  ]);
+  
   // État du thème
   const [isDarkMode, setIsDarkMode] = useState(true);
 
@@ -333,21 +645,111 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Fonctions de gestion des permissions
+  const updateUserTags = (username: string, tags: string[]) => {
+    setAllUsers(prev => 
+      prev.map(u => 
+        u.username === username 
+          ? { ...u, tags }
+          : u
+      )
+    );
+  };
+
+  const hasPermission = (requiredTag: string): boolean => {
+    if (!isLoggedIn || !user) return false;
+    return user.tags.includes(requiredTag) || user.tags.includes('Administrateur');
+  };
+
+  const canContribute = (): boolean => {
+    return hasPermission('Contributeur');
+  };
+
+  const isAdmin = (): boolean => {
+    return hasPermission('Administrateur');
+  };
+
   const updatePage = (pageId: string, content: string) => {
-    setWikiData(prev => ({
-      ...prev,
-      [pageId]: {
-        ...prev[pageId],
-        content,
-        lastModified: new Date().toISOString().split('T')[0],
-        author: user?.username || "Contributeur"
-      }
-    }));
+    // Si pageId contient ":", c'est une section (format: "pageId:sectionId")
+    if (pageId.includes(':')) {
+      const [mainPageId, sectionId] = pageId.split(':');
+      setWikiData(prev => {
+        const currentPage = prev[mainPageId];
+        if (currentPage?.sections) {
+          const updatedSections = currentPage.sections.map(section =>
+            section.id === sectionId
+              ? {
+                  ...section,
+                  content,
+                  lastModified: new Date().toISOString().split('T')[0],
+                  author: user?.username || "Contributeur"
+                }
+              : section
+          );
+          
+          return {
+            ...prev,
+            [mainPageId]: {
+              ...currentPage,
+              sections: updatedSections,
+              lastModified: new Date().toISOString().split('T')[0],
+            }
+          };
+        }
+        return prev;
+      });
+    } else {
+      // Mise à jour normale pour les pages simples
+      setWikiData(prev => ({
+        ...prev,
+        [pageId]: {
+          ...prev[pageId],
+          content,
+          lastModified: new Date().toISOString().split('T')[0],
+          author: user?.username || "Contributeur"
+        }
+      }));
+    }
     
     // Incrémenter le compteur de contributions
     if (user) {
       updateUser({ contributions: user.contributions + 1 });
     }
+  };
+
+  const addSection = (pageId: string, sectionTitle: string): string => {
+    const newSectionId = `section-${Date.now()}`;
+    const newSection: ReadmeSection = {
+      id: newSectionId,
+      title: sectionTitle,
+      content: `# ${sectionTitle}\n\nContenu de la nouvelle section...`,
+      lastModified: new Date().toISOString().split('T')[0],
+      author: user?.username || "Contributeur"
+    };
+
+    setWikiData(prev => {
+      const currentPage = prev[pageId];
+      if (currentPage) {
+        // Si la page n'a pas encore de sections, en créer un tableau
+        const sections = currentPage.sections || [];
+        return {
+          ...prev,
+          [pageId]: {
+            ...currentPage,
+            sections: [...sections, newSection],
+            lastModified: new Date().toISOString().split('T')[0],
+          }
+        };
+      }
+      return prev;
+    });
+
+    // Incrémenter le compteur de contributions
+    if (user) {
+      updateUser({ contributions: user.contributions + 1 });
+    }
+
+    return newSectionId;
   };
 
   return (
@@ -356,6 +758,7 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setCurrentPage,
       wikiData,
       updatePage,
+      addSection,
       isEditing,
       setIsEditing,
       editingPage,
@@ -367,6 +770,12 @@ export const WikiProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       user,
       setUser,
       updateUser,
+      allUsers,
+      setAllUsers,
+      updateUserTags,
+      hasPermission,
+      canContribute,
+      isAdmin,
       isDarkMode,
       toggleTheme
     }}>
