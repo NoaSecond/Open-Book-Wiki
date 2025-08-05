@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, X, Eye } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import logger from '../utils/logger';
 
 export const EditModal: React.FC = () => {
   const { 
@@ -10,10 +11,12 @@ export const EditModal: React.FC = () => {
     editingPage, 
     wikiData, 
     updatePage,
+    renameSection,
     isDarkMode 
   } = useWiki();
   
   const [content, setContent] = useState('');
+  const [sectionTitle, setSectionTitle] = useState('');
   const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
@@ -26,6 +29,7 @@ export const EditModal: React.FC = () => {
           const section = mainPage.sections.find(s => s.id === sectionId);
           if (section) {
             setContent(section.content);
+            setSectionTitle(section.title);
           }
         }
       } else {
@@ -33,6 +37,7 @@ export const EditModal: React.FC = () => {
         const page = wikiData[editingPage];
         if (page?.content) {
           setContent(page.content);
+          setSectionTitle(page.title);
         }
       }
     }
@@ -40,14 +45,32 @@ export const EditModal: React.FC = () => {
 
   const handleSave = () => {
     if (editingPage) {
+      // Sauvegarder le contenu
       updatePage(editingPage, content);
+      logger.info('✅ Section sauvegardée', editingPage);
+      
+      // Si le titre de section a changé, le renommer aussi
+      if (editingPage.includes(':')) {
+        const [mainPageId, sectionId] = editingPage.split(':');
+        const mainPage = wikiData[mainPageId];
+        if (mainPage?.sections) {
+          const section = mainPage.sections.find(s => s.id === sectionId);
+          if (section && section.title !== sectionTitle.trim() && sectionTitle.trim()) {
+            renameSection(mainPageId, sectionId, sectionTitle.trim());
+            logger.info('🏷️ Titre de section modifié', `"${section.title}" → "${sectionTitle.trim()}"`);
+          }
+        }
+      }
+      
       setIsEditing(false);
     }
   };
 
   const handleCancel = () => {
+    logger.debug('❌ Édition annulée', editingPage || 'unknown');
     setIsEditing(false);
     setContent('');
+    setSectionTitle('');
   };
 
   if (!isEditing || !editingPage) {
@@ -103,6 +126,28 @@ export const EditModal: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Section Title Editor (only for sections) */}
+        {editingPage && editingPage.includes(':') && (
+          <div className={`p-4 border-b ${isDarkMode ? 'border-slate-700 bg-slate-750' : 'border-gray-200 bg-gray-50'}`}>
+            <div className="flex items-center space-x-4">
+              <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                Titre de la section :
+              </label>
+              <input
+                type="text"
+                value={sectionTitle}
+                onChange={(e) => setSectionTitle(e.target.value)}
+                className={`flex-1 px-3 py-2 rounded-lg border ${
+                  isDarkMode 
+                    ? 'bg-slate-700 border-slate-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                } focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                placeholder="Entrez le titre de la section..."
+              />
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
