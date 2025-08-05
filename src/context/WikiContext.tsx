@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import authService, { User as AuthUser } from '../services/authService';
 import activityService from '../services/activityService';
 import logger from '../utils/logger';
+import DateUtils from '../utils/dateUtils';
 
 interface ReadmeSection {
   id: string;
@@ -83,7 +84,7 @@ const initialWikiData: WikiData = {
         content: `# Bienvenue sur le Wiki Star Deception
 
 Star Deception est un jeu vidéo de science-fiction captivant qui vous plonge dans un univers où la tromperie et la stratégie sont essentielles à la survie.`,
-        lastModified: "2025-01-27",
+        lastModified: DateUtils.getRecentRandomDate(7),
         author: "Admin"
       },
       {
@@ -92,7 +93,7 @@ Star Deception est un jeu vidéo de science-fiction captivant qui vous plonge da
         content: `# À propos du jeu
 
 Dans Star Deception, les joueurs naviguent dans un cosmos hostile où chaque décision peut changer le cours de l'histoire. Explorez des galaxies lointaines, rencontrez des civilisations alien, et découvrez les secrets cachés de l'univers.`,
-        lastModified: "2025-01-27",
+        lastModified: DateUtils.getRecentRandomDate(3),
         author: "Admin"
       },
       {
@@ -106,7 +107,7 @@ Dans Star Deception, les joueurs naviguent dans un cosmos hostile où chaque dé
 - **Histoire immersive** : Une narration profonde et engageante
 
 Explorez les différentes sections de ce wiki pour découvrir tous les secrets de Star Deception !`,
-        lastModified: "2025-01-27",
+        lastModified: DateUtils.getCurrentDateISO(),
         author: "Admin"
       }
     ],

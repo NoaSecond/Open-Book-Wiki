@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import logger from '../utils/logger';
+import DateUtils from '../utils/dateUtils';
 
 interface CollapsibleSectionsProps {
   sections: Array<{
@@ -77,7 +78,7 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
               
               <div className="flex items-center space-x-2">
                 <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  {section.lastModified} par {section.author}
+                  {DateUtils.getRelativeTime(section.lastModified)} par {section.author}
                 </div>
                 {canContribute() && (
                   <button
