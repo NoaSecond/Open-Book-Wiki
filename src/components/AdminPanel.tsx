@@ -473,7 +473,7 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                         }`}
                       >
                         {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        <span>{showPasswords ? 'Masquer' : 'Afficher'} mots de passe</span>
+                        <span>{showPasswords ? 'Masquer' : 'Afficher'} hash mots de passe</span>
                       </button>
                     </div>
                   </div>
@@ -481,7 +481,8 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                   <div className={`rounded-lg border overflow-hidden ${
                     isDarkMode ? 'border-slate-600' : 'border-gray-200'
                   }`}>
-                    <table className="w-full">
+                    <div className="overflow-x-auto mini-scrollbar">
+                      <table className="w-full min-w-max">
                       <thead className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'}`}>
                         <tr>
                           <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
@@ -497,7 +498,7 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                           <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                             isDarkMode ? 'text-slate-300' : 'text-gray-500'
                           }`}>
-                            Mot de passe
+                            Hash Mot de passe
                           </th>
                           <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
                             isDarkMode ? 'text-slate-300' : 'text-gray-500'
@@ -534,10 +535,17 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                             }`}>
                               {dbUser.username}
                             </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-mono ${
+                            <td className={`px-6 py-4 text-sm font-mono ${
                               isDarkMode ? 'text-slate-300' : 'text-gray-900'
                             }`}>
-                              {showPasswords ? dbUser.password : '••••••••'}
+                              <div 
+                                className="max-w-xs overflow-x-auto scrollbar-thin"
+                                title={showPasswords ? `Hash complet: ${dbUser.passwordHash}` : 'Cliquez sur "Afficher hash mots de passe" pour voir le hash'}
+                              >
+                                <div className="whitespace-nowrap min-w-max">
+                                  {showPasswords ? dbUser.passwordHash : '••••••••'}
+                                </div>
+                              </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -572,6 +580,7 @@ export const AdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => vo
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}

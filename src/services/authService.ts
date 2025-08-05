@@ -1,6 +1,8 @@
 // Service d'authentification simulant une base de données
 // En production, ceci communiquerait avec un vrai backend
 
+import { CryptoUtils } from '../utils/cryptoUtils';
+
 export interface User {
   id: number;
   username: string;
@@ -12,53 +14,89 @@ export interface User {
 interface StoredUser {
   id: number;
   username: string;
-  password: string;
+  passwordHash: string;
+  passwordSalt: string;
   tags: string[];
   email?: string;
+  emailHash?: string; // Hash de l'email pour les recherches sécurisées
   avatar?: string;
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 // Simulation d'une base de données locale (localStorage)
 class AuthService {
   private storageKey = 'wiki_users';
   private sessionKey = 'wiki_session';
+  private initialized = false;
 
   constructor() {
-    this.initializeDefaultUsers();
+    this.initialize();
   }
 
-  private initializeDefaultUsers() {
+  private async initialize() {
+    if (!this.initialized) {
+      await this.initializeDefaultUsers();
+      this.initialized = true;
+    }
+  }
+
+  // S'assurer que l'initialisation est terminée
+  private async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+  }
+
+  private async initializeDefaultUsers() {
     const existingUsers = this.getStoredUsers();
     if (existingUsers.length === 0) {
+      // Créer les utilisateurs par défaut avec des mots de passe hachés
+      const adminPassword = await CryptoUtils.hashPassword('admin');
+      const contribPassword = await CryptoUtils.hashPassword('contrib123');
+      const visitorPassword = await CryptoUtils.hashPassword('visit123');
+
       const defaultUsers: StoredUser[] = [
         {
           id: 1,
           username: 'admin',
-          password: 'admin', // En production, ce serait hashé
+          passwordHash: adminPassword.hash,
+          passwordSalt: adminPassword.salt,
           tags: ['Administrateur', 'Contributeur'],
           email: 'admin@stardeception.com',
-          avatar: undefined
+          emailHash: await CryptoUtils.hashEmail('admin@stardeception.com'),
+          avatar: undefined,
+          createdAt: new Date().toISOString(),
+          lastLogin: undefined
         },
         {
           id: 2,
           username: 'contributeur1',
-          password: 'contrib123',
+          passwordHash: contribPassword.hash,
+          passwordSalt: contribPassword.salt,
           tags: ['Contributeur'],
           email: 'contrib@stardeception.com',
-          avatar: undefined
+          emailHash: await CryptoUtils.hashEmail('contrib@stardeception.com'),
+          avatar: undefined,
+          createdAt: new Date().toISOString(),
+          lastLogin: undefined
         },
         {
           id: 3,
           username: 'visiteur1',
-          password: 'visit123',
+          passwordHash: visitorPassword.hash,
+          passwordSalt: visitorPassword.salt,
           tags: ['Visiteur'],
           email: 'visitor@stardeception.com',
-          avatar: undefined
+          emailHash: await CryptoUtils.hashEmail('visitor@stardeception.com'),
+          avatar: undefined,
+          createdAt: new Date().toISOString(),
+          lastLogin: undefined
         }
       ];
       
       localStorage.setItem(this.storageKey, JSON.stringify(defaultUsers));
-      console.log('✅ Utilisateurs par défaut créés');
+      console.log('✅ Utilisateurs par défaut créés avec mots de passe sécurisés');
     }
   }
 
@@ -73,10 +111,15 @@ class AuthService {
 
   // Authentification
   async authenticate(username: string, password: string): Promise<User | null> {
+    await this.ensureInitialized();
     const users = this.getStoredUsers();
-    const user = users.find(u => u.username === username && u.password === password);
+    const user = users.find(u => u.username === username);
     
-    if (user) {
+    if (user && await CryptoUtils.verifyPassword(password, user.passwordHash, user.passwordSalt)) {
+      // Mettre à jour la dernière connexion
+      user.lastLogin = new Date().toISOString();
+      this.saveUsers(users);
+      
       const userSession: User = {
         id: user.id,
         username: user.username,
@@ -141,13 +184,13 @@ class AuthService {
   }
 
   // Mettre à jour complètement un utilisateur
-  updateUser(userId: number, updates: {
+  async updateUser(userId: number, updates: {
     username?: string;
     email?: string;
     avatar?: string;
     tags?: string[];
     password?: string;
-  }): boolean {
+  }): Promise<boolean> {
     try {
       const users = this.getStoredUsers();
       const userIndex = users.findIndex(u => u.id === userId);
@@ -160,10 +203,17 @@ class AuthService {
 
         const user = users[userIndex];
         if (updates.username !== undefined) user.username = updates.username;
-        if (updates.email !== undefined) user.email = updates.email;
+        if (updates.email !== undefined) {
+          user.email = updates.email;
+          user.emailHash = await CryptoUtils.hashEmail(updates.email);
+        }
         if (updates.avatar !== undefined) user.avatar = updates.avatar;
         if (updates.tags !== undefined) user.tags = updates.tags;
-        if (updates.password !== undefined) user.password = updates.password;
+        if (updates.password !== undefined) {
+          const hashedPassword = await CryptoUtils.hashPassword(updates.password);
+          user.passwordHash = hashedPassword.hash;
+          user.passwordSalt = hashedPassword.salt;
+        }
 
         this.saveUsers(users);
         
@@ -190,8 +240,14 @@ class AuthService {
   }
 
   // Créer un nouvel utilisateur
-  createUser(username: string, password: string, tags: string[] = ['Visiteur']): User | null {
+  async createUser(
+    username: string, 
+    password: string, 
+    tags: string[] = ['Visiteur'],
+    email?: string
+  ): Promise<User | null> {
     try {
+      await this.ensureInitialized();
       const users = this.getStoredUsers();
       
       // Vérifier si l'utilisateur existe déjà
@@ -199,11 +255,18 @@ class AuthService {
         return null;
       }
       
+      const hashedPassword = await CryptoUtils.hashPassword(password);
+      
       const newUser: StoredUser = {
         id: Math.max(...users.map(u => u.id), 0) + 1,
         username,
-        password,
-        tags
+        passwordHash: hashedPassword.hash,
+        passwordSalt: hashedPassword.salt,
+        tags,
+        email,
+        emailHash: email ? await CryptoUtils.hashEmail(email) : undefined,
+        createdAt: new Date().toISOString(),
+        lastLogin: undefined
       };
       
       users.push(newUser);
@@ -212,7 +275,8 @@ class AuthService {
       return {
         id: newUser.id,
         username: newUser.username,
-        tags: newUser.tags
+        tags: newUser.tags,
+        email: newUser.email
       };
     } catch (error) {
       console.error('Erreur lors de la création de l\'utilisateur:', error);
@@ -240,6 +304,73 @@ class AuthService {
   // Vérifier si un utilisateur est connecté
   isAuthenticated(): boolean {
     return this.getCurrentUser() !== null;
+  }
+
+  // Obtenir tous les utilisateurs pour l'administration (avec emails masqués)
+  async getAdminUserList(): Promise<Array<{
+    id: number;
+    username: string;
+    tags: string[];
+    emailMasked?: string;
+    createdAt?: string;
+    lastLogin?: string;
+  }>> {
+    await this.ensureInitialized();
+    const users = this.getStoredUsers();
+    
+    return users.map(user => ({
+      id: user.id,
+      username: user.username,
+      tags: user.tags,
+      emailMasked: user.email ? CryptoUtils.maskEmail(user.email) : undefined,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin
+    }));
+  }
+
+  // Obtenir tous les utilisateurs avec les hashes pour l'administration (accès complet)
+  async getAdminUserListWithHashes(): Promise<Array<{
+    id: number;
+    username: string;
+    passwordHash: string;
+    passwordSalt: string;
+    tags: string[];
+    emailMasked?: string;
+    createdAt?: string;
+    lastLogin?: string;
+  }>> {
+    await this.ensureInitialized();
+    const users = this.getStoredUsers();
+    
+    return users.map(user => ({
+      id: user.id,
+      username: user.username,
+      passwordHash: user.passwordHash,
+      passwordSalt: user.passwordSalt,
+      tags: user.tags,
+      emailMasked: user.email ? CryptoUtils.maskEmail(user.email) : undefined,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin
+    }));
+  }
+
+  // Vérifier la force d'un mot de passe
+  validatePasswordStrength(password: string) {
+    return CryptoUtils.validatePasswordStrength(password);
+  }
+
+  // Générer un mot de passe sécurisé
+  generateSecurePassword(length: number = 12): string {
+    return CryptoUtils.generateSecurePassword(length);
+  }
+
+  // Réinitialiser les données utilisateur (pour le développement)
+  async resetUserData() {
+    localStorage.removeItem(this.storageKey);
+    localStorage.removeItem(this.sessionKey);
+    this.initialized = false;
+    await this.initialize();
+    console.log('🔄 Données utilisateur réinitialisées');
   }
 }
 

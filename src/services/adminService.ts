@@ -1,15 +1,19 @@
 // Service pour simuler l'API d'administration de la base de données
 // En production, ceci communiquerait avec un vrai backend
 
+import authService from './authService';
+
 export interface DatabaseUser {
   id: number;
   username: string;
-  password: string;
+  passwordHash?: string; // Hash du mot de passe pour l'affichage admin
+  passwordSalt?: string; // Sel du mot de passe
   tags: string[];
   created_at: string;
   updated_at: string;
   last_login?: string;
   login_count?: number;
+  emailMasked?: string;
 }
 
 export interface DatabaseStats {
@@ -34,58 +38,6 @@ export interface SystemInfo {
 
 class AdminService {
   private static instance: AdminService;
-  private mockUsers: DatabaseUser[] = [
-    {
-      id: 1,
-      username: 'admin',
-      password: 'admin123',
-      tags: ['Administrateur'],
-      created_at: '2025-01-01T00:00:00Z',
-      updated_at: '2025-01-27T18:00:00Z',
-      last_login: '2025-01-27T18:00:00Z',
-      login_count: 45
-    },
-    {
-      id: 2,
-      username: 'contributeur1',
-      password: 'contrib123',
-      tags: ['Contributeur'],
-      created_at: '2025-01-15T00:00:00Z',
-      updated_at: '2025-01-26T10:30:00Z',
-      last_login: '2025-01-26T10:30:00Z',
-      login_count: 12
-    },
-    {
-      id: 3,
-      username: 'visiteur1',
-      password: 'visit123',
-      tags: ['Visiteur'],
-      created_at: '2025-01-20T00:00:00Z',
-      updated_at: '2025-01-25T14:15:00Z',
-      last_login: '2025-01-25T14:15:00Z',
-      login_count: 3
-    },
-    {
-      id: 4,
-      username: 'testuser',
-      password: 'test123',
-      tags: ['Contributeur'],
-      created_at: '2025-01-22T00:00:00Z',
-      updated_at: '2025-01-24T16:45:00Z',
-      last_login: '2025-01-24T16:45:00Z',
-      login_count: 7
-    },
-    {
-      id: 5,
-      username: 'moderator',
-      password: 'mod123',
-      tags: ['Contributeur', 'Modérateur'],
-      created_at: '2025-01-10T00:00:00Z',
-      updated_at: '2025-01-27T12:30:00Z',
-      last_login: '2025-01-27T12:30:00Z',
-      login_count: 28
-    }
-  ];
 
   private constructor() {}
 
@@ -103,12 +55,28 @@ class AdminService {
 
   public async getUsers(): Promise<DatabaseUser[]> {
     await this.delay(300);
-    return [...this.mockUsers];
+    
+    // Utiliser les vraies données d'authService avec hashes
+    const realUsers = await authService.getAdminUserListWithHashes();
+    
+    return realUsers.map(user => ({
+      id: user.id,
+      username: user.username,
+      passwordHash: user.passwordHash,
+      passwordSalt: user.passwordSalt,
+      tags: user.tags,
+      created_at: user.createdAt || new Date().toISOString(),
+      updated_at: user.lastLogin || user.createdAt || new Date().toISOString(),
+      last_login: user.lastLogin,
+      login_count: Math.floor(Math.random() * 50) + 1, // Simulé pour le moment
+      emailMasked: user.emailMasked
+    }));
   }
 
   public async getStats(wikiData: any): Promise<DatabaseStats> {
     await this.delay(200);
     
+    const realUsers = await authService.getAdminUserList();
     const totalPages = Object.keys(wikiData).length;
     const totalSections = Object.values(wikiData).reduce((acc: number, page: any) => {
       return acc + (page.sections?.length || 0);
@@ -123,9 +91,11 @@ class AdminService {
       return acc + (page.content?.length || 0);
     }, 0);
 
-    // Calculer l'utilisateur le plus actif
-    const mostActiveUser = this.mockUsers.reduce((prev, current) => {
-      return (prev.login_count || 0) > (current.login_count || 0) ? prev : current;
+    // Calculer l'utilisateur le plus actif (basé sur les vraies données)
+    const mostActiveUser = realUsers.reduce((prev, current) => {
+      const prevLogins = prev.lastLogin ? 1 : 0;
+      const currentLogins = current.lastLogin ? 1 : 0;
+      return prevLogins > currentLogins ? prev : current;
     });
 
     // Trouver la page la plus grande
@@ -136,13 +106,14 @@ class AdminService {
     }, Object.keys(wikiData)[0]);
 
     return {
-      totalUsers: this.mockUsers.length,
+      totalUsers: realUsers.length,
       totalPages,
       totalSections,
       totalContent,
       lastActivity: new Date().toISOString(),
-      activeUsers: this.mockUsers.filter(user => {
-        const lastLogin = new Date(user.last_login || user.updated_at);
+      activeUsers: realUsers.filter(user => {
+        if (!user.lastLogin) return false;
+        const lastLogin = new Date(user.lastLogin);
         const daysSinceLogin = (Date.now() - lastLogin.getTime()) / (1000 * 60 * 60 * 24);
         return daysSinceLogin <= 7; // Actif dans les 7 derniers jours
       }).length,
@@ -167,49 +138,65 @@ class AdminService {
   public async deleteUser(userId: number): Promise<boolean> {
     await this.delay(400);
     
-    const index = this.mockUsers.findIndex(user => user.id === userId);
-    if (index !== -1) {
-      this.mockUsers.splice(index, 1);
-      return true;
-    }
-    return false;
+    // Utiliser authService pour supprimer l'utilisateur
+    return authService.deleteUser(userId);
   }
 
-  public async createUser(userData: Omit<DatabaseUser, 'id' | 'created_at' | 'updated_at'>): Promise<DatabaseUser> {
+  public async createUser(userData: Omit<DatabaseUser, 'id' | 'created_at' | 'updated_at'>): Promise<DatabaseUser | null> {
     await this.delay(600);
     
-    const newUser: DatabaseUser = {
-      ...userData,
-      id: Math.max(...this.mockUsers.map(u => u.id)) + 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      login_count: 0
-    };
+    // Utiliser authService pour créer l'utilisateur
+    const result = await authService.createUser(
+      userData.username,
+      'changeme123', // Mot de passe temporaire
+      userData.tags
+    );
     
-    this.mockUsers.push(newUser);
-    return newUser;
+    if (result) {
+      return {
+        id: result.id,
+        username: result.username,
+        passwordHash: '(hash créé automatiquement)',
+        passwordSalt: '(sel créé automatiquement)',
+        tags: result.tags,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        login_count: 0
+      };
+    }
+    
+    return null;
   }
 
   public async updateUser(userId: number, updates: Partial<DatabaseUser>): Promise<DatabaseUser | null> {
     await this.delay(500);
     
-    const index = this.mockUsers.findIndex(user => user.id === userId);
-    if (index !== -1) {
-      this.mockUsers[index] = {
-        ...this.mockUsers[index],
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-      return this.mockUsers[index];
+    // Utiliser authService pour mettre à jour l'utilisateur
+    const success = await authService.updateUser(userId, {
+      username: updates.username,
+      tags: updates.tags
+      // Note: les mots de passe doivent être mis à jour séparément pour des raisons de sécurité
+    });
+    
+    if (success) {
+      // Retourner les données mises à jour
+      const users = await this.getUsers();
+      return users.find(user => user.id === userId) || null;
     }
+    
     return null;
   }
 
   public async exportData(): Promise<string> {
     await this.delay(800);
     
+    const users = await this.getUsers();
     const exportData = {
-      users: this.mockUsers,
+      users: users.map(user => ({
+        ...user,
+        passwordHash: '[REDACTED]', // Masquer les hashes dans l'export
+        passwordSalt: '[REDACTED]'
+      })),
       exportDate: new Date().toISOString(),
       version: '1.0.0'
     };
