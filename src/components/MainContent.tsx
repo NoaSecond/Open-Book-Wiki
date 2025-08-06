@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, User, Plus } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { ProfilePage } from './ProfilePage';
-import { CollapsibleSections } from './CollapsibleSections';
 import { MembersPage } from './MembersPage';
+import { DatabasePage } from './DatabasePage';
+import { CollapsibleSections } from './CollapsibleSections';
 import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 
 export const MainContent: React.FC = () => {
-  const { currentPage, wikiData, setIsEditing, setEditingPage, searchTerm, isDarkMode, addSection, canContribute } = useWiki();
+  const { currentPage, wikiData, setIsEditModalOpen, setEditingPageTitle, searchTerm, isDarkMode, addSection, canContribute, enrichPageWithSections } = useWiki();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
@@ -27,6 +28,11 @@ export const MainContent: React.FC = () => {
   // Si c'est la page membres, afficher le composant MembersPage
   if (currentPage === 'members') {
     return <MembersPage />;
+  }
+
+  // Si c'est la page database, afficher le composant DatabasePage
+  if (currentPage === 'database') {
+    return <DatabasePage />;
   }
   
   const currentPageData = wikiData[currentPage];
@@ -54,13 +60,19 @@ export const MainContent: React.FC = () => {
     setShowAddModal(true);
   };
 
-  const handleCreateSection = () => {
+  const handleCreateSection = async () => {
     if (newSectionTitle.trim()) {
-      const newSectionId = addSection(currentPage, newSectionTitle.trim());
-      setEditingPage(`${currentPage}:${newSectionId}`);
-      setIsEditing(true);
-      setShowAddModal(false);
-      setNewSectionTitle('');
+      try {
+        const newSectionId = await addSection(newSectionTitle.trim());
+        if (newSectionId) {
+          setEditingPageTitle(`${currentPage}:${newSectionId}`);
+          setIsEditModalOpen(true);
+        }
+        setShowAddModal(false);
+        setNewSectionTitle('');
+      } catch (error) {
+        logger.error('Erreur lors de la création de section', error instanceof Error ? error.message : String(error));
+      }
     }
   };
 
@@ -68,6 +80,9 @@ export const MainContent: React.FC = () => {
     setShowAddModal(false);
     setNewSectionTitle('');
   };
+
+  // Enrichir la page actuelle avec des sections
+  const currentPageWithSections = currentPageData ? enrichPageWithSections(currentPageData) : null;
 
   return (
     <main className={`flex-1 content-scrollbar overflow-y-auto ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
@@ -89,11 +104,11 @@ export const MainContent: React.FC = () => {
         <div className={`flex items-center space-x-6 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
           <div className="flex items-center space-x-1">
             <Calendar className="w-4 h-4" />
-            <span>Modifié {DateUtils.getRelativeTime(currentPageData.lastModified)}</span>
+            <span>Modifié {DateUtils.getRelativeTime(currentPageData.updated_at)}</span>
           </div>
           <div className="flex items-center space-x-1">
             <User className="w-4 h-4" />
-            <span>Par {currentPageData.author}</span>
+            <span>Par {currentPageData.author_username}</span>
           </div>
         </div>
         </div>
@@ -107,8 +122,13 @@ export const MainContent: React.FC = () => {
           </div>
         )}
 
-        {/* Sections déroulables */}
-        <CollapsibleSections sections={currentPageData.sections || []} pageId={currentPage} />
+        {/* Contenu de la page avec sections */}
+        {currentPageWithSections && (
+          <CollapsibleSections 
+            sections={currentPageWithSections.sections || []}
+            pageId={currentPage}
+          />
+        )}
 
         {/* Modal pour ajouter une section */}
         {showAddModal && (

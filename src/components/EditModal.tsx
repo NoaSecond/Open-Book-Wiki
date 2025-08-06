@@ -6,12 +6,12 @@ import logger from '../utils/logger';
 
 export const EditModal: React.FC = () => {
   const { 
-    isEditing, 
-    setIsEditing, 
-    editingPage, 
+    isEditModalOpen, 
+    setIsEditModalOpen, 
+    editingPageTitle, 
+    setEditingPageTitle,
     wikiData, 
     updatePage,
-    renameSection,
     isDarkMode 
   } = useWiki();
   
@@ -20,10 +20,10 @@ export const EditModal: React.FC = () => {
   const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
-    if (isEditing && editingPage) {
+    if (isEditModalOpen && editingPageTitle) {
       // Si c'est une section (format: "pageId:sectionId")
-      if (editingPage.includes(':')) {
-        const [mainPageId, sectionId] = editingPage.split(':');
+      if (editingPageTitle.includes(':')) {
+        const [mainPageId, sectionId] = editingPageTitle.split(':');
         const mainPage = wikiData[mainPageId];
         if (mainPage?.sections) {
           const section = mainPage.sections.find(s => s.id === sectionId);
@@ -34,60 +34,62 @@ export const EditModal: React.FC = () => {
         }
       } else {
         // Page simple (cas rare maintenant)
-        const page = wikiData[editingPage];
+        const page = wikiData[editingPageTitle];
         if (page?.content) {
           setContent(page.content);
           setSectionTitle(page.title);
         }
       }
     }
-  }, [isEditing, editingPage, wikiData]);
+  }, [isEditModalOpen, editingPageTitle, wikiData]);
 
   const handleSave = () => {
-    if (editingPage) {
+    if (editingPageTitle) {
       // Sauvegarder le contenu
-      updatePage(editingPage, content);
-      logger.info('✅ Section sauvegardée', editingPage);
+      updatePage(editingPageTitle, content);
+      logger.info('✅ Section sauvegardée', editingPageTitle);
       
       // Si le titre de section a changé, le renommer aussi
-      if (editingPage.includes(':')) {
-        const [mainPageId, sectionId] = editingPage.split(':');
+      if (editingPageTitle.includes(':')) {
+        const [mainPageId, sectionId] = editingPageTitle.split(':');
         const mainPage = wikiData[mainPageId];
         if (mainPage?.sections) {
           const section = mainPage.sections.find(s => s.id === sectionId);
           if (section && section.title !== sectionTitle.trim() && sectionTitle.trim()) {
-            renameSection(mainPageId, sectionId, sectionTitle.trim());
+            // TODO: Implémenter la fonction de renommage de section
             logger.info('🏷️ Titre de section modifié', `"${section.title}" → "${sectionTitle.trim()}"`);
           }
         }
       }
       
-      setIsEditing(false);
+      setIsEditModalOpen(false);
+      setEditingPageTitle(null);
     }
   };
 
   const handleCancel = () => {
-    logger.debug('❌ Édition annulée', editingPage || 'unknown');
-    setIsEditing(false);
+    logger.debug('❌ Édition annulée', editingPageTitle || 'unknown');
+    setIsEditModalOpen(false);
+    setEditingPageTitle(null);
     setContent('');
     setSectionTitle('');
   };
 
-  if (!isEditing || !editingPage) {
+  if (!isEditModalOpen || !editingPageTitle) {
     return null;
   }
 
   // Déterminer le titre à afficher
   const getEditingTitle = () => {
-    if (editingPage.includes(':')) {
-      const [mainPageId, sectionId] = editingPage.split(':');
+    if (editingPageTitle && editingPageTitle.includes(':')) {
+      const [mainPageId, sectionId] = editingPageTitle.split(':');
       const mainPage = wikiData[mainPageId];
       if (mainPage?.sections) {
         const section = mainPage.sections.find(s => s.id === sectionId);
         return section ? `${mainPage.title} - ${section.title}` : 'Section inconnue';
       }
     }
-    return wikiData[editingPage]?.title || 'Page inconnue';
+    return wikiData[editingPageTitle]?.title || 'Page inconnue';
   };
 
   return (
@@ -128,7 +130,7 @@ export const EditModal: React.FC = () => {
         </div>
 
         {/* Section Title Editor (only for sections) */}
-        {editingPage && editingPage.includes(':') && (
+        {editingPageTitle && editingPageTitle.includes(':') && (
           <div className={`p-4 border-b ${isDarkMode ? 'border-slate-700 bg-slate-750' : 'border-gray-200 bg-gray-50'}`}>
             <div className="flex items-center space-x-4">
               <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>

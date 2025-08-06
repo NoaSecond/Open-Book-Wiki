@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
-import { LoginModal } from './components/LoginModal';
 import { EditModal } from './components/EditModal';
 import SimpleAdminPanel from './components/SimpleAdminPanel';
 import { WikiProvider, useWiki } from './context/WikiContext';
@@ -10,7 +9,7 @@ import { getConfigService } from './services/configService';
 import logger from './utils/logger';
 
 const AppContent: React.FC = () => {
-  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData } = useWiki();
+  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData, isLoading } = useWiki();
   const configService = getConfigService();
   const siteName = configService.getSiteName();
   
@@ -24,25 +23,27 @@ const AppContent: React.FC = () => {
   }, [user, wikiData, siteName]);
   
   useEffect(() => {
-    // Signaler que l'application est prête
-    const hideLoadingScreen = () => {
-      const loadingScreen = document.getElementById('loading-screen');
-      if (loadingScreen) {
-        loadingScreen.classList.add('hidden');
-        setTimeout(() => {
-          loadingScreen.remove();
-        }, 500);
-      }
-    };
-    
-    // Attendre un court délai pour s'assurer que tout est rendu
-    const timer = setTimeout(() => {
-      hideLoadingScreen();
-      logger.success('✨ Interface utilisateur prête');
-    }, 800);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    // Masquer l'écran de chargement seulement quand l'initialisation est terminée
+    if (!isLoading) {
+      const hideLoadingScreen = () => {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.classList.add('hidden');
+          setTimeout(() => {
+            loadingScreen.remove();
+          }, 500);
+        }
+      };
+      
+      // Petit délai pour s'assurer que le rendu est terminé
+      const timer = setTimeout(() => {
+        hideLoadingScreen();
+        logger.success('✨ Interface utilisateur prête');
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
   
   return (
     <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${

@@ -9,7 +9,7 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
-  const { setUser, setIsLoggedIn, isDarkMode } = useWiki();
+  const { setUser, isDarkMode } = useWiki();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,7 +25,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       
       if (result.success && result.user) {
         setUser(result.user);
-        setIsLoggedIn(true);
         onClose();
         setUsername('');
         setPassword('');

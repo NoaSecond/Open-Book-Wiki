@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { ChevronDown, LogOut, Settings, Users, Database } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Database } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
-  const { user, setUser, setIsLoggedIn, isDarkMode, setCurrentPage, isAdmin, openAdminPanel } = useWiki();
+  const { user, logout, isDarkMode, setCurrentPage, isAdmin, setIsAdminPanelOpen } = useWiki();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = () => {
-    setUser(null);
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    await logout();
     setIsOpen(false);
-    setCurrentPage('home');
+    setCurrentPage('Accueil');
   };
 
   const handleProfile = () => {
@@ -18,13 +17,13 @@ export const UserMenu: React.FC = () => {
     setIsOpen(false);
   };
 
-  const handleMembers = () => {
-    setCurrentPage('members');
+  const handleAdminPanel = () => {
+    setIsAdminPanelOpen(true);
     setIsOpen(false);
   };
 
-  const handleAdminPanel = () => {
-    openAdminPanel();
+  const handleDatabase = () => {
+    setCurrentPage('database');
     setIsOpen(false);
   };
 
@@ -99,7 +98,7 @@ export const UserMenu: React.FC = () => {
                     {user?.username}
                   </div>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {user?.tags.map((tag) => (
+                    {user?.tags?.map((tag) => (
                       <span
                         key={tag}
                         className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getTagColor(tag)}`}
@@ -127,21 +126,21 @@ export const UserMenu: React.FC = () => {
 
               {isAdmin() && (
                 <button
-                  onClick={handleMembers}
+                  onClick={handleAdminPanel}
                   className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${
                     isDarkMode 
                       ? 'hover:bg-slate-700 text-white' 
                       : 'hover:bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <Users className="w-4 h-4" />
-                  <span>Gestion des membres</span>
+                  <Settings className="w-4 h-4" />
+                  <span>Panel Admin</span>
                 </button>
               )}
 
               {isAdmin() && (
                 <button
-                  onClick={handleAdminPanel}
+                  onClick={handleDatabase}
                   className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${
                     isDarkMode 
                       ? 'hover:bg-slate-700 text-white' 

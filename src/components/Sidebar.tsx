@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  User, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X, Clock
+  User, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X, Clock, ChevronRight
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getConfigService } from '../services/configService';
@@ -43,24 +43,20 @@ export const Sidebar: React.FC = () => {
     addPage,
     renamePage,
     deletePage,
-    isLoggedIn,
     user,
-    hasPermission,
     isDarkMode,
     canContribute,
     isAdmin
   } = useWiki();
   
   const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   
   useEffect(() => {
-    if (isLoggedIn) {
+    if (user) {
       // Charger les activités récentes
       const loadActivities = async () => {
         try {
           const activities = await activityService.getLogs(10);
-          setActivityLogs(activities);
           
           // Filtrer pour les modifications récentes
           const recentMods = activities.filter((log: ActivityLog) => 
@@ -74,7 +70,7 @@ export const Sidebar: React.FC = () => {
       
       loadActivities();
     }
-  }, [isLoggedIn]);
+  }, [user]);
   const [appVersion, setAppVersion] = useState('...');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageTitle, setEditingPageTitle] = useState('');
@@ -113,16 +109,18 @@ export const Sidebar: React.FC = () => {
     setShowAddCategoryModal(true);
   };
 
-  const handleCreateCategory = () => {
+  const handleCreateCategory = async () => {
     if (newCategoryName.trim()) {
       // Créer une nouvelle page avec l'icône sélectionnée
       const selectedIcon = availableIcons[selectedIconIndex];
       
       // Créer la nouvelle page via le contexte
-      const newPageId = addPage(newCategoryName.trim());
+      const newPageId = await addPage(newCategoryName.trim());
       
       // Naviguer vers la nouvelle page
-      setCurrentPage(newPageId);
+      if (newPageId) {
+        setCurrentPage(newCategoryName.trim()); // Utiliser le titre comme identifiant de page
+      }
       
       console.log(`Catégorie créée: ${newCategoryName.trim()} avec icône: ${selectedIcon.name}`);
       
@@ -333,7 +331,7 @@ export const Sidebar: React.FC = () => {
           })}
           
           {/* Lien vers le profil si connecté */}
-          {isLoggedIn && (
+          {user && (
             <li>
               <button
                 onClick={() => setCurrentPage('profile')}
@@ -352,49 +350,50 @@ export const Sidebar: React.FC = () => {
           )}
         </ul>
 
-        {/* Afficher les sections de la page actuelle */}
-        {wikiData[currentPage]?.sections && wikiData[currentPage].sections!.length > 0 && (
-          <div className="mt-6">
-            <div className="flex items-center justify-between px-3 mb-2">
-              <h3 className={`text-sm font-semibold ${
-                isDarkMode ? 'text-slate-300' : 'text-gray-600'
+        {/* Sections de la page courante */}
+        {currentPage && wikiData[currentPage] && (() => {
+          const currentPageData = wikiData[currentPage] as any; // Type temporaire
+          // Utiliser les sections si elles existent, sinon créer une section unique
+          const sections = currentPageData.sections || [{
+            id: 'main-content',
+            title: 'Contenu principal'
+          }];
+          
+          return sections.length > 0 ? (
+            <div className={`mb-6 p-3 rounded-lg transition-colors duration-300 ${
+              isDarkMode ? 'bg-slate-700/50' : 'bg-gray-100/50'
+            }`}>
+              <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
-                Sections
+                Sections de la page
               </h3>
-              <span className={`text-xs px-2 py-1 rounded-full ${
-                isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-gray-200 text-gray-500'
-              }`}>
-                {wikiData[currentPage].sections!.length}
-              </span>
+              <ul className="space-y-1">
+                {sections.map((section: any) => (
+                  <li key={section.id}>
+                    <button
+                      onClick={() => {
+                        // Faire défiler vers la section
+                        const element = document.getElementById(`section-${section.id}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
+                      className={`w-full text-left flex items-center space-x-2 px-2 py-1 rounded text-xs transition-colors ${
+                        isDarkMode 
+                          ? 'text-slate-300 hover:bg-slate-600 hover:text-white' 
+                          : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                      }`}
+                    >
+                      <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{section.title}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-1">
-              {wikiData[currentPage].sections!.map((section) => (
-                <li key={section.id}>
-                  <button
-                    onClick={() => {
-                      // Faire défiler vers la section
-                      const sectionElement = document.getElementById(section.id);
-                      if (sectionElement) {
-                        sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }
-                    }}
-                    className={`w-full flex items-center space-x-2 px-6 py-1.5 text-sm rounded-lg transition-colors ${
-                      isDarkMode 
-                        ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-300'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
-                    }`}
-                    title={`Aller à la section: ${section.title}`}
-                  >
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                      isDarkMode ? 'bg-cyan-400' : 'bg-cyan-500'
-                    }`} />
-                    <span className="truncate text-left">{section.title}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+          ) : null;
+        })()}
 
         <div className={`mt-8 p-4 rounded-lg transition-colors duration-300 ${
           isDarkMode ? 'bg-slate-700' : 'bg-gray-100'

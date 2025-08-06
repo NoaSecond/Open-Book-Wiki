@@ -17,7 +17,7 @@ interface CollapsibleSectionsProps {
 }
 
 export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sections, pageId }) => {
-  const { isDarkMode, setIsEditing, setEditingPage, canContribute } = useWiki();
+  const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, canContribute } = useWiki();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     // Si une seule section, l'afficher dépliée par défaut
     sections.length === 1 ? new Set([sections[0].id]) : new Set()
@@ -37,8 +37,8 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
 
   const handleEdit = (sectionId: string) => {
     logger.debug('✏️ Ouverture modal d\'édition', `Section: ${sectionId}`);
-    setEditingPage(`${pageId}:${sectionId}`);
-    setIsEditing(true);
+    setEditingPageTitle(`${pageId}:${sectionId}`);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -49,7 +49,7 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
         return (
           <div 
             key={section.id}
-            id={section.id}
+            id={`section-${section.id}`}
             className={`border rounded-lg overflow-hidden ${
               isDarkMode ? 'border-slate-600' : 'border-gray-200'
             }`}

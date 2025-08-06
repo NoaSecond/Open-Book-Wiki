@@ -1,6 +1,14 @@
 // Service de gestion des pages wiki utilisant l'API backend
 import logger from '../utils/logger';
 
+export interface WikiSection {
+  id: string;
+  title: string;
+  content: string;
+  lastModified: string;
+  author: string;
+}
+
 export interface WikiPage {
   id: number;
   title: string;
@@ -10,6 +18,7 @@ export interface WikiPage {
   created_at: string;
   updated_at: string;
   is_protected: boolean;
+  sections?: WikiSection[]; // Sections optionnelles
 }
 
 interface WikiPagesResponse {
@@ -132,20 +141,49 @@ class WikiService {
     }
   }
 
-  // Méthodes de compatibilité avec l'ancien système
-  formatPageData(pages: WikiPage[]): Record<string, any> {
-    const formatted: Record<string, any> = {};
-    
-    pages.forEach(page => {
-      formatted[page.title] = {
-        title: page.title,
-        content: page.content,
-        lastModified: page.updated_at,
-        author: page.author_username
-      };
-    });
+  async deletePage(pageId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${pageId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
 
-    return formatted;
+      const data: WikiPagesResponse = await response.json();
+
+      if (data.success) {
+        logger.success('Page supprimée avec succès', { pageId });
+        return true;
+      } else {
+        logger.warn('Échec de suppression de page', { pageId, message: data.message });
+        return false;
+      }
+    } catch (error) {
+      logger.error('Erreur lors de la suppression de page', { pageId, error: error instanceof Error ? error.message : 'Unknown error' });
+      return false;
+    }
+  }
+
+  async renamePage(pageId: string, newTitle: string): Promise<WikiPage | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${pageId}/rename`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ title: newTitle })
+      });
+
+      const data: WikiPagesResponse = await response.json();
+
+      if (data.success && data.page) {
+        logger.success('Page renommée avec succès', { pageId, newTitle });
+        return data.page;
+      } else {
+        logger.warn('Échec de renommage de page', { pageId, newTitle, message: data.message });
+        return null;
+      }
+    } catch (error) {
+      logger.error('Erreur lors du renommage de page', { pageId, newTitle, error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    }
   }
 }
 

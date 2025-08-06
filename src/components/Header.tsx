@@ -10,7 +10,7 @@ export const Header: React.FC = () => {
   const { 
     searchTerm, 
     setSearchTerm, 
-    isLoggedIn,
+    user,
     isDarkMode,
     setCurrentPage
   } = useWiki();
@@ -84,7 +84,7 @@ export const Header: React.FC = () => {
                 />
               </div>
 
-              {isLoggedIn ? (
+              {user ? (
                 <UserMenu />
               ) : (
                 <button
