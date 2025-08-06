@@ -2,8 +2,9 @@ import React, { useEffect } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
+import { LoginModal } from './components/LoginModal';
 import { EditModal } from './components/EditModal';
-import { AdminPanel } from './components/AdminPanel';
+import SimpleAdminPanel from './components/SimpleAdminPanel';
 import { WikiProvider, useWiki } from './context/WikiContext';
 import { getConfigService } from './services/configService';
 import logger from './utils/logger';
@@ -55,7 +56,7 @@ const AppContent: React.FC = () => {
         <MainContent />
       </div>
       <EditModal />
-      <AdminPanel 
+      <SimpleAdminPanel 
         isOpenFromMenu={isAdminPanelOpen}
         onClose={() => setIsAdminPanelOpen(false)}
       />

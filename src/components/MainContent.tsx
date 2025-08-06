@@ -1,30 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Eye, Plus } from 'lucide-react';
+import { Calendar, User, Plus } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { ProfilePage } from './ProfilePage';
 import { CollapsibleSections } from './CollapsibleSections';
 import { MembersPage } from './MembersPage';
-import pageStatsService from '../services/pageStatsService';
 import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 
 export const MainContent: React.FC = () => {
   const { currentPage, wikiData, setIsEditing, setEditingPage, searchTerm, isDarkMode, addSection, canContribute } = useWiki();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [pageViews, setPageViews] = useState<number>(0);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
   // Enregistrer la vue de page et récupérer les statistiques
   useEffect(() => {
     if (currentPage && wikiData[currentPage]) {
-      // Enregistrer la vue
-      pageStatsService.recordPageView(currentPage);
-      
-      // Récupérer le nombre de vues
-      const views = pageStatsService.getPageViews(currentPage);
-      setPageViews(views);
-      
-      logger.debug('📊 Page vue', `${currentPage} (${views} vues)`);
+      logger.debug('📊 Page vue', currentPage);
     }
   }, [currentPage, wikiData]);
   
@@ -103,10 +94,6 @@ export const MainContent: React.FC = () => {
           <div className="flex items-center space-x-1">
             <User className="w-4 h-4" />
             <span>Par {currentPageData.author}</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Eye className="w-4 h-4" />
-            <span>Lecture {pageViews} vues</span>
           </div>
         </div>
         </div>

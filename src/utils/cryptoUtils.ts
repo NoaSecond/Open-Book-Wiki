@@ -9,6 +9,13 @@ export class CryptoUtils {
     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
+  // Générer un ID unique
+  static generateId(): string {
+    const array = new Uint8Array(8);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
   // Encoder une chaîne en bytes pour l'API Crypto
   static encodeString(str: string): Uint8Array {
     return new TextEncoder().encode(str);

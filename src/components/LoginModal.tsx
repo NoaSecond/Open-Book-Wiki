@@ -21,43 +21,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     setIsLoading(true);
 
     try {
-      const authenticatedUser = await authService.authenticate(username, password);
+      const result = await authService.login(username, password);
       
-      if (authenticatedUser) {
-        // Créer l'utilisateur avec les informations étendues pour le contexte
-        const fullUser = {
-          ...authenticatedUser,
-          email: `${authenticatedUser.username}@openbook.wiki`,
-          bio: getBio(authenticatedUser.tags),
-          joinDate: '2023-01-01',
-          contributions: getContributions(authenticatedUser.tags)
-        };
-        
-        setUser(fullUser);
+      if (result.success && result.user) {
+        setUser(result.user);
         setIsLoggedIn(true);
         onClose();
         setUsername('');
         setPassword('');
       } else {
-        setError('Identifiant ou mot de passe incorrect');
+        setError(result.message || 'Identifiant ou mot de passe incorrect');
       }
     } catch {
       setError('Erreur de connexion');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getBio = (tags: string[]): string => {
-    if (tags.includes('Administrateur')) return 'Administrateur principal du wiki';
-    if (tags.includes('Contributeur')) return 'Contributeur actif';
-    return 'Nouveau membre';
-  };
-
-  const getContributions = (tags: string[]): number => {
-    if (tags.includes('Administrateur')) return 150;
-    if (tags.includes('Contributeur')) return 45;
-    return 5;
   };
 
   const handleClose = () => {

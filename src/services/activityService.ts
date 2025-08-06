@@ -1,202 +1,314 @@
-// Service de gestion des logs d'activité
-// Enregistre toutes les actions des utilisateurs dans le wiki
+// Service d'activités utilisant l'API backend
+import authService from './authService';
+import logger from '../utils/logger';
 
+export interface Activity {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  metadata: Record<string, any>;
+  created_at: string;
+  username?: string; // Ajouté par les requêtes admin
+}
+
+// Interface de compatibilité avec l'ancien service
 export interface ActivityLog {
   id: number;
   timestamp: string;
   userId: number;
   username: string;
-  action: 'login' | 'logout' | 'create_page' | 'edit_page' | 'delete_page' | 'create_section' | 'edit_section' | 'delete_section' | 'register' | 'admin_action';
-  target?: string; // Nom de la page/section affectée
+  action: string;
+  target?: string;
   details: string;
   ip?: string;
   userAgent?: string;
 }
 
-class ActivityService {
-  private storageKey = 'wiki_activity_logs';
-  private maxLogs = 500; // Garder seulement les 500 derniers logs
+interface ActivitiesResponse {
+  success: boolean;
+  activities: Activity[];
+  pagination?: {
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
+  message?: string;
+}
 
-  // Ajouter un log d'activité
-  addLog(activity: Omit<ActivityLog, 'id' | 'timestamp' | 'ip' | 'userAgent'>): void {
-    const logs = this.getLogs();
-    
-    const newLog: ActivityLog = {
-      id: this.generateId(),
-      timestamp: new Date().toISOString(),
-      ip: this.getClientIP(),
-      userAgent: navigator.userAgent.substring(0, 100), // Limiter la taille
-      ...activity
+interface CreateActivityResponse {
+  success: boolean;
+  message: string;
+  activity?: Activity;
+}
+
+class ActivityService {
+  private baseUrl = 'http://localhost:3001/api/activities';
+
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
     };
 
-    logs.unshift(newLog); // Ajouter au début
-    
-    // Garder seulement les logs récents
-    if (logs.length > this.maxLogs) {
-      logs.splice(this.maxLogs);
+    const token = localStorage.getItem('wiki_token');
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
-    
-    localStorage.setItem(this.storageKey, JSON.stringify(logs));
+
+    return headers;
   }
 
-  // Récupérer tous les logs
-  getLogs(): ActivityLog[] {
-    const stored = localStorage.getItem(this.storageKey);
-    return stored ? JSON.parse(stored) : [];
+  async getActivities(page: number = 1, limit: number = 50): Promise<{ activities: Activity[]; hasMore: boolean } | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}?page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      const data: ActivitiesResponse = await response.json();
+
+      if (data.success) {
+        return {
+          activities: data.activities,
+          hasMore: data.pagination?.hasMore ?? false
+        };
+      } else {
+        logger.warn('Échec de récupération des activités', { message: data.message });
+        return null;
+      }
+    } catch (error) {
+      logger.error('Erreur lors de la récupération des activités', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    }
   }
 
-  // Récupérer les logs récents (par défaut 20)
-  getRecentLogs(limit: number = 20): ActivityLog[] {
-    return this.getLogs().slice(0, limit);
+  async getTodayActivities(): Promise<Activity[] | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/today`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      const data: ActivitiesResponse = await response.json();
+
+      if (data.success) {
+        return data.activities;
+      } else {
+        logger.warn('Échec de récupération des activités du jour', { message: data.message });
+        return null;
+      }
+    } catch (error) {
+      logger.error('Erreur lors de la récupération des activités du jour', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    }
   }
 
-  // Récupérer les logs d'un utilisateur spécifique
-  getUserLogs(userId: number, limit: number = 10): ActivityLog[] {
-    return this.getLogs()
-      .filter(log => log.userId === userId)
-      .slice(0, limit);
+  async searchActivities(searchTerm: string, limit: number = 50): Promise<Activity[] | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/search?q=${encodeURIComponent(searchTerm)}&limit=${limit}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      const data: ActivitiesResponse = await response.json();
+
+      if (data.success) {
+        return data.activities;
+      } else {
+        logger.warn('Échec de recherche d\'activités', { message: data.message });
+        return null;
+      }
+    } catch (error) {
+      logger.error('Erreur lors de la recherche d\'activités', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    }
   }
 
-  // Récupérer les logs d'une page spécifique
-  getPageLogs(pageName: string, limit: number = 10): ActivityLog[] {
-    return this.getLogs()
-      .filter(log => log.target === pageName)
-      .slice(0, limit);
+  async createActivity(
+    type: string,
+    title: string,
+    description?: string,
+    icon?: string,
+    metadata?: Record<string, any>
+  ): Promise<Activity | null> {
+    try {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          type,
+          title,
+          description: description || '',
+          icon: icon || 'star',
+          metadata: metadata || {}
+        })
+      });
+
+      const data: CreateActivityResponse = await response.json();
+
+      if (data.success && data.activity) {
+        logger.info('Activité créée', { title, type });
+        return data.activity;
+      } else {
+        logger.warn('Échec de création d\'activité', { message: data.message });
+        return null;
+      }
+    } catch (error) {
+      logger.error('Erreur lors de la création d\'activité', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    }
   }
 
-  // Récupérer les logs par type d'action
-  getLogsByAction(action: ActivityLog['action'], limit: number = 10): ActivityLog[] {
-    return this.getLogs()
-      .filter(log => log.action === action)
-      .slice(0, limit);
+  async getAllActivities(page: number = 1, limit: number = 100): Promise<{ activities: Activity[]; hasMore: boolean } | null> {
+    if (!authService.isAdmin()) {
+      logger.warn('Tentative d\'accès admin sans permissions');
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/all?page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      const data: ActivitiesResponse = await response.json();
+
+      if (data.success) {
+        return {
+          activities: data.activities,
+          hasMore: data.pagination?.hasMore ?? false
+        };
+      } else {
+        logger.warn('Échec de récupération de toutes les activités', { message: data.message });
+        return null;
+      }
+    } catch (error) {
+      logger.error('Erreur lors de la récupération de toutes les activités', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return null;
+    }
   }
 
-  // Effacer tous les logs (admin seulement)
-  clearLogs(): void {
-    localStorage.removeItem(this.storageKey);
+  // Méthodes de compatibilité avec l'ancien service
+  async addLog(activity: {
+    action: string;
+    target?: string;
+    details: string;
+  }): Promise<void> {
+    await this.createActivity(
+      'legacy',
+      activity.action,
+      activity.details,
+      'activity',
+      { target: activity.target }
+    );
   }
 
-  // Obtenir des statistiques d'activité
-  getActivityStats() {
-    const logs = this.getLogs();
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  async getLogs(limit: number = 50): Promise<ActivityLog[]> {
+    const result = await this.getActivities(1, limit);
+    const activities = result?.activities ?? [];
+
+    // Convertir les Activity en ActivityLog pour compatibilité
+    return activities.map(activity => ({
+      id: activity.id,
+      timestamp: activity.created_at,
+      userId: activity.user_id,
+      username: activity.username || 'Utilisateur inconnu',
+      action: activity.type,
+      target: activity.metadata?.target,
+      details: activity.description || activity.title,
+      ip: activity.metadata?.ip,
+      userAgent: activity.metadata?.userAgent
+    }));
+  }
+
+  async getActivityStats(): Promise<{
+    totalLogs: number;
+    logsByAction: Record<string, number>;
+    topUsers: Array<{ username: string; count: number }>;
+    recentActivity: ActivityLog[];
+  }> {
+    // Pour les statistiques, on a besoin de toutes les activités
+    const result = await this.getAllActivities(1, 1000);
+    const activities = result?.activities ?? [];
+
+    const logsByAction: Record<string, number> = {};
+    activities.forEach(activity => {
+      logsByAction[activity.type] = (logsByAction[activity.type] || 0) + 1;
+    });
+
+    const userCounts: Record<string, number> = {};
+    activities.forEach(activity => {
+      if (activity.username) {
+        userCounts[activity.username] = (userCounts[activity.username] || 0) + 1;
+      }
+    });
+
+    const topUsers = Object.entries(userCounts)
+      .map(([username, count]) => ({ username, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const recentActivity = activities.slice(0, 10).map(activity => ({
+      id: activity.id,
+      timestamp: activity.created_at,
+      userId: activity.user_id,
+      username: activity.username || 'Utilisateur inconnu',
+      action: activity.type,
+      target: activity.metadata?.target,
+      details: activity.description || activity.title,
+      ip: activity.metadata?.ip,
+      userAgent: activity.metadata?.userAgent
+    }));
 
     return {
-      total: logs.length,
-      today: logs.filter(log => new Date(log.timestamp) >= todayStart).length,
-      thisWeek: logs.filter(log => new Date(log.timestamp) >= weekStart).length,
-      thisMonth: logs.filter(log => new Date(log.timestamp) >= monthStart).length,
-      mostActiveUser: this.getMostActiveUser(logs),
-      mostCommonAction: this.getMostCommonAction(logs)
+      totalLogs: activities.length,
+      logsByAction,
+      topUsers,
+      recentActivity
     };
   }
 
-  // Générateur d'ID simple
-  private generateId(): number {
-    return Date.now() + Math.random() * 1000;
-  }
-
-  // Obtenir l'IP du client (simulée)
-  private getClientIP(): string {
-    // En production, ceci viendrait du serveur
-    return '192.168.1.' + Math.floor(Math.random() * 255);
-  }
-
-  // Trouver l'utilisateur le plus actif
-  private getMostActiveUser(logs: ActivityLog[]): string {
-    const userCounts = logs.reduce((acc, log) => {
-      acc[log.username] = (acc[log.username] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(userCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || 'Aucun';
-  }
-
-  // Trouver l'action la plus commune
-  private getMostCommonAction(logs: ActivityLog[]): string {
-    const actionCounts = logs.reduce((acc, log) => {
-      acc[log.action] = (acc[log.action] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
+  formatAction(action: string): string {
     const actionLabels: Record<string, string> = {
+      auth: 'Authentification',
+      system: 'Système',
+      wiki: 'Wiki',
+      admin: 'Administration',
+      legacy: 'Activité',
       login: 'Connexion',
       logout: 'Déconnexion',
       create_page: 'Création de page',
-      edit_page: 'Édition de page',
+      edit_page: 'Modification de page',
       delete_page: 'Suppression de page',
-      create_section: 'Création de section',
-      edit_section: 'Édition de section',
-      delete_section: 'Suppression de section',
-      register: 'Inscription',
-      admin_action: 'Action admin'
-    };
-
-    const mostCommon = Object.entries(actionCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0];
-
-    return actionLabels[mostCommon] || 'Aucune';
-  }
-
-  // Formater une action pour l'affichage
-  formatAction(action: ActivityLog['action']): string {
-    const actionLabels: Record<ActivityLog['action'], string> = {
-      login: 'Connexion',
-      logout: 'Déconnexion',
-      create_page: 'Création de page',
-      edit_page: 'Édition de page',
-      delete_page: 'Suppression de page',
-      create_section: 'Création de section',
-      edit_section: 'Édition de section',
-      delete_section: 'Suppression de section',
-      register: 'Inscription',
-      admin_action: 'Action admin'
+      register: 'Inscription'
     };
 
     return actionLabels[action] || action;
   }
 
-  // Obtenir une icône pour chaque type d'action
-  getActionIcon(action: ActivityLog['action']): string {
-    const actionIcons: Record<ActivityLog['action'], string> = {
-      login: '🔐',
-      logout: '🚪',
+  getActionIcon(action: string): string {
+    const actionIcons: Record<string, string> = {
+      auth: '🔐',
+      system: '⚙️',
+      wiki: '📖',
+      admin: '👑',
+      legacy: '📝',
+      login: '🚪',
+      logout: '👋',
       create_page: '📄',
       edit_page: '✏️',
       delete_page: '🗑️',
-      create_section: '📝',
-      edit_section: '📋',
-      delete_section: '❌',
       register: '👤',
-      admin_action: '⚙️'
+      create_section: '➕',
+      edit_section: '✏️',
+      delete_section: '❌'
     };
 
     return actionIcons[action] || '📝';
   }
-
-  // Obtenir une couleur pour chaque type d'action
-  getActionColor(action: ActivityLog['action']): string {
-    const actionColors: Record<ActivityLog['action'], string> = {
-      login: 'text-green-600',
-      logout: 'text-gray-600',
-      create_page: 'text-blue-600',
-      edit_page: 'text-yellow-600',
-      delete_page: 'text-red-600',
-      create_section: 'text-purple-600',
-      edit_section: 'text-orange-600',
-      delete_section: 'text-red-500',
-      register: 'text-teal-600',
-      admin_action: 'text-indigo-600'
-    };
-
-    return actionColors[action] || 'text-gray-600';
-  }
 }
 
-// Instance singleton
 const activityService = new ActivityService();
 export default activityService;

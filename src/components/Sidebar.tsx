@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { getConfigService } from '../services/configService';
-import activityService from '../services/activityService';
+import activityService, { ActivityLog } from '../services/activityService';
 import SvgIcon from './SvgIcon';
 
 // Type pour les éléments de navigation
@@ -13,7 +13,6 @@ type NavigationItem = {
   label: string;
   title?: string;
   iconName: string; // Toujours SVG maintenant
-  isDynamic?: boolean;
 };
 
 // Icônes disponibles pour les catégories
@@ -36,13 +35,46 @@ const availableIcons = [
   { name: 'globe', label: 'Globe' }
 ];
 
-const navigationItems: NavigationItem[] = [
-  { id: 'home', label: 'Accueil', iconName: 'home' },
-  { id: 'development', label: 'Développement', iconName: 'code' },
-];
-
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, wikiData, isLoggedIn, isDarkMode, canContribute, renamePage, deletePage, isAdmin, addPage } = useWiki();
+  const {
+    wikiData,
+    currentPage,
+    setCurrentPage,
+    addPage,
+    renamePage,
+    deletePage,
+    isLoggedIn,
+    user,
+    hasPermission,
+    isDarkMode,
+    canContribute,
+    isAdmin
+  } = useWiki();
+  
+  const [recentActivities, setRecentActivities] = useState<ActivityLog[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  
+  useEffect(() => {
+    if (isLoggedIn) {
+      // Charger les activités récentes
+      const loadActivities = async () => {
+        try {
+          const activities = await activityService.getLogs(10);
+          setActivityLogs(activities);
+          
+          // Filtrer pour les modifications récentes
+          const recentMods = activities.filter((log: ActivityLog) => 
+            ['edit_page', 'edit_section', 'create_page', 'create_section'].includes(log.action)
+          ).slice(0, 3);
+          setRecentActivities(recentMods);
+        } catch (error) {
+          console.error('Erreur lors du chargement des activités:', error);
+        }
+      };
+      
+      loadActivities();
+    }
+  }, [isLoggedIn]);
   const [appVersion, setAppVersion] = useState('...');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageTitle, setEditingPageTitle] = useState('');
@@ -52,31 +84,17 @@ export const Sidebar: React.FC = () => {
   const [selectedIconIndex, setSelectedIconIndex] = useState(0);
 
   // Créer les éléments de navigation dynamiquement à partir de wikiData
-  const createNavigationItems = () => {
-    const items = [];
+  const createNavigationItems = (): NavigationItem[] => {
+    const items: NavigationItem[] = [];
     
-    // Ajouter les pages statiques d'abord
-    for (const navItem of navigationItems) {
-      if (wikiData[navItem.id]) {
-        items.push({
-          ...navItem,
-          title: wikiData[navItem.id].title
-        });
-      }
-    }
-    
-    // Ajouter les pages dynamiques créées par les utilisateurs
+    // Ajouter toutes les pages depuis wikiData
     for (const [pageId, pageData] of Object.entries(wikiData)) {
-      // Skip les pages qui sont déjà dans les navigationItems statiques
-      if (!navigationItems.find(item => item.id === pageId)) {
-        items.push({
-          id: pageId,
-          label: pageData.title,
-          title: pageData.title,
-          iconName: 'book-open', // Icône par défaut pour les pages créées dynamiquement (SVG)
-          isDynamic: true
-        });
-      }
+      items.push({
+        id: pageId,
+        label: pageData.title,
+        title: pageData.title,
+        iconName: 'book-open' // Toutes les pages utilisent la même icône par défaut
+      });
     }
     
     return items;
@@ -256,17 +274,10 @@ export const Sidebar: React.FC = () => {
                         }`} 
                       />
                       <span className="truncate">{item.label}</span>
-                      {item.isDynamic && (
-                        <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
-                          isDarkMode ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
-                        }`}>
-                          Nouveau
-                        </span>
-                      )}
                     </button>
                     
-                    {/* Options d'administration pour les pages dynamiques */}
-                    {isAdmin() && item.isDynamic && (
+                    {/* Options d'administration pour toutes les pages */}
+                    {isAdmin() && (
                       <div className="relative">
                         <button
                           onClick={() => setShowPageMenu(showPageMenu === item.id ? null : item.id)}
@@ -394,9 +405,7 @@ export const Sidebar: React.FC = () => {
             Dernières modifications
           </h3>
           <div className="space-y-2">
-            {activityService.getRecentLogs(3).filter(log => 
-              ['edit_page', 'edit_section', 'create_page', 'create_section'].includes(log.action)
-            ).map((log) => (
+            {recentActivities.map((log: ActivityLog) => (
               <div key={log.id} className={`text-xs transition-colors duration-300 ${
                 isDarkMode ? 'text-slate-400' : 'text-gray-600'
               }`}>
@@ -425,9 +434,7 @@ export const Sidebar: React.FC = () => {
                 </div>
               </div>
             ))}
-            {activityService.getRecentLogs(3).filter(log => 
-              ['edit_page', 'edit_section', 'create_page', 'create_section'].includes(log.action)
-            ).length === 0 && (
+            {recentActivities.length === 0 && (
               <div className={`text-xs transition-colors duration-300 ${
                 isDarkMode ? 'text-slate-500' : 'text-gray-500'
               }`}>
