@@ -5,7 +5,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  isAdmin: boolean;
+  isAdmin: boolean | number; // SQLite peut retourner 0/1 ou true/false
   avatar: string;
   lastLogin?: string;
   // Propriétés étendues pour compatibilité
@@ -212,7 +212,8 @@ class AuthService {
 
   isAdmin(): boolean {
     const user = this.getCurrentUser();
-    return user?.isAdmin ?? false;
+    // Gérer à la fois boolean et number (SQLite stocke 0/1)
+    return user?.isAdmin === true || user?.isAdmin === 1;
   }
 
   // Méthode pour vérifier si l'utilisateur est connecté et valide

@@ -7,15 +7,11 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   isOpenFromMenu = false, 
   onClose 
 }) => {
-  const { isDarkMode, allUsers, isAdmin } = useWiki();
+  const { isDarkMode, isAdmin } = useWiki();
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
   const [activeTab, setActiveTab] = useState<'users' | 'activity'>('activity');
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-
-  // Vérifier que l'utilisateur est admin
-  if (!isAdmin()) {
-    return null;
-  }
+  const [allUsers, setAllUsers] = useState<any[]>([]); // TODO: Créer une interface User appropriée
 
   useEffect(() => {
     setIsOpen(isOpenFromMenu);
@@ -32,9 +28,34 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           console.error('Erreur lors du chargement des logs:', error);
         }
       };
+
+      // Charger les utilisateurs
+      const loadUsers = async () => {
+        try {
+          const response = await fetch('http://localhost:3001/api/auth/users', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setAllUsers(data.users || []);
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement des utilisateurs:', error);
+        }
+      };
+
       loadLogs();
+      loadUsers();
     }
   }, [isOpen]);
+
+  // Vérifier que l'utilisateur est admin (après tous les hooks)
+  if (!isAdmin()) {
+    return null;
+  }
 
   const handleClose = () => {
     setIsOpen(false);
@@ -124,7 +145,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                           {u.username}
                         </h3>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {(u.tags || []).map(tag => (
+                          {(u.tags || []).map((tag: string) => (
                             <span
                               key={tag}
                               className={`px-2 py-1 text-xs rounded ${

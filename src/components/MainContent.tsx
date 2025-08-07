@@ -9,7 +9,7 @@ import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 
 export const MainContent: React.FC = () => {
-  const { currentPage, wikiData, setIsEditModalOpen, setEditingPageTitle, searchTerm, isDarkMode, addSection, canContribute, enrichPageWithSections } = useWiki();
+  const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, isDarkMode, addSection, canContribute, enrichPageWithSections, searchInPages } = useWiki();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
@@ -19,6 +19,9 @@ export const MainContent: React.FC = () => {
       logger.debug('📊 Page vue', currentPage);
     }
   }, [currentPage, wikiData]);
+
+  // Obtenir les résultats de recherche si un terme est présent
+  const searchResults = searchTerm && searchTerm.length > 2 ? searchInPages(searchTerm) : [];
   
   // Si c'est la page profil, afficher le composant ProfilePage
   if (currentPage === 'profile') {
@@ -117,18 +120,53 @@ export const MainContent: React.FC = () => {
         {searchTerm && (
           <div className={`mb-4 p-3 ${isDarkMode ? 'bg-cyan-600/20 border-cyan-500/30' : 'bg-cyan-100 border-cyan-300'} border rounded-lg`}>
             <p className={`text-sm ${isDarkMode ? 'text-cyan-300' : 'text-cyan-700'}`}>
-              Résultats de recherche pour "{searchTerm}"
+              Résultats de recherche pour "{searchTerm}" ({searchResults.length} résultat{searchResults.length > 1 ? 's' : ''})
             </p>
           </div>
         )}
 
-        {/* Contenu de la page avec sections */}
-        {currentPageWithSections && (
+        {/* Résultats de recherche ou contenu de la page avec sections */}
+        {searchTerm && searchTerm.length > 2 ? (
+          /* Afficher les résultats de recherche */
+          <div className="space-y-4">
+            {searchResults.length > 0 ? (
+              searchResults.map((page) => {
+                const enrichedPage = enrichPageWithSections(page);
+                return (
+                  <div key={page.title} className={`p-4 border rounded-lg ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+                    <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      <button
+                        onClick={() => setCurrentPage(page.title)}
+                        className="hover:text-cyan-600 transition-colors"
+                      >
+                        {page.title}
+                      </button>
+                    </h3>
+                    <div className={`text-sm mb-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                      Par {page.author_username} • Modifié {DateUtils.getRelativeTime(page.updated_at)}
+                    </div>
+                    {enrichedPage.sections && enrichedPage.sections.length > 0 && (
+                      <CollapsibleSections 
+                        sections={enrichedPage.sections}
+                        pageId={page.title}
+                      />
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className={`text-center py-8 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                Aucun résultat trouvé pour "{searchTerm}"
+              </div>
+            )}
+          </div>
+        ) : currentPageWithSections ? (
+          /* Afficher le contenu normal de la page */
           <CollapsibleSections 
             sections={currentPageWithSections.sections || []}
             pageId={currentPage}
           />
-        )}
+        ) : null}
 
         {/* Modal pour ajouter une section */}
         {showAddModal && (

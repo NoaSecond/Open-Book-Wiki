@@ -1,30 +1,7 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
-
-// Middleware d'authentification
-function authenticateToken(req, res, next) {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Token d\'accès manquant' 
-    });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-fallback-secret-key');
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    return res.status(403).json({ 
-      success: false, 
-      message: 'Token invalide' 
-    });
-  }
-}
 
 // Récupérer toutes les pages wiki
 router.get('/', async (req, res) => {
@@ -76,7 +53,7 @@ router.get('/:title', async (req, res) => {
 });
 
 // Créer une nouvelle page wiki
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const { title, content, isProtected = false } = req.body;
 
@@ -101,13 +78,13 @@ router.post('/', authenticateToken, async (req, res) => {
     const pageId = await db.createWikiPage({
       title,
       content,
-      authorId: req.userId,
+      authorId: req.user.userId,
       isProtected
     });
 
     // Créer une activité de création de page
     await db.createActivity({
-      userId: req.userId,
+      userId: req.user.userId,
       type: 'wiki',
       title: 'Page créée',
       description: `Création de la page "${title}"`,
@@ -133,7 +110,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Mettre à jour une page wiki
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
@@ -160,7 +137,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     // Créer une activité de modification de page
     await db.createActivity({
-      userId: req.userId,
+      userId: req.user.userId,
       type: 'wiki',
       title: 'Page modifiée',
       description: `Modification de la page "${page.title}"`,
@@ -178,6 +155,68 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la page:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur interne du serveur' 
+    });
+  }
+});
+
+// Renommer une page wiki
+router.put('/:id/rename', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Nouveau titre requis' 
+      });
+    }
+
+    const db = req.db;
+    
+    // Vérifier que la page existe
+    const page = await db.findWikiPageByTitle(id); // On utilise le titre comme ID pour l'instant
+    if (!page) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Page non trouvée' 
+      });
+    }
+
+    // Vérifier qu'une page avec le nouveau titre n'existe pas déjà
+    const existingPage = await db.findWikiPageByTitle(title);
+    if (existingPage && existingPage.id !== page.id) {
+      return res.status(409).json({ 
+        success: false, 
+        message: 'Une page avec ce titre existe déjà' 
+      });
+    }
+
+    await db.renameWikiPage(page.id, title);
+
+    // Créer une activité de renommage de page
+    await db.createActivity({
+      userId: req.user.userId,
+      type: 'wiki',
+      title: 'Page renommée',
+      description: `Renommage de la page "${page.title}" en "${title}"`,
+      icon: 'edit',
+      metadata: { oldTitle: page.title, newTitle: title, pageId: page.id }
+    });
+
+    const renamedPage = await db.findWikiPageById(page.id);
+
+    res.json({ 
+      success: true, 
+      message: 'Page renommée avec succès',
+      page: renamedPage
+    });
+
+  } catch (error) {
+    console.error('Erreur lors du renommage de la page:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Erreur interne du serveur' 

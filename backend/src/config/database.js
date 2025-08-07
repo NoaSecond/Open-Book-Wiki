@@ -450,6 +450,22 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
       [content, id]
     );
   }
+
+  async renameWikiPage(id, newTitle) {
+    await this.db.run(
+      'UPDATE wiki_pages SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [newTitle, id]
+    );
+  }
+
+  async findWikiPageById(id) {
+    return await this.db.get(`
+      SELECT w.*, u.username as author_username 
+      FROM wiki_pages w 
+      JOIN users u ON w.author_id = u.id 
+      WHERE w.id = ?
+    `, [id]);
+  }
 }
 
 module.exports = DatabaseManager;

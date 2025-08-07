@@ -62,6 +62,8 @@ interface WikiContextType {
   // États de recherche
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  searchResults: WikiPage[];
+  searchInPages: (term: string) => WikiPage[];
 }
 
 // Créer le contexte
@@ -94,6 +96,44 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<WikiPage[]>([]);
+
+  // Fonction de recherche dans les pages
+  const searchInPages = (term: string): WikiPage[] => {
+    if (!term || term.length < 2) {
+      return [];
+    }
+    
+    const results: WikiPage[] = [];
+    const searchTermLower = term.toLowerCase();
+    
+    for (const [, page] of Object.entries(wikiData)) {
+      // Rechercher dans le titre
+      if (page.title.toLowerCase().includes(searchTermLower)) {
+        results.push(page);
+        continue;
+      }
+      
+      // Rechercher dans le contenu
+      if (page.content.toLowerCase().includes(searchTermLower)) {
+        results.push(page);
+        continue;
+      }
+      
+      // Rechercher dans les sections si elles existent
+      if (page.sections) {
+        const sectionMatch = page.sections.some(section => 
+          section.title.toLowerCase().includes(searchTermLower) ||
+          section.content.toLowerCase().includes(searchTermLower)
+        );
+        if (sectionMatch) {
+          results.push(page);
+        }
+      }
+    }
+    
+    return results;
+  };
 
   // Fonction pour enrichir une page avec des sections temporaires
   const enrichPageWithSections = (page: WikiPage): WikiPage => {
@@ -102,18 +142,57 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
       return page;
     }
     
-    // Sinon, créer une section par défaut avec le contenu
-    const defaultSection = {
-      id: 'main-content',
-      title: 'Contenu principal',
-      content: page.content || '',
-      lastModified: page.updated_at,
-      author: page.author_username
-    };
+    // Parser le contenu pour extraire les sections
+    const content = page.content || '';
+    const sections = [];
+    
+    // Regex pour trouver les sections délimitées
+    const sectionRegex = /<!-- SECTION:([^:]+):([^-]+) -->([\s\S]*?)<!-- END_SECTION:\1 -->/g;
+    let match;
+    
+    // Extraire toutes les sections délimitées
+    while ((match = sectionRegex.exec(content)) !== null) {
+      const [, sectionId, sectionTitle, sectionContent] = match;
+      
+      sections.push({
+        id: sectionId,
+        title: sectionTitle.trim(),
+        content: sectionContent.trim(),
+        lastModified: page.updated_at,
+        author: page.author_username
+      });
+    }
+    
+    // Si aucune section délimitée n'est trouvée, créer une section par défaut
+    if (sections.length === 0) {
+      const defaultSection = {
+        id: 'main-content',
+        title: 'Contenu principal',
+        content: content || '',
+        lastModified: page.updated_at,
+        author: page.author_username
+      };
+      sections.push(defaultSection);
+    } else {
+      // Ajouter le contenu avant la première section comme section principale (si il y en a)
+      const firstSectionMatch = content.match(/<!-- SECTION:[^:]+:[^-]+ -->/);
+      if (firstSectionMatch && typeof firstSectionMatch.index === 'number' && firstSectionMatch.index > 0) {
+        const mainContent = content.substring(0, firstSectionMatch.index).trim();
+        if (mainContent) {
+          sections.unshift({
+            id: 'main-content',
+            title: 'Contenu principal',
+            content: mainContent,
+            lastModified: page.updated_at,
+            author: page.author_username
+          });
+        }
+      }
+    }
     
     return {
       ...page,
-      sections: [defaultSection]
+      sections: sections
     };
   };
 
@@ -240,7 +319,8 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
 
   // Fonctions utilitaires
   const isAdmin = (): boolean => {
-    return user?.isAdmin === true;
+    // Accepter both true et 1 pour is_admin (SQLite stocke les boolean comme 0/1)
+    return user?.isAdmin === true || user?.isAdmin === 1;
   };
 
   const canContribute = (): boolean => {
@@ -266,9 +346,31 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
 
   const updatePage = async (pageId: string, content: string): Promise<void> => {
     try {
-      await wikiService.updatePage(pageId, content);
+      // Vérifier si c'est une mise à jour de section (format: "pageTitle:sectionId")
+      if (pageId.includes(':')) {
+        const [pageTitle, sectionId] = pageId.split(':');
+        const page = wikiData[pageTitle];
+        
+        if (!page) {
+          throw new Error(`Page "${pageTitle}" non trouvée`);
+        }
+        
+        // Remplacer le contenu de la section spécifique
+        const sectionRegex = new RegExp(
+          `(<!-- SECTION:${sectionId}:[^-]+ -->)[\\s\\S]*?(<!-- END_SECTION:${sectionId} -->)`,
+          'g'
+        );
+        
+        const updatedContent = page.content.replace(sectionRegex, `$1\n${content}\n$2`);
+        await wikiService.updatePage(pageTitle, updatedContent);
+        logger.success(`✅ Section mise à jour`);
+      } else {
+        // Mise à jour de page complète
+        await wikiService.updatePage(pageId, content);
+        logger.success(`✅ Page mise à jour`);
+      }
+      
       await refreshWikiData(); // Recharger les données
-      logger.success(`✅ Page mise à jour`);
     } catch (error) {
       logger.error('❌ Erreur lors de la mise à jour', error instanceof Error ? error.message : String(error));
     }
@@ -300,8 +402,28 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
 
   const addSection = async (title: string): Promise<string | null> => {
     try {
-      // Pour le moment, on crée une nouvelle page (la gestion des sections sera ajoutée plus tard)
-      return await addPage(title);
+      // Générer un ID unique pour la section
+      const sectionId = `section-${Date.now()}`;
+      
+      // Obtenir la page actuelle
+      const currentPageTitle = currentPage;
+      const page = wikiData[currentPageTitle];
+      
+      if (!page) {
+        logger.error('❌ Page courante non trouvée');
+        return null;
+      }
+      
+      // Ajouter la nouvelle section au contenu existant
+      const newSectionContent = `\n\n<!-- SECTION:${sectionId}:${title} -->\n# ${title}\n\nContenu de la nouvelle section...\n<!-- END_SECTION:${sectionId} -->\n`;
+      const updatedContent = page.content + newSectionContent;
+      
+      // Mettre à jour la page avec le nouveau contenu
+      await wikiService.updatePage(currentPageTitle, updatedContent);
+      await refreshWikiData(); // Recharger les données
+      
+      logger.success(`✅ Section "${title}" ajoutée`);
+      return sectionId;
     } catch (error) {
       logger.error('❌ Erreur lors de l\'ajout de section', error instanceof Error ? error.message : String(error));
       return null;
@@ -358,7 +480,9 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     
     // États de recherche
     searchTerm,
-    setSearchTerm
+    setSearchTerm,
+    searchResults,
+    searchInPages
   };
 
   return (
