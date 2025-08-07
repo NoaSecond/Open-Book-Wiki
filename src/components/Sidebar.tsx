@@ -6,6 +6,10 @@ import { useWiki } from '../context/WikiContext';
 import { getConfigService } from '../services/configService';
 import activityService, { ActivityLog } from '../services/activityService';
 import SvgIcon from './SvgIcon';
+import DragHandle from './DragHandle';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Type pour les éléments de navigation
 type NavigationItem = {
@@ -43,6 +47,7 @@ export const Sidebar: React.FC = () => {
     addPage,
     renamePage,
     deletePage,
+    reorderPages,
     user,
     isDarkMode,
     canContribute,
@@ -163,6 +168,306 @@ export const Sidebar: React.FC = () => {
     }
   };
 
+  // Fonction pour gérer le drag and drop
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const pageIds = dynamicNavigationItems.map(item => item.id);
+      const oldIndex = pageIds.indexOf(active.id as string);
+      const newIndex = pageIds.indexOf(over.id as string);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = [...pageIds];
+        const [removed] = newOrder.splice(oldIndex, 1);
+        newOrder.splice(newIndex, 0, removed);
+        
+        reorderPages(newOrder);
+        console.log('Pages réorganisées:', newOrder);
+      }
+    }
+  };
+
+  // Composant pour chaque élément draggable (pour respecter les Rules of Hooks)
+  const SortableItem: React.FC<{ 
+    item: NavigationItem; 
+    isActive: boolean; 
+    isBeingEdited: boolean; 
+  }> = ({ item, isActive, isBeingEdited }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: item.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <li ref={setNodeRef} style={style} className="relative">
+        {isBeingEdited ? (
+          // Mode édition
+          <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${
+            isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
+          }`}>
+            <SvgIcon 
+              name={item.iconName!} 
+              className={`w-5 h-5 flex-shrink-0 ${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`} 
+            />
+            <input
+              type="text"
+              value={editingPageTitle}
+              onChange={(e) => setEditingPageTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSavePageEdit();
+                if (e.key === 'Escape') handleCancelPageEdit();
+              }}
+              className={`flex-1 px-2 py-1 rounded border transition-colors ${
+                isDarkMode 
+                  ? 'bg-slate-600 border-slate-500 text-white placeholder-slate-300' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              placeholder="Nom de la page"
+              autoFocus
+            />
+            <div className="flex space-x-1">
+              <button
+                onClick={handleSavePageEdit}
+                className="text-green-500 hover:text-green-400 transition-colors"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCancelPageEdit}
+                className="text-red-500 hover:text-red-400 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Mode normal
+          <div className="flex items-center group">
+            {/* Handle de drag */}
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+              <DragHandle />
+            </div>
+            
+            <button
+              onClick={() => setCurrentPage(item.id)}
+              className={`flex-1 flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-cyan-600 text-white'
+                  : isDarkMode 
+                    ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <SvgIcon 
+                name={item.iconName!} 
+                className={`w-5 h-5 ${
+                  isActive 
+                    ? 'text-white' 
+                    : isDarkMode 
+                      ? 'text-slate-300' 
+                      : 'text-gray-700'
+                }`} 
+              />
+              <span className="truncate">{item.label}</span>
+            </button>
+            
+            {/* Menu d'options pour les admins */}
+            {isAdmin() && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowPageMenu(showPageMenu === item.id ? null : item.id)}
+                  className={`p-1 rounded transition-colors ${
+                    isDarkMode 
+                      ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' 
+                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                
+                {showPageMenu === item.id && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowPageMenu(null)}
+                    />
+                    <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 ${
+                      isDarkMode 
+                        ? 'bg-slate-800 border-slate-700' 
+                        : 'bg-white border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => handleEditPage(item.id, item.label)}
+                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${
+                          isDarkMode 
+                            ? 'text-slate-300 hover:bg-slate-700 hover:text-white' 
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        <span>Renommer</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeletePage(item.id, item.label)}
+                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-600 hover:text-white`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
+
+  // Composant pour chaque élément statique (non-draggable pour les non-admins)
+  const StaticItem: React.FC<{ 
+    item: NavigationItem; 
+    isActive: boolean; 
+    isBeingEdited: boolean; 
+  }> = ({ item, isActive, isBeingEdited }) => {
+    return (
+      <li className="relative">
+        {isBeingEdited ? (
+          // Mode édition
+          <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${
+            isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
+          }`}>
+            <SvgIcon 
+              name={item.iconName!} 
+              className={`w-5 h-5 flex-shrink-0 ${
+                isDarkMode ? 'text-slate-300' : 'text-gray-700'
+              }`} 
+            />
+            <input
+              type="text"
+              value={editingPageTitle}
+              onChange={(e) => setEditingPageTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSavePageEdit();
+                if (e.key === 'Escape') handleCancelPageEdit();
+              }}
+              className={`flex-1 px-2 py-1 rounded border transition-colors ${
+                isDarkMode 
+                  ? 'bg-slate-600 border-slate-500 text-white placeholder-slate-300' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              placeholder="Nom de la page"
+              autoFocus
+            />
+            <div className="flex space-x-1">
+              <button
+                onClick={handleSavePageEdit}
+                className="text-green-500 hover:text-green-400 transition-colors"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCancelPageEdit}
+                className="text-red-500 hover:text-red-400 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Mode normal (sans drag handle)
+          <div className="flex items-center group">
+            <button
+              onClick={() => setCurrentPage(item.id)}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-cyan-600 text-white'
+                  : isDarkMode 
+                    ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <SvgIcon 
+                name={item.iconName!} 
+                className={`w-5 h-5 ${
+                  isActive 
+                    ? 'text-white' 
+                    : isDarkMode 
+                      ? 'text-slate-300' 
+                      : 'text-gray-700'
+                }`} 
+              />
+              <span className="truncate">{item.label}</span>
+            </button>
+            
+            {/* Menu d'options pour les admins */}
+            {isAdmin() && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowPageMenu(showPageMenu === item.id ? null : item.id)}
+                  className={`p-1 rounded transition-colors ${
+                    isDarkMode 
+                      ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' 
+                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                
+                {showPageMenu === item.id && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowPageMenu(null)}
+                    />
+                    <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 ${
+                      isDarkMode 
+                        ? 'bg-slate-800 border-slate-700' 
+                        : 'bg-white border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => handleEditPage(item.id, item.label)}
+                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${
+                          isDarkMode 
+                            ? 'text-slate-300 hover:bg-slate-700 hover:text-white' 
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        <span>Renommer</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeletePage(item.id, item.label)}
+                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-600 hover:text-white`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
+
   return (
     <aside className={`w-64 h-full flex flex-col border-r transition-colors duration-300 ${
       isDarkMode 
@@ -197,158 +502,77 @@ export const Sidebar: React.FC = () => {
 
       {/* Zone scrollable pour les catégories et sections */}
       <div className="flex-1 overflow-y-auto content-scrollbar px-4">
-        <ul className="space-y-2 mb-6">
-          {dynamicNavigationItems.map((item) => {
-            const isActive = currentPage === item.id;
-            const isBeingEdited = editingPageId === item.id;
-            
-            return (
-              <li key={item.id} className="relative">
-                {isBeingEdited ? (
-                  // Mode édition
-                  <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${
-                    isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
-                  }`}>
-                    <SvgIcon 
-                      name={item.iconName!} 
-                      className={`w-5 h-5 flex-shrink-0 ${
-                        isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                      }`} 
-                    />
-                    <input
-                      type="text"
-                      value={editingPageTitle}
-                      onChange={(e) => setEditingPageTitle(e.target.value)}
-                      className={`flex-1 px-2 py-1 text-sm rounded border-0 bg-transparent focus:outline-none ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSavePageEdit();
-                        } else if (e.key === 'Escape') {
-                          handleCancelPageEdit();
-                        }
-                      }}
-                    />
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={handleSavePageEdit}
-                        className={`p-1 rounded hover:bg-green-600 text-green-400 hover:text-white transition-colors`}
-                        title="Sauvegarder"
-                      >
-                        <Check className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={handleCancelPageEdit}
-                        className={`p-1 rounded hover:bg-red-600 text-red-400 hover:text-white transition-colors`}
-                        title="Annuler"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  // Mode normal
-                  <div className="flex items-center group">
+        {isAdmin() ? (
+          <DndContext 
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext 
+              items={dynamicNavigationItems.map(item => item.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="space-y-2 mb-6">
+                {dynamicNavigationItems.map((item) => (
+                  <SortableItem
+                    key={item.id}
+                    item={item}
+                    isActive={currentPage === item.id}
+                    isBeingEdited={editingPageId === item.id}
+                  />
+                ))}
+                
+                {/* Lien vers le profil si connecté */}
+                {user && (
+                  <li>
                     <button
-                      onClick={() => setCurrentPage(item.id)}
-                      className={`flex-1 flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                        isActive
+                      onClick={() => setCurrentPage('profile')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                        currentPage === 'profile'
                           ? 'bg-cyan-600 text-white'
                           : isDarkMode 
                             ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
                             : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
-                      <SvgIcon 
-                        name={item.iconName!} 
-                        className={`w-5 h-5 ${
-                          isActive 
-                            ? 'text-white' 
-                            : isDarkMode 
-                              ? 'text-slate-300' 
-                              : 'text-gray-700'
-                        }`} 
-                      />
-                      <span className="truncate">{item.label}</span>
+                      <User className="w-5 h-5" />
+                      <span>Mon Profil</span>
                     </button>
-                    
-                    {/* Options d'administration pour toutes les pages */}
-                    {isAdmin() && (
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowPageMenu(showPageMenu === item.id ? null : item.id)}
-                          className={`p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${
-                            isDarkMode 
-                              ? 'hover:bg-slate-600 text-slate-400 hover:text-slate-300' 
-                              : 'hover:bg-gray-200 text-gray-500 hover:text-gray-700'
-                          }`}
-                          title="Options"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                        
-                        {/* Menu déroulant */}
-                        {showPageMenu === item.id && (
-                          <>
-                            <div 
-                              className="fixed inset-0 z-10" 
-                              onClick={() => setShowPageMenu(null)}
-                            />
-                            <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 ${
-                              isDarkMode 
-                                ? 'bg-slate-800 border-slate-700' 
-                                : 'bg-white border-gray-200'
-                            }`}>
-                              <button
-                                onClick={() => handleEditPage(item.id, item.label)}
-                                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${
-                                  isDarkMode 
-                                    ? 'text-slate-300 hover:bg-slate-700 hover:text-white' 
-                                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                                }`}
-                              >
-                                <Edit3 className="w-4 h-4" />
-                                <span>Renommer</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeletePage(item.id, item.label)}
-                                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-600 hover:text-white`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                <span>Supprimer</span>
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  </li>
                 )}
+              </ul>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <ul className="space-y-2 mb-6">
+            {dynamicNavigationItems.map((item) => (
+              <StaticItem
+                key={item.id}
+                item={item}
+                isActive={currentPage === item.id}
+                isBeingEdited={editingPageId === item.id}
+              />
+            ))}
+            
+            {/* Lien vers le profil si connecté */}
+            {user && (
+              <li>
+                <button
+                  onClick={() => setCurrentPage('profile')}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                    currentPage === 'profile'
+                      ? 'bg-cyan-600 text-white'
+                      : isDarkMode 
+                        ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <User className="w-5 h-5" />
+                  <span>Mon Profil</span>
+                </button>
               </li>
-            );
-          })}
-          
-          {/* Lien vers le profil si connecté */}
-          {user && (
-            <li>
-              <button
-                onClick={() => setCurrentPage('profile')}
-                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                  currentPage === 'profile'
-                    ? 'bg-cyan-600 text-white'
-                    : isDarkMode 
-                      ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                <User className="w-5 h-5" />
-                <span>Mon Profil</span>
-              </button>
-            </li>
-          )}
-        </ul>
+            )}
+          </ul>
+        )}
 
         {/* Sections de la page courante */}
         {currentPage && wikiData[currentPage] && (() => {

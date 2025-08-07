@@ -55,6 +55,7 @@ interface WikiContextType {
   updatePage: (pageId: string, content: string) => Promise<void>;
   deletePage: (pageId: string) => Promise<void>;
   renamePage: (pageId: string, newTitle: string) => Promise<void>;
+  reorderPages: (pageIds: string[]) => Promise<void>;
   
   // Fonctions de gestion des sections (pour compatibilité)
   addSection: (title: string) => Promise<string | null>;
@@ -400,6 +401,17 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     }
   };
 
+  const reorderPages = async (pageIds: string[]): Promise<void> => {
+    try {
+      // Pour l'instant, nous allons simplement stocker l'ordre dans localStorage
+      // car le backend n'a pas encore de support pour l'ordre des pages
+      localStorage.setItem('wiki_pages_order', JSON.stringify(pageIds));
+      logger.success(`✅ Ordre des pages sauvegardé`);
+    } catch (error) {
+      logger.error('❌ Erreur lors de la réorganisation', error instanceof Error ? error.message : String(error));
+    }
+  };
+
   const addSection = async (title: string): Promise<string | null> => {
     try {
       // Générer un ID unique pour la section
@@ -473,6 +485,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     updatePage,
     deletePage,
     renamePage,
+    reorderPages,
     addSection,
     
     // Fonctions utilitaires pour les sections
