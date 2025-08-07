@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, LogOut, Settings, Database } from 'lucide-react';
+import { ChevronDown, LogOut, Settings } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
@@ -19,11 +19,6 @@ export const UserMenu: React.FC = () => {
 
   const handleAdminPanel = () => {
     setIsAdminPanelOpen(true);
-    setIsOpen(false);
-  };
-
-  const handleDatabase = () => {
-    setCurrentPage('database');
     setIsOpen(false);
   };
 
@@ -135,20 +130,6 @@ export const UserMenu: React.FC = () => {
                 >
                   <Settings className="w-4 h-4" />
                   <span>Panel Admin</span>
-                </button>
-              )}
-
-              {isAdmin() && (
-                <button
-                  onClick={handleDatabase}
-                  className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${
-                    isDarkMode 
-                      ? 'hover:bg-slate-700 text-white' 
-                      : 'hover:bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  <Database className="w-4 h-4" />
-                  <span>Base de données</span>
                 </button>
               )}
 

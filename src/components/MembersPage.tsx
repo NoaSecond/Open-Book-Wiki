@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Edit3, Calendar, Trophy, Shield, UserCheck, Eye, Trash2 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import type { User } from '../services/authService';
+import { DateUtils } from '../utils/dateUtils';
 
 // Type étendu pour l'affichage des membres avec propriétés optionnelles
 type DisplayUser = User & {
@@ -225,7 +226,7 @@ export const MembersPage: React.FC = () => {
               }`}>
                 <div className="flex items-center space-x-1">
                   <Calendar className="w-4 h-4" />
-                  <span>Membre depuis le {user.joinDate}</span>
+                  <span>Membre depuis le {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Trophy className="w-4 h-4" />

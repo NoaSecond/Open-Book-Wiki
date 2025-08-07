@@ -3,7 +3,6 @@ import { Calendar, User, Plus } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { ProfilePage } from './ProfilePage';
 import { MembersPage } from './MembersPage';
-import { DatabasePage } from './DatabasePage';
 import { CollapsibleSections } from './CollapsibleSections';
 import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
@@ -31,11 +30,6 @@ export const MainContent: React.FC = () => {
   // Si c'est la page membres, afficher le composant MembersPage
   if (currentPage === 'members') {
     return <MembersPage />;
-  }
-
-  // Si c'est la page database, afficher le composant DatabasePage
-  if (currentPage === 'database') {
-    return <DatabasePage />;
   }
   
   const currentPageData = wikiData[currentPage];

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   User, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X, Clock, ChevronRight
 } from 'lucide-react';
@@ -83,6 +83,7 @@ export const Sidebar: React.FC = () => {
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedIconIndex, setSelectedIconIndex] = useState(0);
+  const [orderUpdateTrigger, setOrderUpdateTrigger] = useState(0);
 
   // Créer les éléments de navigation dynamiquement à partir de wikiData
   const createNavigationItems = (): NavigationItem[] => {
@@ -90,18 +91,54 @@ export const Sidebar: React.FC = () => {
     
     // Ajouter toutes les pages depuis wikiData
     for (const [pageId, pageData] of Object.entries(wikiData)) {
+      // Assigner l'icône appropriée selon le titre de la page
+      let iconName = 'book-open'; // Icône par défaut
+      if (pageData.title === 'Accueil') {
+        iconName = 'home';
+      }
+      
       items.push({
         id: pageId,
         label: pageData.title,
         title: pageData.title,
-        iconName: 'book-open' // Toutes les pages utilisent la même icône par défaut
+        iconName: iconName
       });
+    }
+    
+    // Appliquer l'ordre personnalisé si il existe dans localStorage
+    try {
+      const savedOrder = localStorage.getItem('wiki_pages_order');
+      if (savedOrder) {
+        const pageOrder = JSON.parse(savedOrder) as string[];
+        
+        // Réorganiser les items selon l'ordre sauvegardé
+        const orderedItems: NavigationItem[] = [];
+        
+        // D'abord, ajouter les éléments dans l'ordre sauvegardé
+        pageOrder.forEach(pageId => {
+          const item = items.find(item => item.id === pageId);
+          if (item) {
+            orderedItems.push(item);
+          }
+        });
+        
+        // Ensuite, ajouter les nouvelles pages qui ne sont pas dans l'ordre sauvegardé
+        items.forEach(item => {
+          if (!pageOrder.includes(item.id)) {
+            orderedItems.push(item);
+          }
+        });
+        
+        return orderedItems;
+      }
+    } catch (error) {
+      console.warn('Erreur lors du chargement de l\'ordre des pages:', error);
     }
     
     return items;
   };
 
-  const dynamicNavigationItems = createNavigationItems();
+  const dynamicNavigationItems = useMemo(() => createNavigationItems(), [wikiData, orderUpdateTrigger]);
 
   // Fonction pour récupérer la version de l'application
   useEffect(() => {
@@ -173,7 +210,7 @@ export const Sidebar: React.FC = () => {
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
-      const pageIds = dynamicNavigationItems.map(item => item.id);
+      const pageIds = dynamicNavigationItems.map((item: NavigationItem) => item.id);
       const oldIndex = pageIds.indexOf(active.id as string);
       const newIndex = pageIds.indexOf(over.id as string);
       
@@ -182,6 +219,11 @@ export const Sidebar: React.FC = () => {
         const [removed] = newOrder.splice(oldIndex, 1);
         newOrder.splice(newIndex, 0, removed);
         
+        // Sauvegarder l'ordre localement et déclencher la re-render
+        localStorage.setItem('wiki_pages_order', JSON.stringify(newOrder));
+        setOrderUpdateTrigger(prev => prev + 1);
+        
+        // Appeler aussi la fonction du contexte pour la cohérence
         reorderPages(newOrder);
         console.log('Pages réorganisées:', newOrder);
       }
@@ -508,11 +550,11 @@ export const Sidebar: React.FC = () => {
             onDragEnd={handleDragEnd}
           >
             <SortableContext 
-              items={dynamicNavigationItems.map(item => item.id)}
+              items={dynamicNavigationItems.map((item: NavigationItem) => item.id)}
               strategy={verticalListSortingStrategy}
             >
               <ul className="space-y-2 mb-6">
-                {dynamicNavigationItems.map((item) => (
+                {dynamicNavigationItems.map((item: NavigationItem) => (
                   <SortableItem
                     key={item.id}
                     item={item}
@@ -544,7 +586,7 @@ export const Sidebar: React.FC = () => {
           </DndContext>
         ) : (
           <ul className="space-y-2 mb-6">
-            {dynamicNavigationItems.map((item) => (
+            {dynamicNavigationItems.map((item: NavigationItem) => (
               <StaticItem
                 key={item.id}
                 item={item}

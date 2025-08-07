@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Calendar, Edit3, Save, X, Award, Tag, Shield, UserCheck, Eye } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { AvatarEditor } from './AvatarEditor';
+import { DateUtils } from '../utils/dateUtils';
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUser, isDarkMode } = useWiki();
@@ -155,7 +156,7 @@ export const ProfilePage: React.FC = () => {
                 <div className={`flex items-center space-x-4 mt-3 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
-                    Membre depuis {user.joinDate}
+                    Membre depuis {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}
                   </span>
                   <span className="flex items-center">
                     <Award className="w-4 h-4 mr-1" />
@@ -259,7 +260,7 @@ export const ProfilePage: React.FC = () => {
           
           <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-green-400 mb-2">
-              {user.joinDate}
+              {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}
             </div>
             <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Membre depuis</div>
           </div>
