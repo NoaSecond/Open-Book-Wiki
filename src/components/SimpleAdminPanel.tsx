@@ -40,7 +40,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         try {
           const response = await fetch('http://localhost:3001/api/auth/users', {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
             }
           });
@@ -77,7 +77,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           }
 
           // Charger les activités
-          const activitiesResponse = await fetch('http://localhost:3001/api/activities', {
+          const activitiesResponse = await fetch('http://localhost:3001/api/activities/admin/all', {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'

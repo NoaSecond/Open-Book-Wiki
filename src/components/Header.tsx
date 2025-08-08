@@ -48,89 +48,91 @@ export const Header: React.FC = () => {
         <div className="max-w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  setCurrentPage('home');
-                  logger.debug('🏠 Navigation vers l\'accueil');
-                }}
-                className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
-                title="Retour à l'accueil"
-              >
-                <div className="w-10 h-10 flex items-center justify-center">
-                  <img 
-                    src="/Icon.svg" 
-                    alt={`${siteName} Icon`} 
-                    className="w-10 h-10 object-contain"
-                  />
-                </div>
-                <div>
-                <div className="flex items-center space-x-2">
-                  {isEditingTitle ? (
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className={`text-2xl font-bold bg-transparent border-b-2 border-cyan-500 focus:outline-none transition-colors duration-300 ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveTitle();
-                        if (e.key === 'Escape') handleCancelEdit();
-                      }}
-                      autoFocus
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setCurrentPage('home');
+                    logger.debug('🏠 Navigation vers l\'accueil');
+                  }}
+                  className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
+                  title="Retour à l'accueil"
+                >
+                  <div className="w-10 h-10 flex items-center justify-center">
+                    <img 
+                      src="/Icon.svg" 
+                      alt={`${siteName} Icon`} 
+                      className="w-10 h-10 object-contain"
                     />
-                  ) : (
-                    <h1 className={`text-2xl font-bold transition-colors duration-300 ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {siteName || 'Open Book Wiki'}
-                    </h1>
-                  )}
-                  
-                  {user?.isAdmin && (
-                    <div className="flex items-center space-x-1">
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
                       {isEditingTitle ? (
-                        <>
-                          <button
-                            onClick={handleSaveTitle}
-                            className={`p-1 rounded hover:bg-opacity-80 transition-colors ${
-                              isDarkMode ? 'hover:bg-slate-700 text-green-400' : 'hover:bg-gray-200 text-green-600'
-                            }`}
-                            title="Sauvegarder"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className={`p-1 rounded hover:bg-opacity-80 transition-colors ${
-                              isDarkMode ? 'hover:bg-slate-700 text-red-400' : 'hover:bg-gray-200 text-red-600'
-                            }`}
-                            title="Annuler"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setIsEditingTitle(true)}
-                          className={`p-1 rounded hover:bg-opacity-80 transition-colors ${
-                            isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className={`text-2xl font-bold bg-transparent border-b-2 border-cyan-500 focus:outline-none transition-colors duration-300 ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
                           }`}
-                          title="Modifier le nom du wiki"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveTitle();
+                            if (e.key === 'Escape') handleCancelEdit();
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <h1 className={`text-2xl font-bold transition-colors duration-300 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {siteName || 'Open Book Wiki'}
+                        </h1>
                       )}
                     </div>
-                  )}
-                </div>
-                  <p className={`text-sm transition-colors duration-300 ${
-                    isDarkMode ? 'text-slate-400' : 'text-gray-600'
-                  }`}>
-                    {siteDescription || 'Wiki open source'}
-                  </p>
-                </div>
-              </button>
+                    <p className={`text-sm transition-colors duration-300 ${
+                      isDarkMode ? 'text-slate-400' : 'text-gray-600'
+                    }`}>
+                      {siteDescription || 'Wiki open source'}
+                    </p>
+                  </div>
+                </button>
+                
+                {user?.isAdmin && (
+                  <div className="flex items-center space-x-1">
+                    {isEditingTitle ? (
+                      <>
+                        <button
+                          onClick={handleSaveTitle}
+                          className={`p-1 rounded hover:bg-opacity-80 transition-colors ${
+                            isDarkMode ? 'hover:bg-slate-700 text-green-400' : 'hover:bg-gray-200 text-green-600'
+                          }`}
+                          title="Sauvegarder"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className={`p-1 rounded hover:bg-opacity-80 transition-colors ${
+                            isDarkMode ? 'hover:bg-slate-700 text-red-400' : 'hover:bg-gray-200 text-red-600'
+                          }`}
+                          title="Annuler"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setIsEditingTitle(true)}
+                        className={`p-1 rounded hover:bg-opacity-80 transition-colors ${
+                          isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="Modifier le nom du wiki"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center space-x-4">

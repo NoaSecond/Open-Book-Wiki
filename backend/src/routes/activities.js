@@ -1,39 +1,16 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Middleware d'authentification
-function authenticateToken(req, res, next) {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Token d\'accès manquant' 
-    });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-fallback-secret-key');
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    return res.status(403).json({ 
-      success: false, 
-      message: 'Token invalide' 
-    });
-  }
-}
-
 // Récupérer toutes les activités de l'utilisateur connecté
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
     
     const db = req.db;
-    const activities = await db.getActivitiesByUser(req.userId, parseInt(limit), offset);
+    const activities = await db.getActivitiesByUser(req.user.userId, parseInt(limit), offset);
     
     // Parser les métadonnées JSON
     const parsedActivities = activities.map(activity => ({
@@ -61,10 +38,10 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Récupérer les activités d'aujourd'hui
-router.get('/today', authenticateToken, async (req, res) => {
+router.get('/today', requireAuth, async (req, res) => {
   try {
     const db = req.db;
-    const activities = await db.getTodayActivitiesByUser(req.userId);
+    const activities = await db.getTodayActivitiesByUser(req.user.userId);
     
     // Parser les métadonnées JSON
     const parsedActivities = activities.map(activity => ({
@@ -87,7 +64,7 @@ router.get('/today', authenticateToken, async (req, res) => {
 });
 
 // Rechercher des activités
-router.get('/search', authenticateToken, async (req, res) => {
+router.get('/search', requireAuth, async (req, res) => {
   try {
     const { q: searchTerm, limit = 50 } = req.query;
     
@@ -99,7 +76,7 @@ router.get('/search', authenticateToken, async (req, res) => {
     }
 
     const db = req.db;
-    const activities = await db.searchActivities(req.userId, searchTerm, parseInt(limit));
+    const activities = await db.searchActivities(req.user.userId, searchTerm, parseInt(limit));
     
     // Parser les métadonnées JSON
     const parsedActivities = activities.map(activity => ({
@@ -123,7 +100,7 @@ router.get('/search', authenticateToken, async (req, res) => {
 });
 
 // Créer une nouvelle activité
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const { type, title, description, icon, metadata } = req.body;
 
@@ -138,7 +115,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const db = req.db;
     
     const activityId = await db.createActivity({
-      userId: req.userId,
+      userId: req.user.userId,
       type,
       title,
       description: description || '',
@@ -147,7 +124,7 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
     // Récupérer l'activité créée pour la retourner
-    const newActivity = await db.getActivitiesByUser(req.userId, 1, 0);
+    const newActivity = await db.getActivitiesByUser(req.user.userId, 1, 0);
     const activity = newActivity[0];
 
     // Parser les métadonnées JSON
@@ -172,22 +149,12 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Route admin : récupérer toutes les activités de tous les utilisateurs
-router.get('/admin/all', authenticateToken, async (req, res) => {
+router.get('/admin/all', requireAuth, requireAdmin, async (req, res) => {
   try {
-    // Vérifier que l'utilisateur est admin
-    const db = req.db;
-    const user = await db.findUserById(req.userId);
-    
-    if (!user || !user.is_admin) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Accès refusé. Droits administrateur requis.' 
-      });
-    }
-
     const { page = 1, limit = 100 } = req.query;
     const offset = (page - 1) * limit;
     
+    const db = req.db;
     const activities = await db.getAllActivities(parseInt(limit), offset);
     
     // Parser les métadonnées JSON

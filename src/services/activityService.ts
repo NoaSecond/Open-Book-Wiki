@@ -206,21 +206,37 @@ class ActivityService {
   }
 
   async getLogs(limit: number = 50): Promise<ActivityLog[]> {
-    const result = await this.getActivities(1, limit);
-    const activities = result?.activities ?? [];
+    // Pour les administrateurs, utiliser l'endpoint admin
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/all?limit=${limit}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
 
-    // Convertir les Activity en ActivityLog pour compatibilité
-    return activities.map(activity => ({
-      id: activity.id,
-      timestamp: activity.created_at,
-      userId: activity.user_id,
-      username: activity.username || 'Utilisateur inconnu',
-      action: activity.type,
-      target: activity.metadata?.target,
-      details: activity.description || activity.title,
-      ip: activity.metadata?.ip,
-      userAgent: activity.metadata?.userAgent
-    }));
+      const data: ActivitiesResponse = await response.json();
+
+      if (data.success) {
+        const activities = data.activities || [];
+        // Convertir les Activity en ActivityLog pour compatibilité
+        return activities.map(activity => ({
+          id: activity.id,
+          timestamp: activity.created_at,
+          userId: activity.user_id,
+          username: activity.username || 'Utilisateur inconnu',
+          action: activity.type,
+          target: activity.metadata?.target,
+          details: activity.description || activity.title,
+          ip: activity.metadata?.ip,
+          userAgent: activity.metadata?.userAgent
+        }));
+      } else {
+        logger.warn('Échec de récupération des logs admin', { message: data.message });
+        return [];
+      }
+    } catch (error) {
+      logger.error('Erreur lors de la récupération des logs admin:', { error: String(error) });
+      return [];
+    }
   }
 
   async getActivityStats(): Promise<{
