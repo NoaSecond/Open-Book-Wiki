@@ -377,6 +377,30 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
     `);
   }
 
+  async updateUserProfile(userId, updates) {
+    const allowedFields = ['username', 'email', 'avatar'];
+    const fields = [];
+    const values = [];
+    
+    // Construire la requête dynamiquement avec uniquement les champs autorisés
+    allowedFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        fields.push(`${field} = ?`);
+        values.push(updates[field]);
+      }
+    });
+    
+    if (fields.length === 0) {
+      throw new Error('Aucun champ valide à mettre à jour');
+    }
+    
+    values.push(userId);
+    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+    
+    await this.db.run(query, values);
+    return await this.findUserById(userId);
+  }
+
   // Activity management methods
   async createActivity(activityData) {
     const { userId, type, title, description, icon, metadata } = activityData;

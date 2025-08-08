@@ -62,7 +62,8 @@ router.post('/login', async (req, res) => {
       email: user.email,
       isAdmin: user.is_admin,
       avatar: user.avatar,
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      tags: user.is_admin ? ['Administrateur'] : ['Contributeur']
     };
 
     // Enregistrer l'activité de connexion
@@ -149,7 +150,8 @@ router.post('/register', async (req, res) => {
       email: newUser.email,
       isAdmin: newUser.is_admin,
       avatar: newUser.avatar,
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      tags: newUser.is_admin ? ['Administrateur'] : ['Contributeur']
     };
 
     // Enregistrer l'activité d'inscription
@@ -195,7 +197,8 @@ router.get('/me', requireAuth, async (req, res) => {
       email: user.email,
       isAdmin: user.is_admin,
       avatar: user.avatar,
-      lastLogin: user.last_login
+      lastLogin: user.last_login,
+      tags: user.is_admin ? ['Administrateur'] : ['Contributeur']
     };
 
     res.json({
@@ -205,6 +208,69 @@ router.get('/me', requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+});
+
+// Route de mise à jour du profil utilisateur
+router.put('/profile', requireAuth, async (req, res) => {
+  try {
+    const { avatar, username, email } = req.body;
+    
+    // Validation des données
+    const updates = {};
+    if (avatar) updates.avatar = avatar;
+    if (username) updates.username = username;
+    if (email) updates.email = email;
+    
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aucune donnée à mettre à jour'
+      });
+    }
+    
+    // Mettre à jour le profil
+    const updatedUser = await req.db.updateUserProfile(req.user.userId, updates);
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+    
+    // Préparer les données utilisateur (sans le hash du mot de passe)
+    const userData = {
+      id: updatedUser.id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      isAdmin: updatedUser.is_admin,
+      avatar: updatedUser.avatar,
+      lastLogin: updatedUser.last_login,
+      tags: updatedUser.is_admin ? ['Administrateur'] : ['Contributeur']
+    };
+    
+    // Enregistrer l'activité de mise à jour
+    await req.db.createActivity({
+      userId: updatedUser.id,
+      type: 'auth',
+      title: 'Profil mis à jour',
+      description: `Mise à jour du profil de ${updatedUser.username}`,
+      icon: 'user'
+    });
+    
+    res.json({
+      success: true,
+      message: 'Profil mis à jour avec succès',
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du profil:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'

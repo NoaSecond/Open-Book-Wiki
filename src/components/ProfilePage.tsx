@@ -167,7 +167,7 @@ export const ProfilePage: React.FC = () => {
                 {/* Tags utilisateur */}
                 <div className="mt-3">
                   <div className="flex flex-wrap gap-2">
-                    {user.tags.map((tag) => (
+                    {(user.tags || []).map((tag) => (
                       <span
                         key={tag}
                         className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white ${getTagColor(tag)}`}

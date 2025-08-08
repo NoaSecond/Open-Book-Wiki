@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, LogOut, Settings } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Grid3X3 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
@@ -128,7 +128,7 @@ export const UserMenu: React.FC = () => {
                       : 'hover:bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <Settings className="w-4 h-4" />
+                  <Grid3X3 className="w-4 h-4" />
                   <span>Panel Admin</span>
                 </button>
               )}

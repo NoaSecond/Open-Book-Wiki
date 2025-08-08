@@ -44,6 +44,7 @@ interface WikiContextType {
   // Fonctions utilitaires
   refreshWikiData: () => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
   isAdmin: () => boolean;
   canContribute: () => boolean;
   
@@ -240,6 +241,54 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
       logger.info('👋 Utilisateur déconnecté');
     } catch (error) {
       logger.error('❌ Erreur lors de la déconnexion', error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  // Fonction de mise à jour de l'utilisateur
+  const updateUser = async (userData: Partial<User>) => {
+    try {
+      if (!user) {
+        throw new Error('Aucun utilisateur connecté');
+      }
+      
+      // Mise à jour locale immédiate pour une meilleure UX
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      
+      // Envoyer la mise à jour au serveur
+      const token = localStorage.getItem('wiki_token');
+      if (!token) {
+        throw new Error('Token d\'authentification manquant');
+      }
+      
+      const response = await fetch('http://localhost:3001/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        // En cas d'erreur serveur, remettre l'ancien état
+        setUser(user);
+        throw new Error(data.message || 'Erreur lors de la mise à jour');
+      }
+      
+      // Mettre à jour avec les données du serveur
+      setUser(data.user);
+      logger.info('✅ Profil utilisateur mis à jour avec succès');
+      
+    } catch (error) {
+      logger.error('❌ Erreur lors de la mise à jour du profil', error instanceof Error ? error.message : String(error));
+      // Remettre l'ancien état en cas d'erreur
+      if (user) {
+        setUser(user);
+      }
+      throw error;
     }
   };
 
@@ -477,6 +526,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     // Fonctions utilitaires
     refreshWikiData,
     logout,
+    updateUser,
     isAdmin,
     canContribute,
     

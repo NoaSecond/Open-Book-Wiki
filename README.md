@@ -40,7 +40,20 @@ npm install
 cd ..
 ```
 
-3. **Démarrez l'application :**
+3. **Créez le dossier pour la base de données :**
+```bash
+mkdir backend/data
+```
+
+4. **Démarrez l'application :**
+
+Dans un premier terminal (Backend) :
+```bash
+cd backend
+npm start
+```
+
+4. **Démarrez l'application :**
 
 Dans un premier terminal (Backend) :
 ```bash
@@ -53,7 +66,7 @@ Dans un second terminal (Frontend) :
 npm run dev
 ```
 
-4. **Accédez à l'application :**
+5. **Accédez à l'application :**
 - Frontend : `http://localhost:5176`
 - API Backend : `http://localhost:3001`
 
