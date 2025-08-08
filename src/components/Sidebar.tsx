@@ -739,7 +739,7 @@ export const Sidebar: React.FC = () => {
             isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          <span>Projet sur GitHub</span>
+          <span>Open Book Wiki</span>
           <ExternalLink className="w-3 h-3" />
         </a>
         <div className={`text-xs transition-colors duration-300 ${
