@@ -40,9 +40,14 @@ interface WikiContextType {
   // État de chargement
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  loadingMessage: string;
+  setLoadingMessage: (message: string) => void;
+  isBackendConnected: boolean;
+  setIsBackendConnected: (connected: boolean) => void;
   
   // Fonctions utilitaires
   refreshWikiData: () => Promise<void>;
+  retryConnection: () => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => Promise<void>;
   isAdmin: () => boolean;
@@ -97,6 +102,8 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
   const [editingPageTitle, setEditingPageTitle] = useState<string | null>(null);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadingMessage, setLoadingMessage] = useState<string>('Chargement du guide complet...');
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [searchResults, setSearchResults] = useState<WikiPage[]>([]);
 
@@ -242,6 +249,75 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     }
   };
 
+  // Fonction pour réessayer la connexion au backend
+  const retryConnection = async () => {
+    try {
+      setIsLoading(true);
+      setLoadingMessage('Tentative de reconnexion...');
+      logger.info('🔄 Tentative de reconnexion au backend...');
+      
+      try {
+        // Test de connectivité backend simple (même logique que l'initialisation)
+        await Promise.race([
+          fetch('http://localhost:3001/api/auth/verify', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('wiki_token') || 'test'}`
+            }
+          }),
+          new Promise<Response>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout backend')), 3000)
+          )
+        ]);
+        
+        // Si on arrive ici, le backend répond, vérifier l'authentification
+        logger.info('✅ Backend disponible, vérification authentification...');
+        const currentUser = await authService.checkAuth();
+        
+        // Backend à nouveau disponible
+        setIsBackendConnected(true);
+        setLoadingMessage('Reconnecté ! Chargement des données...');
+        
+        if (currentUser) {
+          setUser(currentUser);
+          logger.info('👤 Utilisateur reconnecté:', currentUser.username);
+        }
+        
+        // Recharger les données wiki
+        await refreshWikiData();
+        
+        // Charger les préférences
+        const savedDarkMode = localStorage.getItem('wiki_dark_mode');
+        if (savedDarkMode !== null) {
+          setIsDarkMode(savedDarkMode === 'true');
+        }
+        
+        const savedCurrentPage = localStorage.getItem('wiki_current_page');
+        if (savedCurrentPage) {
+          setCurrentPage(savedCurrentPage);
+        }
+        
+        setIsLoading(false);
+        logger.success('✅ Reconnexion réussie');
+        
+      } catch (backendError) {
+        // Backend toujours indisponible
+        logger.warn('⚠️ Backend toujours indisponible:', backendError instanceof Error ? backendError.message : String(backendError));
+        setIsBackendConnected(false);
+        setLoadingMessage('Connexion à la base de données...');
+        // On reste en mode chargement, on ne fait PAS setIsLoading(false)
+        return;
+      }
+      
+    } catch (error) {
+      logger.warn('⚠️ Échec de la reconnexion');
+      setIsBackendConnected(false);
+      setLoadingMessage('Connexion à la base de données...');
+      // On reste en mode chargement
+    }
+  };
+
   // Fonction de déconnexion
   const logout = async () => {
     try {
@@ -304,64 +380,99 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
 
   // Effect pour initialiser l'application
   useEffect(() => {
+    const continueInitialization = async () => {
+      try {
+        setLoadingMessage('Chargement des pages wiki...');
+        // Charger les données wiki avec timeout
+        await Promise.race([
+          refreshWikiData(),
+          new Promise<void>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout wiki')), 3000)
+          )
+        ]);
+      } catch (wikiError) {
+        logger.info('ℹ️ Chargement des données par défaut');
+        // Les données par défaut sont déjà gérées dans refreshWikiData
+      }
+      
+      // Charger les préférences utilisateur depuis localStorage
+      setLoadingMessage('Chargement des préférences...');
+      const savedDarkMode = localStorage.getItem('wiki_dark_mode');
+      if (savedDarkMode !== null) {
+        setIsDarkMode(savedDarkMode === 'true');
+      }
+      
+      const savedCurrentPage = localStorage.getItem('wiki_current_page');
+      if (savedCurrentPage) {
+        setCurrentPage(savedCurrentPage);
+      }
+      
+      // Fin de l'initialisation réussie
+      setIsLoading(false);
+      logger.success('✅ Application initialisée');
+    };
+
     const initializeApp = async () => {
       try {
         logger.info('🚀 Initialisation de l\'application...');
+        setLoadingMessage('Chargement du guide complet...');
         
-        // Timeout global pour éviter un blocage
-        const initTimeout = setTimeout(() => {
-          logger.warn('⚠️ Timeout d\'initialisation - continuons sans backend');
-          setIsLoading(false);
-        }, 5000); // 5 secondes max
+        // Tentative de connexion au backend
+        setLoadingMessage('Connexion à la base de données...');
+        logger.info('🔍 Tentative de connexion au backend...');
         
         try {
-          // Vérifier l'authentification avec timeout
-          const currentUser = await Promise.race([
-            authService.getCurrentUser(),
-            new Promise<null>((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout auth')), 3000)
+          // Test de connectivité backend simple
+          await Promise.race([
+            fetch('http://localhost:3001/api/auth/verify', {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('wiki_token') || 'test'}`
+              }
+            }),
+            new Promise<Response>((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout backend')), 3000)
             )
           ]);
+          
+          // Si on arrive ici, le backend répond (même si auth échoue)
+          logger.info('✅ Backend disponible, vérification authentification...');
+          
+          // Maintenant vérifier l'authentification proprement
+          const currentUser = await authService.checkAuth();
+          
+          setIsBackendConnected(true);
+          setLoadingMessage('Chargement des données utilisateur...');
           
           if (currentUser) {
             setUser(currentUser);
             logger.info('👤 Utilisateur connecté:', currentUser.username);
           }
-        } catch (authError) {
-          logger.info('ℹ️ Pas d\'utilisateur connecté ou backend indisponible');
+          
+          // Continuer l'initialisation seulement si le backend est connecté
+          logger.info('📋 Continuation de l\'initialisation...');
+          await continueInitialization();
+          
+        } catch (backendError) {
+          logger.warn('❌ Échec de connexion au backend:', backendError instanceof Error ? backendError.message : String(backendError));
+          logger.info('ℹ️ Backend indisponible - mode hors ligne');
+          setIsBackendConnected(false);
+          setLoadingMessage('Connexion à la base de données...');
+          
+          // En mode hors ligne, on reste en chargement indéfiniment
+          // L'utilisateur pourra relancer manuellement ou attendre
+          // On ne fait PAS setIsLoading(false) ici
+          logger.info('🔄 Attente de reconnexion...');
+          return;
         }
-        
-        try {
-          // Charger les données wiki avec timeout
-          await Promise.race([
-            refreshWikiData(),
-            new Promise<void>((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout wiki')), 3000)
-            )
-          ]);
-        } catch (wikiError) {
-          logger.info('ℹ️ Chargement des données par défaut');
-          // Les données par défaut sont déjà gérées dans refreshWikiData
-        }
-        
-        // Charger les préférences utilisateur depuis localStorage
-        const savedDarkMode = localStorage.getItem('wiki_dark_mode');
-        if (savedDarkMode !== null) {
-          setIsDarkMode(savedDarkMode === 'true');
-        }
-        
-        const savedCurrentPage = localStorage.getItem('wiki_current_page');
-        if (savedCurrentPage) {
-          setCurrentPage(savedCurrentPage);
-        }
-        
-        clearTimeout(initTimeout);
         
       } catch (error) {
         logger.error('❌ Erreur lors de l\'initialisation', error instanceof Error ? error.message : String(error));
-      } finally {
-        setIsLoading(false);
-        logger.success('✅ Application initialisée');
+        // En cas d'erreur générale, on reste aussi en chargement
+        setIsBackendConnected(false);
+        setLoadingMessage('Connexion à la base de données...');
+        logger.info('🔄 Attente de reconnexion après erreur...');
       }
     };
 
@@ -532,9 +643,14 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     // État de chargement
     isLoading,
     setIsLoading,
+    loadingMessage,
+    setLoadingMessage,
+    isBackendConnected,
+    setIsBackendConnected,
     
     // Fonctions utilitaires
     refreshWikiData,
+    retryConnection,
     logout,
     updateUser,
     isAdmin,

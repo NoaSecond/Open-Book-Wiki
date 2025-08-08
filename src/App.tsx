@@ -9,7 +9,7 @@ import { getConfigService } from './services/configService';
 import logger from './utils/logger';
 
 const AppContent: React.FC = () => {
-  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData, isLoading } = useWiki();
+  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData, isLoading, loadingMessage, isBackendConnected, retryConnection } = useWiki();
   const configService = getConfigService();
   const siteName = configService.getSiteName();
   
@@ -23,8 +23,44 @@ const AppContent: React.FC = () => {
   }, [user, wikiData, siteName]);
   
   useEffect(() => {
-    // Masquer l'écran de chargement seulement quand l'initialisation est terminée
-    if (!isLoading) {
+    // Exposer la fonction de retry globalement
+    (window as any).retryBackendConnection = retryConnection;
+    
+    return () => {
+      // Nettoyer lors du démontage
+      delete (window as any).retryBackendConnection;
+    };
+  }, [retryConnection]);
+  
+  useEffect(() => {
+    // Mettre à jour le message de chargement dans l'écran de chargement HTML
+    const updateLoadingMessage = () => {
+      const loadingSubtitle = document.querySelector('.loading-subtitle');
+      if (loadingSubtitle && isLoading) {
+        loadingSubtitle.innerHTML = `${loadingMessage}<span class="loading-dots"></span>`;
+      }
+    };
+    
+    // Gérer l'affichage du bouton retry
+    const updateRetryButton = () => {
+      const retryButton = document.getElementById('retry-button');
+      if (retryButton) {
+        if (isLoading && !isBackendConnected && loadingMessage.includes('Connexion à la base de données')) {
+          retryButton.classList.add('show');
+        } else {
+          retryButton.classList.remove('show');
+        }
+      }
+    };
+    
+    updateLoadingMessage();
+    updateRetryButton();
+  }, [loadingMessage, isLoading, isBackendConnected]);
+  
+  useEffect(() => {
+    // Masquer l'écran de chargement seulement quand l'initialisation est terminée ET que le backend est connecté
+    // OU si on décide de continuer sans backend (pour l'instant, on reste en chargement)
+    if (!isLoading && isBackendConnected) {
       const hideLoadingScreen = () => {
         const loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen) {
@@ -43,7 +79,7 @@ const AppContent: React.FC = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [isLoading, isBackendConnected]);
   
   return (
     <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
