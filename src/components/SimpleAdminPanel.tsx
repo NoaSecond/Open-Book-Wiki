@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Activity, Users, Database, Eye, EyeOff, FileText, Edit3, Tag, Plus, Trash2, Save, Shield } from 'lucide-react';
+import { X, Activity, Users, Database, Eye, EyeOff, FileText, Edit3, Tag, Plus, Trash2, Save, Shield, Search } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import activityService, { ActivityLog } from '../services/activityService';
 import { UserProfileModal } from './UserProfileModal';
@@ -197,6 +197,77 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   const [tagPermissions, setTagPermissions] = useState<any[]>([]);
   const [selectedTagForPermissions, setSelectedTagForPermissions] = useState<any>(null);
   const [hasUnsavedPermissionChanges, setHasUnsavedPermissionChanges] = useState(false);
+
+  // États pour le tri et la recherche des utilisateurs
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [userSortBy, setUserSortBy] = useState<'permissions' | 'name' | 'email' | 'contributions' | 'joinDate'>('permissions');
+  const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Fonction pour obtenir le nombre de permissions d'un tag
+  const getTagPermissionCount = (tagName: string): number => {
+    const tagPerm = tagPermissions.find(tp => tp.name === tagName);
+    return tagPerm ? tagPerm.permissions.length : 0;
+  };
+
+  // Fonction pour obtenir le score de permissions maximum d'un utilisateur
+  const getUserMaxPermissionScore = (user: any): number => {
+    if (!user.tags || user.tags.length === 0) return 0;
+    return Math.max(...user.tags.map((tag: string) => getTagPermissionCount(tag)));
+  };
+
+  // Fonction de tri des utilisateurs
+  const sortUsers = (users: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
+    return [...users].sort((a, b) => {
+      let valueA, valueB;
+      
+      switch (sortBy) {
+        case 'permissions':
+          valueA = getUserMaxPermissionScore(a);
+          valueB = getUserMaxPermissionScore(b);
+          break;
+        case 'name':
+          valueA = a.username.toLowerCase();
+          valueB = b.username.toLowerCase();
+          break;
+        case 'email':
+          valueA = a.email.toLowerCase();
+          valueB = b.email.toLowerCase();
+          break;
+        case 'contributions':
+          valueA = a.contributions || 0;
+          valueB = b.contributions || 0;
+          break;
+        case 'joinDate':
+          valueA = new Date(a.created_at || 0).getTime();
+          valueB = new Date(b.created_at || 0).getTime();
+          break;
+        default:
+          valueA = getUserMaxPermissionScore(a);
+          valueB = getUserMaxPermissionScore(b);
+      }
+      
+      if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+      if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+      
+      // Tri secondaire par nom d'utilisateur
+      return a.username.localeCompare(b.username);
+    });
+  };
+
+  // Filtrer les utilisateurs par terme de recherche
+  const filteredUsers = allUsers.filter(user => {
+    if (!userSearchTerm) return true;
+    
+    const searchLower = userSearchTerm.toLowerCase();
+    return (
+      user.username.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower) ||
+      (user.tags || []).some((tag: string) => tag.toLowerCase().includes(searchLower))
+    );
+  });
+
+  // Appliquer le tri aux utilisateurs filtrés
+  const sortedUsers = sortUsers(filteredUsers, userSortBy, userSortOrder);
 
   useEffect(() => {
     setIsOpen(isOpenFromMenu);
@@ -648,81 +719,194 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         <div className="flex-1 overflow-auto p-4">
           {activeTab === 'users' && (
             <div>
-              <h2 className={`text-lg font-semibold mb-4 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}>
-                Utilisateurs ({allUsers.length})
-              </h2>
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex-1">
+                  <h2 className={`text-lg font-semibold mb-4 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    Utilisateurs ({filteredUsers.length}/{allUsers.length})
+                  </h2>
+                  
+                  {/* Barre de recherche */}
+                  <div className="relative">
+                    <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`} />
+                    <input
+                      type="text"
+                      placeholder="Rechercher par nom, email ou tag..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className={`w-full pl-10 pr-10 py-2 rounded-lg border ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    />
+                    {userSearchTerm && (
+                      <button
+                        onClick={() => setUserSearchTerm('')}
+                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
+                          isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                        } transition-colors`}
+                        title="Effacer la recherche"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Contrôles de tri */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex flex-col">
+                    <label className={`text-xs font-medium mb-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Trier par
+                    </label>
+                    <select
+                      value={userSortBy}
+                      onChange={(e) => setUserSortBy(e.target.value as any)}
+                      className={`px-3 py-2 rounded-lg border text-sm ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white' 
+                          : 'bg-white border-gray-300 text-gray-900'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    >
+                      <option value="permissions">Permissions</option>
+                      <option value="name">Nom</option>
+                      <option value="email">Email</option>
+                      <option value="contributions">Contributions</option>
+                      <option value="joinDate">Date d'inscription</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <label className={`text-xs font-medium mb-1 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Ordre
+                    </label>
+                    <button
+                      onClick={() => setUserSortOrder(userSortOrder === 'asc' ? 'desc' : 'asc')}
+                      className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600' 
+                          : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
+                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center gap-1`}
+                    >
+                      {userSortOrder === 'asc' ? (
+                        <>↑ Croissant</>
+                      ) : (
+                        <>↓ Décroissant</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid gap-4">
-                {allUsers.map(u => (
-                  <div
-                    key={u.id}
-                    className={`p-4 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600' 
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
-                            {u.avatar ? (
-                              <img 
-                                src={u.avatar} 
-                                alt="Avatar" 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Users className="w-5 h-5 text-white" />
-                            )}
+                {sortedUsers.length > 0 ? (
+                  sortedUsers.map(u => (
+                    <div
+                      key={u.id}
+                      className={`p-4 rounded-lg border ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600' 
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
+                              {u.avatar ? (
+                                <img 
+                                  src={u.avatar} 
+                                  alt="Avatar" 
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Users className="w-5 h-5 text-white" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className={`font-semibold ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}>
+                                {u.username}
+                              </h3>
+                              <p className={`text-sm ${
+                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                              }`}>
+                                {u.email}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className={`font-semibold ${
-                              isDarkMode ? 'text-white' : 'text-gray-900'
-                            }`}>
-                              {u.username}
-                            </h3>
-                            <p className={`text-sm ${
-                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                            }`}>
-                              {u.email}
-                            </p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {(u.tags || []).map((tag: string) => {
+                              const permissionCount = getTagPermissionCount(tag);
+                              return (
+                                <span
+                                  key={tag}
+                                  className="px-2 py-1 text-xs rounded text-white font-medium flex items-center gap-1"
+                                  style={{ backgroundColor: getTagColor(tag) }}
+                                  title={`${tag} - ${permissionCount} permissions`}
+                                >
+                                  {tag}
+                                  <span className="bg-white bg-opacity-20 px-1 rounded text-xs">
+                                    {permissionCount}
+                                  </span>
+                                </span>
+                              );
+                            })}
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {(u.tags || []).map((tag: string) => (
-                            <span
-                              key={tag}
-                              className="px-2 py-1 text-xs rounded text-white font-medium"
-                              style={{ backgroundColor: getTagColor(tag) }}
-                            >
-                              {tag}
+                        <div className="flex items-center space-x-3">
+                          <div className={`text-sm flex items-center gap-3 ${
+                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            <span>Contributions: {u.contributions || 0}</span>
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
+                            }`}>
+                              Max permissions: {getUserMaxPermissionScore(u)}
                             </span>
-                          ))}
+                          </div>
+                          <button
+                            onClick={() => handleEditUser(u)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              isDarkMode
+                                ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                            }`}
+                            title="Modifier le profil"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className={`text-sm ${
-                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                          Contributions: {u.contributions || 0}
-                        </div>
-                        <button
-                          onClick={() => handleEditUser(u)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            isDarkMode
-                              ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                              : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                          }`}
-                          title="Modifier le profil"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className={`text-center py-8 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {userSearchTerm ? (
+                      <div>
+                        <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Aucun utilisateur trouvé pour "{userSearchTerm}"</p>
+                        <p className="text-sm mt-1">Essayez avec d'autres termes de recherche</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Aucun utilisateur trouvé</p>
+                      </div>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
