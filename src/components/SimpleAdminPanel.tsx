@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Activity, Users, Database, Eye, EyeOff, FileText } from 'lucide-react';
+import { X, Activity, Users, Database, Eye, EyeOff, FileText, Edit3 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import activityService, { ActivityLog } from '../services/activityService';
+import { UserProfileModal } from './UserProfileModal';
 import logger from '../utils/logger';
 
 export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => void }> = ({ 
@@ -18,6 +19,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   const [dbStats, setDbStats] = useState<{users: any[], pages: any[], activities: any[]}>({ users: [], pages: [], activities: [] });
   const [dbActiveTab, setDbActiveTab] = useState<'users' | 'pages' | 'activities'>('users');
   const [showPasswords, setShowPasswords] = useState(false);
+
+  // États pour la modal de profil utilisateur
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
     setIsOpen(isOpenFromMenu);
@@ -98,6 +103,56 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       loadDatabaseData();
     }
   }, [isOpen]);
+
+  // Fonction pour ouvrir la modal de profil utilisateur
+  const handleEditUser = (user: any) => {
+    setSelectedUser(user);
+    setIsProfileModalOpen(true);
+  };
+
+  // Fonction pour sauvegarder les modifications de profil utilisateur
+  const handleSaveUserProfile = async (userData: any) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/auth/users/${userData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: userData.username,
+          email: userData.email,
+          bio: userData.bio,
+          tags: userData.tags,
+          avatar: userData.avatar
+        })
+      });
+
+      if (response.ok) {
+        // Recharger la liste des utilisateurs
+        const usersResponse = await fetch('http://localhost:3001/api/auth/users', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (usersResponse.ok) {
+          const data = await usersResponse.json();
+          setAllUsers(data.users || []);
+          setDbStats(prev => ({ ...prev, users: data.users || [] }));
+        }
+        
+        setIsProfileModalOpen(false);
+        setSelectedUser(null);
+      } else {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du profil utilisateur:', error);
+      throw error;
+    }
+  };
 
   // Vérifier que l'utilisateur est admin (après tous les hooks)
   if (!isAdmin()) {
@@ -186,12 +241,32 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                     }`}
                   >
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className={`font-semibold ${
-                          isDarkMode ? 'text-white' : 'text-gray-900'
-                        }`}>
-                          {u.username}
-                        </h3>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
+                            {u.avatar ? (
+                              <img 
+                                src={u.avatar} 
+                                alt="Avatar" 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Users className="w-5 h-5 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <h3 className={`font-semibold ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {u.username}
+                            </h3>
+                            <p className={`text-sm ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              {u.email}
+                            </p>
+                          </div>
+                        </div>
                         <div className="flex flex-wrap gap-1 mt-2">
                           {(u.tags || []).map((tag: string) => (
                             <span
@@ -211,10 +286,23 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                           ))}
                         </div>
                       </div>
-                      <div className={`text-sm ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        Contributions: {u.contributions || 0}
+                      <div className="flex items-center space-x-3">
+                        <div className={`text-sm ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          Contributions: {u.contributions || 0}
+                        </div>
+                        <button
+                          onClick={() => handleEditUser(u)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDarkMode
+                              ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                              : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                          }`}
+                          title="Modifier le profil"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -499,6 +587,20 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           )}
         </div>
       </div>
+
+      {/* Modal de profil utilisateur */}
+      {selectedUser && (
+        <UserProfileModal
+          user={selectedUser}
+          isOpen={isProfileModalOpen}
+          onClose={() => {
+            setIsProfileModalOpen(false);
+            setSelectedUser(null);
+          }}
+          onSave={handleSaveUserProfile}
+          isAdmin={true}
+        />
+      )}
     </div>
   );
 };

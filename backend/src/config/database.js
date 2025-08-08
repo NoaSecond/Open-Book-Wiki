@@ -52,6 +52,8 @@ class DatabaseManager {
           password_hash TEXT NOT NULL,
           is_admin BOOLEAN DEFAULT FALSE,
           avatar TEXT DEFAULT '/avatars/avatar-openbookwiki.svg',
+          bio TEXT DEFAULT '',
+          tags TEXT DEFAULT '',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           last_login DATETIME
         )
@@ -93,12 +95,36 @@ class DatabaseManager {
 
       console.log('Database tables initialized successfully');
       
+      // Migrate existing tables if needed
+      await this.migrateDatabase();
+      
       // Seed default data
       await this.seedDefaultData();
       
     } catch (error) {
       console.error('Error initializing database tables:', error);
       throw error;
+    }
+  }
+
+  async migrateDatabase() {
+    try {
+      // Check if bio and tags columns exist
+      const tableInfo = await this.db.all("PRAGMA table_info(users)");
+      const columns = tableInfo.map(col => col.name);
+      
+      if (!columns.includes('bio')) {
+        await this.db.run('ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ""');
+        console.log('Added bio column to users table');
+      }
+      
+      if (!columns.includes('tags')) {
+        await this.db.run('ALTER TABLE users ADD COLUMN tags TEXT DEFAULT ""');
+        console.log('Added tags column to users table');
+      }
+    } catch (error) {
+      console.error('Error during database migration:', error);
+      // Continue even if migration fails for non-critical columns
     }
   }
 
@@ -112,8 +138,16 @@ class DatabaseManager {
         const hashedPassword = await bcrypt.hash('admin123', 10);
         
         await this.db.run(
-          'INSERT INTO users (username, email, password_hash, is_admin, avatar) VALUES (?, ?, ?, ?, ?)',
-          ['admin', 'admin@openbookwiki.com', hashedPassword, true, '/avatars/avatar-openbookwiki.svg']
+          'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            'admin', 
+            'admin@openbookwiki.com', 
+            hashedPassword, 
+            true, 
+            '/avatars/avatar-openbookwiki.svg',
+            'Administrateur principal du wiki Open Book Wiki.',
+            'Administrateur'
+          ]
         );
 
         // Get the admin user ID
@@ -133,6 +167,49 @@ class DatabaseManager {
 
         console.log('Default admin user created successfully');
         console.log('Login credentials: admin / admin123');
+      }
+
+      // Create test users if they don't exist
+      const contributorUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['contributeur']);
+      if (!contributorUser) {
+        const hashedPassword = await bcrypt.hash('contrib123', 10);
+        
+        await this.db.run(
+          'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            'contributeur', 
+            'contributeur@openbookwiki.com', 
+            hashedPassword, 
+            false, 
+            '/avatars/avatar-blue.svg',
+            'Utilisateur contributeur qui peut créer et modifier des articles.',
+            'Contributeur'
+          ]
+        );
+
+        console.log('Test contributor user created successfully');
+        console.log('Login credentials: contributeur / contrib123');
+      }
+
+      const visitorUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['visiteur']);
+      if (!visitorUser) {
+        const hashedPassword = await bcrypt.hash('visit123', 10);
+        
+        await this.db.run(
+          'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            'visiteur', 
+            'visiteur@openbookwiki.com', 
+            hashedPassword, 
+            false, 
+            '/avatars/avatar-green.svg',
+            'Utilisateur visiteur avec accès en lecture seule.',
+            'Visiteur'
+          ]
+        );
+
+        console.log('Test visitor user created successfully');
+        console.log('Login credentials: visiteur / visit123');
       }
       
       // Check if default pages exist
@@ -371,14 +448,22 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
 
   async getAllUsers() {
     return await this.db.all(`
-      SELECT id, username, email, is_admin, avatar, created_at, last_login 
+      SELECT id, username, email, is_admin, avatar, bio, tags, created_at, last_login 
       FROM users 
       ORDER BY created_at DESC
     `);
   }
 
+  async getUserById(userId) {
+    return await this.db.get(`
+      SELECT id, username, email, is_admin, avatar, bio, tags, created_at, last_login 
+      FROM users 
+      WHERE id = ?
+    `, [userId]);
+  }
+
   async updateUserProfile(userId, updates) {
-    const allowedFields = ['username', 'email', 'avatar'];
+    const allowedFields = ['username', 'email', 'avatar', 'bio', 'tags'];
     const fields = [];
     const values = [];
     
