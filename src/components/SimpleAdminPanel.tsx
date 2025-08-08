@@ -1,9 +1,171 @@
-import React, { useState, useEffect } from 'react';
-import { X, Activity, Users, Database, Eye, EyeOff, FileText, Edit3, Tag, Plus, Trash2, Save } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Activity, Users, Database, Eye, EyeOff, FileText, Edit3, Tag, Plus, Trash2, Save, Shield } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import activityService, { ActivityLog } from '../services/activityService';
 import { UserProfileModal } from './UserProfileModal';
 import logger from '../utils/logger';
+
+// Composant pour éditer les permissions d'un tag
+const PermissionEditor: React.FC<{
+  tag: any;
+  allPermissions: any[];
+  onUpdate: (tagId: number, permissionIds: number[]) => void;
+  isDarkMode: boolean;
+  onUnsavedChanges?: (hasChanges: boolean) => void;
+}> = ({ tag, allPermissions, onUpdate, isDarkMode, onUnsavedChanges }) => {
+  const [selectedPermissions, setSelectedPermissions] = useState<number[]>(
+    tag.permissions.map((p: any) => p.id)
+  );
+  const [originalPermissions, setOriginalPermissions] = useState<number[]>(
+    tag.permissions.map((p: any) => p.id)
+  );
+
+  // Mettre à jour les permissions sélectionnées quand le tag change
+  useEffect(() => {
+    const newPermissions = tag.permissions.map((p: any) => p.id);
+    setSelectedPermissions(newPermissions);
+    setOriginalPermissions(newPermissions);
+  }, [tag.id, tag.permissions]);
+
+  // Détecter s'il y a des changements non sauvegardés
+  const hasUnsavedChanges = useMemo(() => {
+    if (selectedPermissions.length !== originalPermissions.length) return true;
+    return selectedPermissions.some(id => !originalPermissions.includes(id)) ||
+           originalPermissions.some(id => !selectedPermissions.includes(id));
+  }, [selectedPermissions, originalPermissions]);
+
+  // Notifier le parent des changements non sauvegardés
+  useEffect(() => {
+    if (onUnsavedChanges) {
+      onUnsavedChanges(hasUnsavedChanges);
+    }
+  }, [hasUnsavedChanges, onUnsavedChanges]);
+
+  const handlePermissionToggle = (permissionId: number) => {
+    setSelectedPermissions(prev => {
+      if (prev.includes(permissionId)) {
+        return prev.filter(id => id !== permissionId);
+      } else {
+        return [...prev, permissionId];
+      }
+    });
+  };
+
+  const handleSave = () => {
+    onUpdate(tag.id, selectedPermissions);
+    setOriginalPermissions([...selectedPermissions]);
+  };
+
+  const handleCancel = () => {
+    if (hasUnsavedChanges) {
+      if (confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment annuler ?')) {
+        setSelectedPermissions([...originalPermissions]);
+      }
+    }
+  };
+
+  // Grouper les permissions par catégorie
+  const permissionsByCategory = allPermissions.reduce((acc: Record<string, any[]>, permission) => {
+    if (!acc[permission.category]) {
+      acc[permission.category] = [];
+    }
+    acc[permission.category].push(permission);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const categoryLabels: Record<string, string> = {
+    admin: 'Administration',
+    content: 'Contenu',
+    user: 'Utilisateur',
+    general: 'Général'
+  };
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(permissionsByCategory).map(([category, permissions]) => (
+        <div key={category} className={`p-4 rounded-lg border ${
+          isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'
+        }`}>
+          <h5 className={`font-medium mb-3 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            {categoryLabels[category] || category}
+          </h5>
+          <div className="space-y-2">
+            {(permissions as any[]).map((permission: any) => (
+              <label key={permission.id} className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedPermissions.includes(permission.id)}
+                  onChange={() => handlePermissionToggle(permission.id)}
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <div className="flex-1">
+                  <div className={`text-sm font-medium ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {permission.name}
+                  </div>
+                  <div className={`text-xs ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {permission.description}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      
+      {/* Indicateur de changements non sauvegardés */}
+      {hasUnsavedChanges && (
+        <div className={`p-3 rounded-lg mb-4 border-l-4 ${
+          isDarkMode 
+            ? 'bg-yellow-900/30 border-yellow-500 text-yellow-300' 
+            : 'bg-yellow-50 border-yellow-400 text-yellow-800'
+        }`}>
+          <div className="flex items-center">
+            <div className={`w-2 h-2 rounded-full mr-2 ${
+              isDarkMode ? 'bg-yellow-400' : 'bg-yellow-500'
+            }`}></div>
+            <span className="text-sm font-medium">
+              Vous avez des modifications non sauvegardées
+            </span>
+          </div>
+        </div>
+      )}
+      
+      <div className="flex justify-end space-x-3">
+        {hasUnsavedChanges && (
+          <button
+            onClick={handleCancel}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              isDarkMode
+                ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            }`}
+          >
+            Annuler
+          </button>
+        )}
+        <button
+          onClick={handleSave}
+          className={`px-4 py-2 rounded-lg transition-colors ${
+            hasUnsavedChanges
+              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+              : isDarkMode
+                ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+                : 'bg-gray-300 hover:bg-gray-400 text-gray-600'
+          }`}
+          disabled={!hasUnsavedChanges}
+        >
+          {hasUnsavedChanges ? 'Sauvegarder les modifications' : 'Aucun changement'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => void }> = ({ 
   isOpenFromMenu = false, 
@@ -11,7 +173,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 }) => {
   const { isDarkMode, isAdmin, user, setUser } = useWiki();
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
-  const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'database' | 'tags'>('activity');
+  const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'database' | 'tags' | 'permissions'>('activity');
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]); // TODO: Créer une interface User appropriée
   
@@ -29,6 +191,12 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   const [editingTag, setEditingTag] = useState<any>(null);
   const [newTag, setNewTag] = useState({ name: '', color: '#3B82F6' });
   const [isAddingTag, setIsAddingTag] = useState(false);
+
+  // États pour l'onglet Permissions
+  const [permissions, setPermissions] = useState<any[]>([]);
+  const [tagPermissions, setTagPermissions] = useState<any[]>([]);
+  const [selectedTagForPermissions, setSelectedTagForPermissions] = useState<any>(null);
+  const [hasUnsavedPermissionChanges, setHasUnsavedPermissionChanges] = useState(false);
 
   useEffect(() => {
     setIsOpen(isOpenFromMenu);
@@ -123,10 +291,44 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         }
       };
 
+      // Charger les permissions et les permissions des tags
+      const loadPermissions = async () => {
+        try {
+          // Charger toutes les permissions
+          const permissionsResponse = await fetch('http://localhost:3001/api/permissions', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (permissionsResponse.ok) {
+            const permissionsData = await permissionsResponse.json();
+            setPermissions(permissionsData.permissions || []);
+          }
+
+          // Charger les permissions des tags
+          const tagPermissionsResponse = await fetch('http://localhost:3001/api/permissions/tags', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (tagPermissionsResponse.ok) {
+            const tagPermissionsData = await tagPermissionsResponse.json();
+            setTagPermissions(tagPermissionsData.tagPermissions || []);
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement des permissions:', error);
+        }
+      };
+
       loadLogs();
       loadUsers();
       loadDatabaseData();
       loadTags();
+      loadPermissions();
     }
   }, [isOpen]);
 
@@ -317,6 +519,62 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     }
   };
 
+  const handleUpdateTagPermissions = async (tagId: number, permissionIds: number[]) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/permissions/tags/${tagId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ permissionIds })
+      });
+
+      if (response.ok) {
+        // Recharger les permissions des tags
+        const tagPermissionsResponse = await fetch('http://localhost:3001/api/permissions/tags', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (tagPermissionsResponse.ok) {
+          const tagPermissionsData = await tagPermissionsResponse.json();
+          setTagPermissions(tagPermissionsData.tagPermissions || []);
+          
+          // Mettre à jour le tag sélectionné
+          const updatedTag = tagPermissionsData.tagPermissions.find((tp: any) => tp.id === tagId);
+          if (updatedTag) {
+            setSelectedTagForPermissions(updatedTag);
+          }
+        }
+      } else {
+        const errorData = await response.json();
+        alert('Erreur: ' + errorData.message);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des permissions:', error);
+      alert('Erreur lors de la mise à jour des permissions');
+    }
+  };
+
+  const handleTagSelectionForPermissions = (newTag: any) => {
+    if (hasUnsavedPermissionChanges) {
+      if (confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment changer de tag sans sauvegarder ?')) {
+        setSelectedTagForPermissions(newTag);
+        setHasUnsavedPermissionChanges(false);
+      }
+    } else {
+      setSelectedTagForPermissions(newTag);
+    }
+  };
+
+  const handlePermissionEditorUpdate = (tagId: number, permissionIds: number[]) => {
+    handleUpdateTagPermissions(tagId, permissionIds);
+    setHasUnsavedPermissionChanges(false);
+  };
+
   // Vérifier que l'utilisateur est admin (après tous les hooks)
   if (!isAdmin()) {
     return null;
@@ -364,11 +622,12 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
             { id: 'users', label: 'Utilisateurs', icon: Users },
             { id: 'activity', label: 'Activité', icon: Activity },
             { id: 'database', label: 'Base de données', icon: Database },
-            { id: 'tags', label: 'Tags', icon: Tag }
+            { id: 'tags', label: 'Tags', icon: Tag },
+            { id: 'permissions', label: 'Permissions', icon: Shield }
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'users' | 'activity' | 'database' | 'tags')}
+              onClick={() => setActiveTab(tab.id as 'users' | 'activity' | 'database' | 'tags' | 'permissions')}
               className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
                 activeTab === tab.id
                   ? isDarkMode
@@ -910,6 +1169,103 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                     Aucun tag trouvé
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Onglet Permissions */}
+          {activeTab === 'permissions' && (
+            <div className="space-y-6">
+              <div className={`p-6 border rounded-lg ${
+                isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
+              }`}>
+                <h3 className={`text-lg font-medium mb-4 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Gestion des Permissions par Tag
+                </h3>
+                <p className={`text-sm mb-6 ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Configurez les permissions pour chaque tag. Les utilisateurs héritent automatiquement des permissions de leurs tags.
+                </p>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Liste des tags */}
+                  <div>
+                    <h4 className={`text-md font-medium mb-3 ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Tags
+                    </h4>
+                    <div className="space-y-2">
+                      {tagPermissions.map(tagPerm => (
+                        <button
+                          key={tagPerm.id}
+                          onClick={() => handleTagSelectionForPermissions(tagPerm)}
+                          className={`w-full p-3 rounded-lg text-left transition-colors ${
+                            selectedTagForPermissions?.id === tagPerm.id
+                              ? isDarkMode
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-blue-100 text-blue-900 border border-blue-300'
+                              : isDarkMode
+                                ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                                : 'bg-white hover:bg-gray-50 border border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className="w-4 h-4 rounded"
+                              style={{ backgroundColor: tagPerm.color }}
+                            ></div>
+                            <div>
+                              <div className="font-medium">{tagPerm.name}</div>
+                              <div className={`text-sm ${
+                                selectedTagForPermissions?.id === tagPerm.id
+                                  ? isDarkMode ? 'text-blue-200' : 'text-blue-700'
+                                  : isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                              }`}>
+                                {tagPerm.permissions.length} permission(s)
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Permissions du tag sélectionné */}
+                  <div>
+                    {selectedTagForPermissions ? (
+                      <>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div
+                            className="w-4 h-4 rounded"
+                            style={{ backgroundColor: selectedTagForPermissions.color }}
+                          ></div>
+                          <h4 className={`text-md font-medium ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            Permissions de "{selectedTagForPermissions.name}"
+                          </h4>
+                        </div>
+                        <PermissionEditor
+                          tag={selectedTagForPermissions}
+                          allPermissions={permissions}
+                          onUpdate={handlePermissionEditorUpdate}
+                          isDarkMode={isDarkMode}
+                          onUnsavedChanges={setHasUnsavedPermissionChanges}
+                        />
+                      </>
+                    ) : (
+                      <div className={`text-center py-8 ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        Sélectionnez un tag pour voir et modifier ses permissions
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -98,11 +98,38 @@ class DatabaseManager {
         )
       `);
 
+      // Create permissions table
+      await this.db.run(`
+        CREATE TABLE IF NOT EXISTS permissions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE NOT NULL,
+          description TEXT,
+          category TEXT DEFAULT 'general',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create tag_permissions table (many-to-many relationship)
+      await this.db.run(`
+        CREATE TABLE IF NOT EXISTS tag_permissions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tag_id INTEGER NOT NULL,
+          permission_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
+          FOREIGN KEY (permission_id) REFERENCES permissions (id) ON DELETE CASCADE,
+          UNIQUE(tag_id, permission_id)
+        )
+      `);
+
       // Create indexes
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities (user_id)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities (created_at)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_wiki_pages_title ON wiki_pages (title)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_tags_name ON tags (name)');
+      await this.db.run('CREATE INDEX IF NOT EXISTS idx_permissions_name ON permissions (name)');
+      await this.db.run('CREATE INDEX IF NOT EXISTS idx_tag_permissions_tag_id ON tag_permissions (tag_id)');
+      await this.db.run('CREATE INDEX IF NOT EXISTS idx_tag_permissions_permission_id ON tag_permissions (permission_id)');
 
       console.log('Database tables initialized successfully');
       
@@ -423,6 +450,101 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
         }
         
         console.log('Default tags created successfully');
+      }
+
+      // Create default permissions if they don't exist
+      const permissionCount = await this.db.get('SELECT COUNT(*) as count FROM permissions');
+      
+      if (permissionCount.count === 0) {
+        const defaultPermissions = [
+          // Admin permissions
+          { name: 'admin_panel_access', description: 'Accès au panel d\'administration', category: 'admin' },
+          { name: 'user_management', description: 'Gestion des utilisateurs', category: 'admin' },
+          { name: 'tag_management', description: 'Gestion des tags', category: 'admin' },
+          { name: 'permission_management', description: 'Gestion des permissions', category: 'admin' },
+          { name: 'database_management', description: 'Gestion de la base de données', category: 'admin' },
+          { name: 'view_activity_admin', description: 'Voir l\'activité (admin)', category: 'admin' },
+          
+          // Content permissions
+          { name: 'create_pages', description: 'Créer des pages', category: 'content' },
+          { name: 'edit_pages', description: 'Modifier des pages', category: 'content' },
+          { name: 'delete_pages', description: 'Supprimer des pages', category: 'content' },
+          { name: 'protect_pages', description: 'Protéger/déprotéger des pages', category: 'content' },
+          { name: 'reorder_pages', description: 'Réorganiser les pages', category: 'content' },
+          { name: 'manage_sections', description: 'Gérer les sections dans les pages', category: 'content' },
+          
+          // User permissions
+          { name: 'edit_own_profile', description: 'Modifier son propre profil', category: 'user' },
+          { name: 'change_avatar', description: 'Changer son avatar', category: 'user' },
+          { name: 'view_activity', description: 'Voir l\'activité', category: 'user' }
+        ];
+        
+        for (const permission of defaultPermissions) {
+          await this.db.run(
+            'INSERT INTO permissions (name, description, category) VALUES (?, ?, ?)',
+            [permission.name, permission.description, permission.category]
+          );
+        }
+        
+        console.log('Default permissions created successfully');
+      }
+
+      // Create default tag permissions if they don't exist
+      const tagPermissionCount = await this.db.get('SELECT COUNT(*) as count FROM tag_permissions');
+      
+      if (tagPermissionCount.count === 0) {
+        // Get tag and permission IDs
+        const adminTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Administrateur']);
+        const contributorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Contributeur']);
+        const visitorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Visiteur']);
+        
+        const allPermissions = await this.db.all('SELECT id, name FROM permissions');
+        const permissionMap = {};
+        allPermissions.forEach(p => permissionMap[p.name] = p.id);
+        
+        // Admin permissions (all permissions)
+        if (adminTag) {
+          for (const permission of allPermissions) {
+            await this.db.run(
+              'INSERT INTO tag_permissions (tag_id, permission_id) VALUES (?, ?)',
+              [adminTag.id, permission.id]
+            );
+          }
+        }
+        
+        // Contributor permissions (user permissions + edit pages)
+        if (contributorTag) {
+          const contributorPermissions = [
+            'edit_pages', 'edit_own_profile', 'change_avatar', 'view_activity'
+          ];
+          
+          for (const permName of contributorPermissions) {
+            if (permissionMap[permName]) {
+              await this.db.run(
+                'INSERT INTO tag_permissions (tag_id, permission_id) VALUES (?, ?)',
+                [contributorTag.id, permissionMap[permName]]
+              );
+            }
+          }
+        }
+        
+        // Visitor permissions (user permissions only)
+        if (visitorTag) {
+          const visitorPermissions = [
+            'edit_own_profile', 'change_avatar', 'view_activity'
+          ];
+          
+          for (const permName of visitorPermissions) {
+            if (permissionMap[permName]) {
+              await this.db.run(
+                'INSERT INTO tag_permissions (tag_id, permission_id) VALUES (?, ?)',
+                [visitorTag.id, permissionMap[permName]]
+              );
+            }
+          }
+        }
+        
+        console.log('Default tag permissions created successfully');
       }
     } catch (error) {
       console.error('Error seeding default data:', error);

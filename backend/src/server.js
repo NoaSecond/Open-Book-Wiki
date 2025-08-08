@@ -14,6 +14,7 @@ const authRoutes = require('./routes/auth');
 const activityRoutes = require('./routes/activities');
 const wikiRoutes = require('./routes/wiki');
 const tagsRoutes = require('./routes/tags');
+const permissionsRoutes = require('./routes/permissions');
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -67,6 +68,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/wiki', wikiRoutes);
 app.use('/api/tags', tagsRoutes);
+app.use('/api/permissions', permissionsRoutes);
 
 // Route de santé
 app.get('/health', (req, res) => {
