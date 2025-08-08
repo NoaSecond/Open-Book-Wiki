@@ -220,7 +220,7 @@ Voici quelques exemples de syntaxe Markdown que vous pouvez utiliser :
             is_protected: false
           },
           {
-            title: 'Guide de démarrage',
+            title: 'Démarrage',
             content: `# Guide de démarrage rapide
 
 Ce guide vous aidera à prendre en main Open Book Wiki rapidement.
