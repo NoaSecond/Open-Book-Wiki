@@ -51,7 +51,7 @@ class DatabaseManager {
           email TEXT UNIQUE NOT NULL,
           password_hash TEXT NOT NULL,
           is_admin BOOLEAN DEFAULT FALSE,
-          avatar TEXT DEFAULT 'avatar-openbookwiki.svg',
+          avatar TEXT DEFAULT '/avatars/avatar-openbookwiki.svg',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           last_login DATETIME
         )
@@ -112,8 +112,8 @@ class DatabaseManager {
         const hashedPassword = await bcrypt.hash('admin123', 10);
         
         await this.db.run(
-          'INSERT INTO users (username, email, password_hash, is_admin) VALUES (?, ?, ?, ?)',
-          ['admin', 'admin@openbookwiki.com', hashedPassword, true]
+          'INSERT INTO users (username, email, password_hash, is_admin, avatar) VALUES (?, ?, ?, ?, ?)',
+          ['admin', 'admin@openbookwiki.com', hashedPassword, true, '/avatars/avatar-openbookwiki.svg']
         );
 
         // Get the admin user ID
@@ -339,7 +339,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
 
   // User management methods
   async createUser(userData) {
-    const { username, email, password, isAdmin = false, avatar = 'avatar-openbookwiki.svg' } = userData;
+    const { username, email, password, isAdmin = false, avatar = '/avatars/avatar-openbookwiki.svg' } = userData;
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const result = await this.db.run(
