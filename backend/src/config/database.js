@@ -88,10 +88,21 @@ class DatabaseManager {
         )
       `);
 
+      // Create tags table
+      await this.db.run(`
+        CREATE TABLE IF NOT EXISTS tags (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE NOT NULL,
+          color TEXT NOT NULL DEFAULT '#3B82F6',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
       // Create indexes
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities (user_id)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities (created_at)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_wiki_pages_title ON wiki_pages (title)');
+      await this.db.run('CREATE INDEX IF NOT EXISTS idx_tags_name ON tags (name)');
 
       console.log('Database tables initialized successfully');
       
@@ -393,6 +404,26 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
         
         console.log('Default wiki pages created successfully');
       }
+      
+      // Create default tags if they don't exist
+      const tagCount = await this.db.get('SELECT COUNT(*) as count FROM tags');
+      
+      if (tagCount.count === 0) {
+        const defaultTags = [
+          { name: 'Administrateur', color: '#DC2626' }, // Rouge
+          { name: 'Contributeur', color: '#2563EB' },   // Bleu
+          { name: 'Visiteur', color: '#6B7280' }        // Gris
+        ];
+        
+        for (const tag of defaultTags) {
+          await this.db.run(
+            'INSERT INTO tags (name, color) VALUES (?, ?)',
+            [tag.name, tag.color]
+          );
+        }
+        
+        console.log('Default tags created successfully');
+      }
     } catch (error) {
       console.error('Error seeding default data:', error);
       throw error;
@@ -574,6 +605,38 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
       JOIN users u ON w.author_id = u.id 
       WHERE w.id = ?
     `, [id]);
+  }
+
+  // Tags management methods
+  async getAllTags() {
+    return await this.db.all(`
+      SELECT * FROM tags 
+      ORDER BY name ASC
+    `);
+  }
+
+  async createTag(name, color) {
+    const result = await this.db.run(
+      'INSERT INTO tags (name, color) VALUES (?, ?)',
+      [name, color]
+    );
+    return result.lastID;
+  }
+
+  async updateTag(id, name, color) {
+    await this.db.run(
+      'UPDATE tags SET name = ?, color = ? WHERE id = ?',
+      [name, color, id]
+    );
+    return await this.db.get('SELECT * FROM tags WHERE id = ?', [id]);
+  }
+
+  async deleteTag(id) {
+    await this.db.run('DELETE FROM tags WHERE id = ?', [id]);
+  }
+
+  async getTagById(id) {
+    return await this.db.get('SELECT * FROM tags WHERE id = ?', [id]);
   }
 }
 

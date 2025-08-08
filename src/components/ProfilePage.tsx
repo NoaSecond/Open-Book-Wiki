@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, Calendar, Edit3, Save, X, Award, Tag, Shield, UserCheck, Eye } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { AvatarEditor } from './AvatarEditor';
@@ -8,23 +8,60 @@ export const ProfilePage: React.FC = () => {
   const { user, updateUser, isDarkMode } = useWiki();
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
+  const [tags, setTags] = useState<Array<{id: number, name: string, color: string}>>([]);
+  const [currentUser, setCurrentUser] = useState(user); // State local pour les données à jour
   const [formData, setFormData] = useState({
     username: user?.username || '',
     email: user?.email || '',
     bio: user?.bio || ''
   });
 
-  const getTagColor = (tag: string) => {
-    switch (tag) {
-      case 'Administrateur':
-        return isDarkMode ? 'bg-red-600' : 'bg-red-500';
-      case 'Contributeur':
-        return isDarkMode ? 'bg-blue-600' : 'bg-blue-500';
-      case 'Visiteur':
-        return isDarkMode ? 'bg-gray-600' : 'bg-gray-500';
-      default:
-        return isDarkMode ? 'bg-slate-600' : 'bg-slate-500';
-    }
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+          // Mettre à jour formData avec les nouvelles données
+          setFormData({
+            username: data.user.username || '',
+            email: data.user.email || '',
+            bio: data.user.bio || ''
+          });
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données utilisateur:', error);
+      }
+    };
+
+    const fetchTags = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/tags/public', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTags(data.tags || []);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des tags:', error);
+      }
+    };
+
+    fetchUserData();
+    fetchTags();
+  }, [user]); // Ajouter user comme dépendance
+
+  const getTagColor = (tagName: string) => {
+    const tag = tags.find(t => t.name === tagName);
+    return tag ? tag.color : '#6B7280'; // Couleur par défaut si tag non trouvé
   };
 
   const getTagIcon = (tag: string) => {
@@ -40,7 +77,7 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  if (!user) {
+  if (!user || !currentUser) {
     return (
       <div className={`flex-1 p-6 ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
         <div className="max-w-4xl mx-auto">
@@ -65,9 +102,9 @@ export const ProfilePage: React.FC = () => {
 
   const handleCancel = () => {
     setFormData({
-      username: user.username,
-      email: user.email || '',
-      bio: user.bio || ''
+      username: currentUser.username,
+      email: currentUser.email || '',
+      bio: currentUser.bio || ''
     });
     setIsEditing(false);
   };
@@ -94,9 +131,9 @@ export const ProfilePage: React.FC = () => {
               {/* Avatar */}
               <div className="relative">
                 <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
-                  {user.avatar ? (
+                  {currentUser.avatar ? (
                     <img 
-                      src={user.avatar} 
+                      src={currentUser.avatar} 
                       alt="Avatar utilisateur" 
                       className="w-full h-full object-cover"
                     />
@@ -145,10 +182,10 @@ export const ProfilePage: React.FC = () => {
                   </div>
                 ) : (
                   <div>
-                    <h1 className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{user.username}</h1>
+                    <h1 className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentUser.username}</h1>
                     <p className={`flex items-center ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                       <Mail className="w-4 h-4 mr-2" />
-                      {user.email}
+                      {currentUser.email}
                     </p>
                   </div>
                 )}
@@ -156,21 +193,22 @@ export const ProfilePage: React.FC = () => {
                 <div className={`flex items-center space-x-4 mt-3 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
-                    Membre depuis {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}
+                    Membre depuis {currentUser.joinDate ? DateUtils.formatDateShort(currentUser.joinDate) : 'N/A'}
                   </span>
                   <span className="flex items-center">
                     <Award className="w-4 h-4 mr-1" />
-                    {user.contributions} contributions
+                    {currentUser.contributions || 0} contributions
                   </span>
                 </div>
 
                 {/* Tags utilisateur */}
                 <div className="mt-3">
                   <div className="flex flex-wrap gap-2">
-                    {(user.tags || []).map((tag) => (
+                    {(currentUser.tags || []).map((tag) => (
                       <span
                         key={tag}
-                        className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white ${getTagColor(tag)}`}
+                        className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white"
+                        style={{ backgroundColor: getTagColor(tag) }}
                       >
                         {getTagIcon(tag)}
                         <span>{tag}</span>
@@ -235,8 +273,8 @@ export const ProfilePage: React.FC = () => {
             />
           ) : (
             <div className={isDarkMode ? 'text-slate-300' : 'text-gray-700'}>
-              {user.bio ? (
-                <p className="whitespace-pre-wrap">{user.bio}</p>
+              {currentUser.bio ? (
+                <p className="whitespace-pre-wrap">{currentUser.bio}</p>
               ) : (
                 <p className={`italic ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>Aucune biographie renseignée.</p>
               )}
@@ -247,7 +285,7 @@ export const ProfilePage: React.FC = () => {
         {/* Statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
-            <div className="text-3xl font-bold text-cyan-400 mb-2">{user.contributions}</div>
+            <div className="text-3xl font-bold text-cyan-400 mb-2">{currentUser.contributions || 0}</div>
             <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Contributions</div>
           </div>
           
@@ -260,7 +298,7 @@ export const ProfilePage: React.FC = () => {
           
           <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-green-400 mb-2">
-              {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}
+              {currentUser.joinDate ? DateUtils.formatDateShort(currentUser.joinDate) : 'N/A'}
             </div>
             <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Membre depuis</div>
           </div>
@@ -270,7 +308,7 @@ export const ProfilePage: React.FC = () => {
       {/* Modal d'édition d'avatar */}
       {showAvatarEditor && (
         <AvatarEditor
-          currentAvatar={user.avatar}
+          currentAvatar={currentUser.avatar}
           onSave={handleAvatarSave}
           onCancel={() => setShowAvatarEditor(false)}
         />

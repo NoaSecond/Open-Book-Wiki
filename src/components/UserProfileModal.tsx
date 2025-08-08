@@ -9,6 +9,7 @@ interface UserProfileModalProps {
   onClose: () => void;
   onSave: (userData: any) => Promise<void>;
   isAdmin?: boolean;
+  availableTags?: any[]; // Liste des tags avec leurs couleurs
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -16,7 +17,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  isAdmin = false
+  isAdmin = false,
+  availableTags = []
 }) => {
   const { isDarkMode } = useWiki();
   const [isEditing, setIsEditing] = useState(false);
@@ -40,17 +42,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     }
   }, [user]);
 
-  const getTagColor = (tag: string) => {
-    switch (tag) {
-      case 'Administrateur':
-        return isDarkMode ? 'bg-red-600' : 'bg-red-500';
-      case 'Contributeur':
-        return isDarkMode ? 'bg-blue-600' : 'bg-blue-500';
-      case 'Visiteur':
-        return isDarkMode ? 'bg-gray-600' : 'bg-gray-500';
-      default:
-        return isDarkMode ? 'bg-slate-600' : 'bg-slate-500';
-    }
+  const getTagColor = (tagName: string) => {
+    const tag = availableTags.find(t => t.name === tagName);
+    return tag ? tag.color : '#6B7280'; // Couleur par défaut si tag non trouvé
   };
 
   const getTagIcon = (tag: string) => {
@@ -233,28 +227,52 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               Tags utilisateur
             </h3>
             <div className="space-y-2">
-              {['Administrateur', 'Contributeur', 'Visiteur'].map((tag) => (
-                <label
-                  key={tag}
-                  className={`flex items-center space-x-3 ${
-                    isAdmin && isEditing ? 'cursor-pointer' : 'cursor-default'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.tags.includes(tag)}
-                    onChange={() => handleTagToggle(tag)}
-                    disabled={!isAdmin || !isEditing}
-                    className="rounded focus:ring-cyan-500"
-                  />
-                  <span
-                    className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white ${getTagColor(tag)}`}
+              {isEditing ? (
+                // Mode édition : afficher les checkboxes pour sélectionner les tags
+                availableTags.map((tagObj) => (
+                  <label
+                    key={tagObj.name}
+                    className={`flex items-center space-x-3 ${
+                      isAdmin ? 'cursor-pointer' : 'cursor-default'
+                    }`}
                   >
-                    {getTagIcon(tag)}
-                    <span>{tag}</span>
-                  </span>
-                </label>
-              ))}
+                    <input
+                      type="checkbox"
+                      checked={formData.tags.includes(tagObj.name)}
+                      onChange={() => handleTagToggle(tagObj.name)}
+                      disabled={!isAdmin}
+                      className="rounded focus:ring-cyan-500"
+                    />
+                    <span
+                      className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: getTagColor(tagObj.name) }}
+                    >
+                      {getTagIcon(tagObj.name)}
+                      <span>{tagObj.name}</span>
+                    </span>
+                  </label>
+                ))
+              ) : (
+                // Mode lecture : afficher seulement les tags attribués à l'utilisateur
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.length > 0 ? (
+                    formData.tags.map((tagName) => (
+                      <span
+                        key={tagName}
+                        className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white"
+                        style={{ backgroundColor: getTagColor(tagName) }}
+                      >
+                        {getTagIcon(tagName)}
+                        <span>{tagName}</span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Aucun tag attribué
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

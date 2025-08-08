@@ -122,9 +122,18 @@ class AuthService {
 
       if (data.success && data.token && data.user) {
         this.setToken(data.token);
-        this.setUser(data.user);
-        logger.info('Connexion réussie', { username: data.user.username });
-        return { success: true, message: data.message, user: data.user };
+        
+        // Récupérer les données complètes de l'utilisateur via /me
+        const completeUser = await this.verifyToken();
+        if (completeUser) {
+          logger.info('Connexion réussie', { username: completeUser.username });
+          return { success: true, message: data.message, user: completeUser };
+        } else {
+          // Fallback vers les données de login si /me échoue
+          this.setUser(data.user);
+          logger.info('Connexion réussie (fallback)', { username: data.user.username });
+          return { success: true, message: data.message, user: data.user };
+        }
       } else {
         logger.warn('Échec de connexion', { username, message: data.message });
         return { success: false, message: data.message };
@@ -167,7 +176,7 @@ class AuthService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/verify`, {
+      const response = await fetch(`${this.baseUrl}/me`, {
         method: 'GET',
         headers: this.getHeaders()
       });

@@ -13,6 +13,7 @@ const DatabaseManager = require('./config/database');
 const authRoutes = require('./routes/auth');
 const activityRoutes = require('./routes/activities');
 const wikiRoutes = require('./routes/wiki');
+const tagsRoutes = require('./routes/tags');
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -65,6 +66,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/wiki', wikiRoutes);
+app.use('/api/tags', tagsRoutes);
 
 // Route de santé
 app.get('/health', (req, res) => {

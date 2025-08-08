@@ -1,10 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, LogOut, Settings, Grid3X3 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
   const { user, logout, isDarkMode, setCurrentPage, isAdmin, setIsAdminPanelOpen } = useWiki();
   const [isOpen, setIsOpen] = useState(false);
+  const [availableTags, setAvailableTags] = useState<Array<{name: string, color: string}>>([]);
+
+  useEffect(() => {
+    fetchTags();
+  }, [user]); // Ajouter user comme dépendance
+
+  const fetchTags = async () => {
+    try {
+      const token = localStorage.getItem('wiki_token');
+      const response = await fetch('http://localhost:3001/api/tags/public', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableTags(data.tags || data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des tags:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -22,17 +45,9 @@ export const UserMenu: React.FC = () => {
     setIsOpen(false);
   };
 
-  const getTagColor = (tag: string) => {
-    switch (tag) {
-      case 'Administrateur':
-        return 'bg-red-500';
-      case 'Contributeur':
-        return 'bg-blue-500';
-      case 'Visiteur':
-        return 'bg-gray-500';
-      default:
-        return 'bg-slate-500';
-    }
+  const getTagColor = (tagName: string) => {
+    const tag = availableTags.find(t => t.name === tagName);
+    return tag ? tag.color : '#6b7280'; // Couleur par défaut (gray-500)
   };
 
   return (
@@ -92,15 +107,24 @@ export const UserMenu: React.FC = () => {
                   }`}>
                     {user?.username}
                   </div>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {user?.tags?.map((tag) => (
-                      <span
-                        key={tag}
-                        className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getTagColor(tag)}`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div className="flex items-center gap-1 mt-1">
+                    {user?.tags && user.tags.length > 0 && (
+                      <>
+                        <span
+                          className="px-2 py-1 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: getTagColor(user.tags[0]) }}
+                        >
+                          {user.tags[0]}
+                        </span>
+                        {user.tags.length > 1 && (
+                          <span className={`text-xs font-medium ${
+                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            +{user.tags.length - 1}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

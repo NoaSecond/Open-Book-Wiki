@@ -191,14 +191,37 @@ router.get('/me', requireAuth, async (req, res) => {
       });
     }
 
+    // Parse tags from database (stored as comma-separated string)
+    let userTags = [];
+    try {
+      if (user.tags) {
+        // Si c'est une chaîne, on la sépare par des virgules
+        if (typeof user.tags === 'string') {
+          userTags = user.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        } else {
+          // Si c'est déjà un array (ne devrait pas arriver)
+          userTags = Array.isArray(user.tags) ? user.tags : [];
+        }
+      } else {
+        // Tags par défaut selon le rôle
+        userTags = user.is_admin ? ['Administrateur'] : ['Contributeur'];
+      }
+    } catch (error) {
+      console.error('Erreur lors du parsing des tags:', error);
+      userTags = user.is_admin ? ['Administrateur'] : ['Contributeur'];
+    }
+
     const userData = {
       id: user.id,
       username: user.username,
       email: user.email,
       isAdmin: user.is_admin,
       avatar: user.avatar,
+      bio: user.bio,
       lastLogin: user.last_login,
-      tags: user.is_admin ? ['Administrateur'] : ['Contributeur']
+      tags: userTags,
+      contributions: user.contributions || 0,
+      joinDate: user.created_at
     };
 
     res.json({
