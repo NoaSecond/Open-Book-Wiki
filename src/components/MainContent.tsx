@@ -8,7 +8,7 @@ import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 
 export const MainContent: React.FC = () => {
-  const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, isDarkMode, addSection, canContribute, enrichPageWithSections, searchInPages } = useWiki();
+  const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, searchResults, isDarkMode, addSection, canContribute, enrichPageWithSections } = useWiki();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
@@ -18,9 +18,6 @@ export const MainContent: React.FC = () => {
       logger.debug('📊 Page vue', currentPage);
     }
   }, [currentPage, wikiData]);
-
-  // Obtenir les résultats de recherche si un terme est présent
-  const searchResults = searchTerm && searchTerm.length > 2 ? searchInPages(searchTerm) : [];
   
   // Si c'est la page profil, afficher le composant ProfilePage
   if (currentPage === 'profile') {

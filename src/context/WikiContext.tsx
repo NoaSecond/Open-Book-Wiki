@@ -137,6 +137,16 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     return results;
   };
 
+  // Mettre à jour les résultats de recherche quand le terme ou les données changent
+  useEffect(() => {
+    if (searchTerm && searchTerm.length >= 2) {
+      const results = searchInPages(searchTerm);
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchTerm, wikiData]);
+
   // Fonction pour enrichir une page avec des sections temporaires
   const enrichPageWithSections = (page: WikiPage): WikiPage => {
     // Si la page a déjà des sections, les utiliser
