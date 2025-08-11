@@ -22,7 +22,7 @@ export interface CollapsibleSectionsProps {
 }
 
 export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sections, pageId }) => {
-  const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, canContribute } = useWiki();
+  const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, canContribute, updatePage, refreshWikiData, wikiData } = useWiki();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     sections.length === 1 ? new Set([sections[0].id]) : new Set()
   );
@@ -36,14 +36,30 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = async (event: any) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
       const oldIndex = orderedSections.indexOf(active.id);
       const newIndex = orderedSections.indexOf(over.id);
       const newOrder = arrayMove(orderedSections, oldIndex, newIndex);
       setOrderedSections(newOrder);
-      // TODO: Appeler ici la sauvegarde côté backend si besoin
+
+      // Reconstruire le markdown de la page avec le nouvel ordre des sections
+      const page = wikiData[pageId];
+
+      if (!page || !Array.isArray(page.sections)) return;
+      // On prend le contenu de chaque section dans le bon ordre
+      const newContent = newOrder.map((sectionId) => {
+        const s = page.sections!.find((sec: any) => sec.id === sectionId);
+        if (!s) return '';
+        // On suppose que chaque section a bien les balises SECTION/END_SECTION
+        return `<!-- SECTION:${s.id}:${s.title} -->\n${s.content}\n<!-- END_SECTION:${s.id} -->`;
+      }).join('\n\n');
+
+      // On sauvegarde le nouvel ordre dans le backend
+      await updatePage(pageId, newContent);
+      // On rafraîchit les données pour que la sidebar soit à jour
+      await refreshWikiData();
     }
   };
 
