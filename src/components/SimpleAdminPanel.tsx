@@ -454,7 +454,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   // Fonction pour sauvegarder les modifications de profil utilisateur
   const handleSaveUserProfile = async (userData: Partial<User>) => {
     try {
-      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/auth/users/${userData.id}`, {
+  const response = await fetch(configService.getApiUrl(`/auth/users/${userData.id}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -561,7 +561,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
   const handleUpdateTag = async (tag: TagType) => {
     try {
-      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/tags/${tag.id}`, {
+  const response = await fetch(configService.getApiUrl(`/tags/${tag.id}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -601,7 +601,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     }
     
     try {
-      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/tags/${tagId}`, {
+  const response = await fetch(configService.getApiUrl(`/tags/${tagId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -634,7 +634,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
   const handleUpdateTagPermissions = async (tagId: number, permissionIds: number[]) => {
     try {
-      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/permissions/tags/${tagId}`, {
+  const response = await fetch(configService.getApiUrl(`/permissions/tags/${tagId}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
