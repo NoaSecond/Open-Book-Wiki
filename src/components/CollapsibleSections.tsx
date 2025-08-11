@@ -91,14 +91,19 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
   }, [sections]);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={() => setExpandedSections(new Set())}
+      onDragEnd={handleDragEnd}
+    >
       <SortableContext items={orderedSections} strategy={verticalListSortingStrategy}>
         <div className="space-y-4">
           {orderedSections.map((sectionId) => {
             const section = sectionMap[sectionId];
             const isExpanded = expandedSections.has(section.id);
             return (
-              <SortableSection key={section.id} id={section.id} isDarkMode={isDarkMode}>
+              <SortableSection key={section.id} id={section.id} isDarkMode={isDarkMode} isExpanded={isExpanded}>
                 <div
                   id={`section-${section.id}`}
                   className={`border rounded-lg overflow-hidden ${isDarkMode ? 'border-slate-600' : 'border-gray-200'}`}
