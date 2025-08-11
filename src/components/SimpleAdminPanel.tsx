@@ -182,6 +182,21 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
   const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'database' | 'tags' | 'permissions'>('activity');
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  // Grouper les logs par jour (YYYY-MM-DD)
+  const groupedActivityLogs = useMemo(() => {
+    return activityLogs.reduce((acc: Record<string, ActivityLog[]>, log) => {
+      const date = new Date(log.timestamp).toLocaleDateString('fr-CA');
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(log);
+      return acc;
+    }, {});
+  }, [activityLogs]);
+
+  // Pour gérer l'ouverture/fermeture des jours
+  const [openDays, setOpenDays] = useState<Record<string, boolean>>({});
+  const toggleDay = (date: string) => {
+    setOpenDays(prev => ({ ...prev, [date]: !prev[date] }));
+  };
   const [allUsers, setAllUsers] = useState<User[]>([]);
   
   // States for Database tab
@@ -925,63 +940,85 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
               }`}>
                 Logs d'activité récents
               </h2>
-              <div className="space-y-2">
-                {activityLogs.map(log => (
-                  <div
-                    key={log.id}
-                    className={`p-3 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600' 
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-lg">
-                          {activityService.getActionIcon(log.action)}
-                        </span>
-                        <div>
-                          <span className={`font-medium ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {log.username}
-                          </span>
-                          <span className={`ml-2 ${
-                            isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                          }`}>
-                            {activityService.formatAction(log.action)}
-                          </span>
-                          {log.target && (
-                            <span className={`ml-2 font-medium ${
-                              isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                            }`}>
-                              "{log.target}"
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span className={`text-sm ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {new Date(log.timestamp).toLocaleString('fr-FR')}
-                      </span>
-                    </div>
-                    {log.details && (
-                      <div className={`mt-2 text-sm ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {log.details}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {activityLogs.length === 0 && (
+              <div className="space-y-4">
+                {Object.keys(groupedActivityLogs).length === 0 && (
                   <div className={`text-center py-8 ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}>
                     Aucun log d'activité trouvé
                   </div>
                 )}
+                {Object.entries(groupedActivityLogs)
+                  .sort((a, b) => b[0].localeCompare(a[0]))
+                  .map(([date, logs]) => (
+                  <div key={date}>
+                    <button
+                      className={`w-full flex items-center justify-between px-4 py-2 rounded-lg border font-semibold text-left transition-colors ${
+                        isDarkMode
+                          ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                          : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200'
+                      }`}
+                      onClick={() => toggleDay(date)}
+                    >
+                      <span>{new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      <span className="ml-2 text-xs opacity-70">{logs.length} activité{logs.length > 1 ? 's' : ''}</span>
+                      <span className="ml-auto">{openDays[date] ? '▲' : '▼'}</span>
+                    </button>
+                    {openDays[date] && (
+                      <div className="space-y-2 mt-2">
+                        {logs.map(log => (
+                          <div
+                            key={log.id}
+                            className={`p-3 rounded-lg border ${
+                              isDarkMode 
+                                ? 'bg-gray-700 border-gray-600' 
+                                : 'bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-lg">
+                                  {activityService.getActionIcon(log.action)}
+                                </span>
+                                <div>
+                                  <span className={`font-medium ${
+                                    isDarkMode ? 'text-white' : 'text-gray-900'
+                                  }`}>
+                                    {log.username}
+                                  </span>
+                                  <span className={`ml-2 ${
+                                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                  }`}>
+                                    {activityService.formatAction(log.action)}
+                                  </span>
+                                  {log.target && (
+                                    <span className={`ml-2 font-medium ${
+                                      isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                                    }`}>
+                                      "{log.target}"
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className={`text-sm ${
+                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                              }`}>
+                                {new Date(log.timestamp).toLocaleTimeString('fr-FR')}
+                              </span>
+                            </div>
+                            {log.details && (
+                              <div className={`mt-2 text-sm ${
+                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                              }`}>
+                                {log.details}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}

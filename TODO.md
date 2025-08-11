@@ -10,8 +10,6 @@
 - Ajouter dans le user menu, un moyen de changer la langue
 - Ajouter dans la modale de modification de Sections markdown un moyen de gérer le text par langues
 
-<!-- Panel d'administration - Activité -->
-- Grouper les activitées par jours et pouvoir dérouler un jour pour avoir chaques activitées du jour.
-
 <!-- Pages -->
 - Je peux actuellement renommer ou supprimer un page, cependant j'aimerai qu'il y ait à la place la modale permettant de modifier l'icone et le titre de la page. Tu peux réutiliser la modale de création de page pour simplifier le code.
+- Je veux pouvoir réorganiser les sections parmis les pages avec la même metode de drag and drop que la réorganisation des pages.
