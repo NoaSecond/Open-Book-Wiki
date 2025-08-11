@@ -464,15 +464,20 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
           { name: 'permission_management', description: 'Gestion des permissions', category: 'admin' },
           { name: 'database_management', description: 'Gestion de la base de données', category: 'admin' },
           { name: 'view_activity_admin', description: 'Voir l\'activité (admin)', category: 'admin' },
-          
-          // Content permissions
-          { name: 'create_pages', description: 'Créer des pages', category: 'content' },
-          { name: 'edit_pages', description: 'Modifier des pages', category: 'content' },
-          { name: 'delete_pages', description: 'Supprimer des pages', category: 'content' },
-          { name: 'protect_pages', description: 'Protéger/déprotéger des pages', category: 'content' },
-          { name: 'reorder_pages', description: 'Réorganiser les pages', category: 'content' },
-          { name: 'manage_sections', description: 'Gérer les sections dans les pages', category: 'content' },
-          
+
+          // Pages
+          { name: 'create_pages', description: 'Créer des pages', category: 'pages' },
+          { name: 'edit_pages', description: 'Modifier des pages', category: 'pages' },
+          { name: 'delete_pages', description: 'Supprimer des pages', category: 'pages' },
+          { name: 'protect_pages', description: 'Protéger/déprotéger des pages', category: 'pages' },
+          { name: 'reorder_pages', description: 'Réorganiser les pages', category: 'pages' },
+
+          // Sections
+          { name: 'create_sections', description: 'Créer des sections', category: 'sections' },
+          { name: 'delete_sections', description: 'Supprimer des sections', category: 'sections' },
+          { name: 'edit_sections', description: 'Modifier des sections', category: 'sections' },
+          { name: 'reorder_sections', description: 'Réorganiser les sections', category: 'sections' },
+
           // User permissions
           { name: 'edit_own_profile', description: 'Modifier son propre profil', category: 'user' },
           { name: 'change_avatar', description: 'Changer son avatar', category: 'user' },

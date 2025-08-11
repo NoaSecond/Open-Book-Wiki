@@ -81,13 +81,33 @@ const PermissionEditor: React.FC<{
 
   const categoryLabels: Record<string, string> = {
     admin: 'Administration',
-    content: 'Contenu',
-    user: 'Utilisateur',
-    general: 'Général'
+    pages: 'Pages',
+    sections: 'Sections',
+    user: 'Utilisateur'
   };
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end mb-2 gap-2">
+        {selectedPermissions.length < allPermissions.length && (
+          <button
+            type="button"
+            onClick={() => setSelectedPermissions(allPermissions.map(p => p.id))}
+            className={`px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors`}
+          >
+            Donner toutes les permissions
+          </button>
+        )}
+        {selectedPermissions.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setSelectedPermissions([])}
+            className={`px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors`}
+          >
+            Retirer toutes les permissions
+          </button>
+        )}
+      </div>
       {Object.entries(permissionsByCategory).map(([category, permissions]) => (
         <div key={category} className={`p-4 rounded-lg border ${
           isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'
