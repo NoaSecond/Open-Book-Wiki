@@ -12,4 +12,5 @@
 
 <!-- Pages -->
 - Je peux actuellement renommer ou supprimer un page, cependant j'aimerai qu'il y ait à la place la modale permettant de modifier l'icone et le titre de la page. Tu peux réutiliser la modale de création de page pour simplifier le code.
-- Je veux pouvoir réorganiser les sections parmis les pages avec la même metode de drag and drop que la réorganisation des pages.
+- Je veux pouvoir réorganiser les sections parmis les pages avec la même metode de drag and drop que la réorganisation des pages. Ne modifie pas la sidebar, je veux que la poignée pour drag and drop soit à gauche de chaque section de page. Tu pourras utiliser l'icone grip-vertical
+- Lorsque je clique sur une poignée, je veux que toutes les sections de la page actuelle s'enroulent.

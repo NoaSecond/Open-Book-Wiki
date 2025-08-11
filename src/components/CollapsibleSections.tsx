@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import SortableSection from './SortableSection';
 import { ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
-import { MarkdownRenderer } from './MarkdownRenderer';
-import logger from '../utils/logger';
-import DateUtils from '../utils/dateUtils';
 
-interface CollapsibleSectionsProps {
+
+import DateUtils from '../utils/dateUtils';
+import logger from '../utils/logger';
+import { MarkdownRenderer } from './MarkdownRenderer';
+
+export interface CollapsibleSectionsProps {
   sections: Array<{
     id: string;
     title: string;
@@ -19,12 +24,31 @@ interface CollapsibleSectionsProps {
 export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sections, pageId }) => {
   const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, canContribute } = useWiki();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    // Si une seule section, l'afficher dépliée par défaut
     sections.length === 1 ? new Set([sections[0].id]) : new Set()
   );
+  const [orderedSections, setOrderedSections] = useState<string[]>(sections.map((s) => s.id));
+
+  React.useEffect(() => {
+    setOrderedSections(sections.map((s) => s.id));
+  }, [sections]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      const oldIndex = orderedSections.indexOf(active.id);
+      const newIndex = orderedSections.indexOf(over.id);
+      const newOrder = arrayMove(orderedSections, oldIndex, newIndex);
+      setOrderedSections(newOrder);
+      // TODO: Appeler ici la sauvegarde côté backend si besoin
+    }
+  };
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(sectionId)) {
         newSet.delete(sectionId);
@@ -41,77 +65,69 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
     setIsEditModalOpen(true);
   };
 
-  return (
-    <div className="space-y-4">
-      {sections.map((section) => {
-        const isExpanded = expandedSections.has(section.id);
-        
-        return (
-          <div 
-            key={section.id}
-            id={`section-${section.id}`}
-            className={`border rounded-lg overflow-hidden ${
-              isDarkMode ? 'border-slate-600' : 'border-gray-200'
-            }`}
-          >
-            {/* Header de la section */}
-            <div 
-              className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
-                isDarkMode 
-                  ? 'bg-slate-700 hover:bg-slate-600' 
-                  : 'bg-gray-50 hover:bg-gray-100'
-              }`}
-              onClick={() => toggleSection(section.id)}
-            >
-              <div className="flex items-center space-x-3">
-                {isExpanded ? (
-                  <ChevronDown className="w-5 h-5" />
-                ) : (
-                  <ChevronRight className="w-5 h-5" />
-                )}
-                <h3 className={`text-lg font-semibold ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  {section.title}
-                </h3>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  {DateUtils.getRelativeTime(section.lastModified)} par {section.author}
-                </div>
-                {canContribute() && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(section.id);
-                    }}
-                    className={`p-2 rounded-md transition-colors ${
-                      isDarkMode 
-                        ? 'hover:bg-slate-500 text-slate-300' 
-                        : 'hover:bg-gray-200 text-gray-600'
-                    }`}
-                    title="Modifier cette section"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
+  // Map des sections par id pour accès rapide
+  const sectionMap = React.useMemo(() => {
+    const map: Record<string, CollapsibleSectionsProps['sections'][0]> = {};
+    sections.forEach((s) => {
+      map[s.id] = s;
+    });
+    return map;
+  }, [sections]);
 
-            {/* Contenu de la section */}
-            {isExpanded && (
-              <div className={`p-6 border-t ${
-                isDarkMode 
-                  ? 'bg-slate-800 border-slate-600' 
-                  : 'bg-white border-gray-200'
-              }`}>
-                <MarkdownRenderer content={section.content} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={orderedSections} strategy={verticalListSortingStrategy}>
+        <div className="space-y-4">
+          {orderedSections.map((sectionId) => {
+            const section = sectionMap[sectionId];
+            const isExpanded = expandedSections.has(section.id);
+            return (
+              <SortableSection key={section.id} id={section.id} isDarkMode={isDarkMode}>
+                <div
+                  id={`section-${section.id}`}
+                  className={`border rounded-lg overflow-hidden ${isDarkMode ? 'border-slate-600' : 'border-gray-200'}`}
+                >
+                  {/* Header de la section */}
+                  <div
+                    className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-50 hover:bg-gray-100'}`}
+                    onClick={() => toggleSection(section.id)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      {isExpanded ? (
+                        <ChevronDown className="w-5 h-5" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5" />
+                      )}
+                      <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{section.title}</h3>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{DateUtils.getRelativeTime(section.lastModified)} par {section.author}</div>
+                      {canContribute() && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(section.id);
+                          }}
+                          className={`p-2 rounded-md transition-colors ${isDarkMode ? 'hover:bg-slate-500 text-slate-300' : 'hover:bg-gray-200 text-gray-600'}`}
+                          title="Modifier cette section"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Contenu de la section */}
+                  {isExpanded && (
+                    <div className={`p-6 border-t ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-200'}`}>
+                      <MarkdownRenderer content={section.content} />
+                    </div>
+                  )}
+                </div>
+              </SortableSection>
+            );
+          })}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 };
