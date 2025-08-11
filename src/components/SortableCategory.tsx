@@ -60,7 +60,7 @@ export const SortableCategory: React.FC<SortableCategoryProps> = ({
   return (
     <li ref={setNodeRef} style={style} className="relative">
       {isBeingEdited ? (
-        // Mode édition
+        // Edit mode
         <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${
           isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
         }`}>
@@ -104,7 +104,7 @@ export const SortableCategory: React.FC<SortableCategoryProps> = ({
           </div>
         </div>
       ) : (
-        // Mode normal
+        // Normal mode
         <div className="flex items-center group">
           {/* Indicateur de drag à gauche - toujours visible */}
           <div className="mr-2" {...attributes} {...listeners}>

@@ -3,9 +3,11 @@ import { User, Mail, Calendar, Edit3, Save, X, Award, Tag, Shield, UserCheck, Ey
 import { useWiki } from '../context/WikiContext';
 import { AvatarEditor } from './AvatarEditor';
 import { DateUtils } from '../utils/dateUtils';
+import { getConfigService } from '../services/configService';
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUser, isDarkMode } = useWiki();
+  const configService = getConfigService();
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [tags, setTags] = useState<Array<{id: number, name: string, color: string}>>([]);
@@ -19,7 +21,7 @@ export const ProfilePage: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/auth/me', {
+        const response = await fetch(configService.getApiUrl('/auth/me'), {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
           },
@@ -41,7 +43,7 @@ export const ProfilePage: React.FC = () => {
 
     const fetchTags = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/tags/public', {
+        const response = await fetch(configService.getApiUrl('/tags/public'), {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
           },
@@ -57,7 +59,7 @@ export const ProfilePage: React.FC = () => {
 
     fetchUserData();
     fetchTags();
-  }, [user]); // Ajouter user comme dépendance
+  }, [user, configService]); // Ajouter user comme dépendance
 
   const getTagColor = (tagName: string) => {
     const tag = tags.find(t => t.name === tagName);

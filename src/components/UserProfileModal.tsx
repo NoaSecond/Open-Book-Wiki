@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Save, X, Shield, UserCheck, Eye, Tag, Edit3 } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { AvatarEditor } from './AvatarEditor';
+import type { User as UserType, Tag as TagType } from '../types';
 
 interface UserProfileModalProps {
-  user: any;
+  user: UserType;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: any) => Promise<void>;
+  onSave: (userData: Partial<UserType>) => Promise<void>;
   isAdmin?: boolean;
-  availableTags?: any[]; // Liste des tags avec leurs couleurs
+  availableTags?: TagType[]; // List of tags with their colors
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -44,7 +45,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   const getTagColor = (tagName: string) => {
     const tag = availableTags.find(t => t.name === tagName);
-    return tag ? tag.color : '#6B7280'; // Couleur par défaut si tag non trouvé
+    return tag ? tag.color : '#6B7280'; // Default color if tag not found
   };
 
   const getTagIcon = (tag: string) => {
@@ -228,7 +229,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </h3>
             <div className="space-y-2">
               {isEditing ? (
-                // Mode édition : afficher les checkboxes pour sélectionner les tags
+                // Edit mode: show checkboxes to select tags
                 availableTags.map((tagObj) => (
                   <label
                     key={tagObj.name}
@@ -253,7 +254,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </label>
                 ))
               ) : (
-                // Mode lecture : afficher seulement les tags attribués à l'utilisateur
+                // Read mode: show only tags assigned to user
                 <div className="flex flex-wrap gap-2">
                   {formData.tags.length > 0 ? (
                     formData.tags.map((tagName) => (

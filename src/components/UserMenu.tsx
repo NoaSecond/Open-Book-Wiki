@@ -1,33 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, LogOut, Settings, Grid3X3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, LogOut, Settings, Grid3X3, Sun, Moon } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 
 export const UserMenu: React.FC = () => {
-  const { user, logout, isDarkMode, setCurrentPage, isAdmin, setIsAdminPanelOpen } = useWiki();
+  const { user, logout, isDarkMode, setCurrentPage, isAdmin, setIsAdminPanelOpen, toggleDarkMode } = useWiki();
   const [isOpen, setIsOpen] = useState(false);
-  const [availableTags, setAvailableTags] = useState<Array<{name: string, color: string}>>([]);
-
-  useEffect(() => {
-    fetchTags();
-  }, [user]); // Ajouter user comme dépendance
-
-  const fetchTags = async () => {
-    try {
-      const token = localStorage.getItem('wiki_token');
-      const response = await fetch('http://localhost:3001/api/tags/public', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableTags(data.tags || data);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la récupération des tags:', error);
-    }
-  };
+  const [availableTags] = useState<Array<{name: string, color: string}>>([]);
 
   const handleLogout = async () => {
     await logout();
@@ -45,9 +23,14 @@ export const UserMenu: React.FC = () => {
     setIsOpen(false);
   };
 
+  const handleToggleTheme = () => {
+    toggleDarkMode();
+    setIsOpen(false);
+  };
+
   const getTagColor = (tagName: string) => {
     const tag = availableTags.find(t => t.name === tagName);
-    return tag ? tag.color : '#6b7280'; // Couleur par défaut (gray-500)
+    return tag ? tag.color : '#6b7280'; // Default color (gray-500)
   };
 
   return (
@@ -141,6 +124,18 @@ export const UserMenu: React.FC = () => {
               >
                 <Settings className="w-4 h-4" />
                 <span>Profil</span>
+              </button>
+
+              <button
+                onClick={handleToggleTheme}
+                className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${
+                  isDarkMode 
+                    ? 'hover:bg-slate-700 text-white' 
+                    : 'hover:bg-gray-100 text-gray-900'
+                }`}
+              >
+                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                <span>{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
               </button>
 
               {isAdmin() && (

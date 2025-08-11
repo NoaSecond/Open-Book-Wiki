@@ -1,6 +1,7 @@
 // Service d'activités utilisant l'API backend
 import authService from './authService';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
+import { getConfigService } from './configService';
 
 export interface Activity {
   id: number;
@@ -9,7 +10,7 @@ export interface Activity {
   title: string;
   description?: string;
   icon?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
   username?: string; // Ajouté par les requêtes admin
 }
@@ -18,7 +19,7 @@ export interface Activity {
 export interface ActivityLog {
   id: number;
   timestamp: string;
-  userId: number;
+  userId?: number;
   username: string;
   action: string;
   target?: string;
@@ -45,7 +46,11 @@ interface CreateActivityResponse {
 }
 
 class ActivityService {
-  private baseUrl = 'http://localhost:3001/api/activities';
+  private configService = getConfigService();
+
+  private getBaseUrl(): string {
+    return this.configService.getApiUrl('/activities');
+  }
 
   private getHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
@@ -62,7 +67,7 @@ class ActivityService {
 
   async getActivities(page: number = 1, limit: number = 50): Promise<{ activities: Activity[]; hasMore: boolean } | null> {
     try {
-      const response = await fetch(`${this.baseUrl}?page=${page}&limit=${limit}`, {
+      const response = await fetch(`${this.getBaseUrl()}?page=${page}&limit=${limit}`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -86,7 +91,7 @@ class ActivityService {
 
   async getTodayActivities(): Promise<Activity[] | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/today`, {
+      const response = await fetch(`${this.getBaseUrl()}/today`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -107,7 +112,7 @@ class ActivityService {
 
   async searchActivities(searchTerm: string, limit: number = 50): Promise<Activity[] | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/search?q=${encodeURIComponent(searchTerm)}&limit=${limit}`, {
+      const response = await fetch(`${this.getBaseUrl()}/search?q=${encodeURIComponent(searchTerm)}&limit=${limit}`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -131,10 +136,10 @@ class ActivityService {
     title: string,
     description?: string,
     icon?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<Activity | null> {
     try {
-      const response = await fetch(this.baseUrl, {
+      const response = await fetch(this.getBaseUrl(), {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -168,7 +173,7 @@ class ActivityService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/admin/all?page=${page}&limit=${limit}`, {
+      const response = await fetch(`${this.getBaseUrl()}/admin/all?page=${page}&limit=${limit}`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -208,7 +213,7 @@ class ActivityService {
   async getLogs(limit: number = 50): Promise<ActivityLog[]> {
     // Pour les administrateurs, utiliser l'endpoint admin
     try {
-      const response = await fetch(`${this.baseUrl}/admin/all?limit=${limit}`, {
+      const response = await fetch(`${this.getBaseUrl()}/admin/all?limit=${limit}`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -224,10 +229,10 @@ class ActivityService {
           userId: activity.user_id,
           username: activity.username || 'Utilisateur inconnu',
           action: activity.type,
-          target: activity.metadata?.target,
-          details: activity.description || activity.title,
-          ip: activity.metadata?.ip,
-          userAgent: activity.metadata?.userAgent
+          target: typeof activity.metadata?.target === 'string' ? activity.metadata.target : undefined,
+          details: activity.description || activity.title || '',
+          ip: typeof activity.metadata?.ip === 'string' ? activity.metadata.ip : undefined,
+          userAgent: typeof activity.metadata?.userAgent === 'string' ? activity.metadata.userAgent : undefined
         }));
       } else {
         logger.warn('Échec de récupération des logs admin', { message: data.message });
@@ -272,10 +277,10 @@ class ActivityService {
       userId: activity.user_id,
       username: activity.username || 'Utilisateur inconnu',
       action: activity.type,
-      target: activity.metadata?.target,
-      details: activity.description || activity.title,
-      ip: activity.metadata?.ip,
-      userAgent: activity.metadata?.userAgent
+      target: typeof activity.metadata?.target === 'string' ? activity.metadata.target : undefined,
+      details: activity.description || activity.title || '',
+      ip: typeof activity.metadata?.ip === 'string' ? activity.metadata.ip : undefined,
+      userAgent: typeof activity.metadata?.userAgent === 'string' ? activity.metadata.userAgent : undefined
     }));
 
     return {

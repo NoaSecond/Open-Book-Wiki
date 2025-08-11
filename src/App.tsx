@@ -24,11 +24,11 @@ const AppContent: React.FC = () => {
   
   useEffect(() => {
     // Exposer la fonction de retry globalement
-    (window as any).retryBackendConnection = retryConnection;
+    (window as typeof window & { retryBackendConnection?: () => void }).retryBackendConnection = retryConnection;
     
     return () => {
       // Nettoyer lors du démontage
-      delete (window as any).retryBackendConnection;
+      delete (window as typeof window & { retryBackendConnection?: () => void }).retryBackendConnection;
     };
   }, [retryConnection]);
   

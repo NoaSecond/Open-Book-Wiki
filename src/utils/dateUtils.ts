@@ -1,8 +1,8 @@
-// Utilitaires pour formater les dates
+// Date formatting utilities
 import logger from './logger';
 
 export class DateUtils {
-  // Formater une date au format français
+  // Format a date in French format
   static formatDate(dateString: string): string {
     try {
       const date = new Date(dateString);
@@ -10,56 +10,56 @@ export class DateUtils {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
 
-      // Si c'est aujourd'hui
+      // If it's today
       if (date.toDateString() === today.toDateString()) {
-        return `Aujourd'hui à ${date.toLocaleTimeString('fr-FR', { 
+        return `Today at ${date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
         })}`;
       }
 
-      // Si c'est hier
+      // If it's yesterday
       if (date.toDateString() === yesterday.toDateString()) {
-        return `Hier à ${date.toLocaleTimeString('fr-FR', { 
+        return `Yesterday at ${date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
         })}`;
       }
 
-      // Si c'est cette semaine
+      // If it's this week
       const daysDiff = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
       if (daysDiff < 7) {
-        const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-        return `${dayNames[date.getDay()]} à ${date.toLocaleTimeString('fr-FR', { 
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        return `${dayNames[date.getDay()]} at ${date.toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
         })}`;
       }
 
-      // Format standard français
+      // Standard French format
       return date.toLocaleDateString('fr-FR', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
     } catch (error) {
-      logger.warn('⚠️ Erreur de formatage de date', `${dateString}: ${error}`);
-      return dateString; // Retourner la chaîne originale en cas d'erreur
+      logger.warn('⚠️ Date formatting error', `${dateString}: ${error}`);
+      return dateString; // Return the original string in case of error
     }
   }
 
-  // Formater une date courte (sans l'heure)
+  // Format a short date (without time)
   static formatDateShort(dateString: string): string {
     try {
       const date = new Date(dateString);
       const today = new Date();
       
-      // Si c'est aujourd'hui
+      // If it's today
       if (date.toDateString() === today.toDateString()) {
-        return "Aujourd'hui";
+        return "Today";
       }
 
-      // Si c'est cette année
+      // If it's this year
       if (date.getFullYear() === today.getFullYear()) {
         return date.toLocaleDateString('fr-FR', {
           month: 'long',
@@ -67,19 +67,19 @@ export class DateUtils {
         });
       }
 
-      // Avec l'année
+      // With year
       return date.toLocaleDateString('fr-FR', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
     } catch (error) {
-      logger.warn('⚠️ Erreur de formatage de date courte', `${dateString}: ${error}`);
+      logger.warn('⚠️ Short date formatting error', `${dateString}: ${error}`);
       return dateString;
     }
   }
 
-  // Obtenir un timestamp relatif (il y a X temps)
+  // Get relative timestamp (X time ago)
   static getRelativeTime(dateString: string): string {
     try {
       const date = new Date(dateString);
@@ -93,38 +93,38 @@ export class DateUtils {
       const diffMonths = Math.floor(diffDays / 30);
 
       if (diffMinutes < 1) {
-        return "À l'instant";
+        return "Just now";
       } else if (diffMinutes < 60) {
-        return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+        return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
       } else if (diffHours < 24) {
-        return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+        return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
       } else if (diffDays < 7) {
-        return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
       } else if (diffWeeks < 4) {
-        return `Il y a ${diffWeeks} semaine${diffWeeks > 1 ? 's' : ''}`;
+        return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
       } else if (diffMonths < 12) {
-        return `Il y a ${diffMonths} mois`;
+        return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
       } else {
         const diffYears = Math.floor(diffMonths / 12);
-        return `Il y a ${diffYears} an${diffYears > 1 ? 's' : ''}`;
+        return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
       }
     } catch (error) {
-      logger.warn('⚠️ Erreur de calcul de temps relatif', `${dateString}: ${error}`);
+      logger.warn('⚠️ Relative time calculation error', `${dateString}: ${error}`);
       return dateString;
     }
   }
 
-  // Obtenir la date actuelle au format ISO (YYYY-MM-DD)
+  // Get current date in ISO format (YYYY-MM-DD)
   static getCurrentDateISO(): string {
     return new Date().toISOString().split('T')[0];
   }
 
-  // Obtenir le timestamp actuel complet
+  // Get current full timestamp
   static getCurrentTimestamp(): string {
     return new Date().toISOString();
   }
 
-  // Générer une date récente aléatoire (dans les X derniers jours)
+  // Generate a recent random date (within the last X days)
   static getRecentRandomDate(maxDaysAgo: number = 30): string {
     const now = new Date();
     const daysAgo = Math.floor(Math.random() * maxDaysAgo);
@@ -133,7 +133,7 @@ export class DateUtils {
     return randomDate.toISOString().split('T')[0];
   }
 
-  // Vérifier si une date est aujourd'hui
+  // Check if a date is today
   static isToday(dateString: string): boolean {
     try {
       const date = new Date(dateString);
@@ -144,7 +144,7 @@ export class DateUtils {
     }
   }
 
-  // Vérifier si une date est dans les 7 derniers jours
+  // Check if a date is within the last 7 days
   static isThisWeek(dateString: string): boolean {
     try {
       const date = new Date(dateString);

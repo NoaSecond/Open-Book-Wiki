@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Database, Users, FileText, Activity, Eye, EyeOff } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import logger from '../utils/logger';
+import { getConfigService } from '../services/configService';
+import type { User, WikiPage, Activity as ActivityType } from '../types';
 
 interface DatabaseStats {
-  users: any[];
-  pages: any[];
-  activities: any[];
+  users: User[];
+  pages: WikiPage[];
+  activities: ActivityType[];
 }
 
 export const DatabasePage: React.FC = () => {
   const { isDarkMode, isAdmin } = useWiki();
+  const configService = getConfigService();
   const [dbStats, setDbStats] = useState<DatabaseStats>({ users: [], pages: [], activities: [] });
   const [activeTab, setActiveTab] = useState<'users' | 'pages' | 'activities'>('users');
   const [isLoading, setIsLoading] = useState(true);
@@ -24,7 +27,7 @@ export const DatabasePage: React.FC = () => {
         // Charger les utilisateurs (nécessite les droits admin)
         if (isAdmin()) {
           try {
-            const usersResponse = await fetch('http://localhost:3001/api/auth/users', {
+            const usersResponse = await fetch(configService.getApiUrl('/auth/users'), {
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
                 'Content-Type': 'application/json'
@@ -42,7 +45,7 @@ export const DatabasePage: React.FC = () => {
 
         // Charger les pages
         try {
-          const pagesResponse = await fetch('http://localhost:3001/api/wiki');
+          const pagesResponse = await fetch(configService.getApiUrl('/wiki'));
           if (pagesResponse.ok) {
             const pagesData = await pagesResponse.json();
             setDbStats(prev => ({ ...prev, pages: pagesData.pages || [] }));
@@ -53,7 +56,7 @@ export const DatabasePage: React.FC = () => {
 
         // Charger les activités
         try {
-          const activitiesResponse = await fetch('http://localhost:3001/api/activities', {
+          const activitiesResponse = await fetch(configService.getApiUrl('/activities'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -76,7 +79,7 @@ export const DatabasePage: React.FC = () => {
     };
 
     loadDatabaseData();
-  }, [isAdmin]);
+  }, [isAdmin, configService]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('fr-FR');
@@ -158,7 +161,7 @@ export const DatabasePage: React.FC = () => {
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setActiveTab(id as any)}
+                onClick={() => setActiveTab(id as 'users' | 'pages' | 'activities')}
                 className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === id
                     ? 'border-cyan-600 text-cyan-600'
@@ -271,8 +274,8 @@ export const DatabasePage: React.FC = () => {
                             {page.is_protected ? 'Protégée' : 'Libre'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(page.created_at)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(page.updated_at)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{page.created_at ? formatDate(page.created_at) : 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{page.updated_at ? formatDate(page.updated_at) : 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>

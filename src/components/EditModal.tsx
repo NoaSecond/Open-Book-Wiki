@@ -12,6 +12,7 @@ export const EditModal: React.FC = () => {
     setEditingPageTitle,
     wikiData, 
     updatePage,
+    renameSectionTitle,
     isDarkMode 
   } = useWiki();
   
@@ -43,27 +44,42 @@ export const EditModal: React.FC = () => {
     }
   }, [isEditModalOpen, editingPageTitle, wikiData]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editingPageTitle) {
-      // Sauvegarder le contenu
-      updatePage(editingPageTitle, content);
-      logger.info('✅ Section sauvegardée', editingPageTitle);
-      
-      // Si le titre de section a changé, le renommer aussi
-      if (editingPageTitle.includes(':')) {
-        const [mainPageId, sectionId] = editingPageTitle.split(':');
-        const mainPage = wikiData[mainPageId];
-        if (mainPage?.sections) {
-          const section = mainPage.sections.find(s => s.id === sectionId);
-          if (section && section.title !== sectionTitle.trim() && sectionTitle.trim()) {
-            // TODO: Implémenter la fonction de renommage de section
-            logger.info('🏷️ Titre de section modifié', `"${section.title}" → "${sectionTitle.trim()}"`);
+      try {
+        logger.debug('🔧 Début de la sauvegarde', { editingPageTitle, sectionTitle, content: content.substring(0, 50) + '...' });
+        
+        // Si c'est une section et que le titre a changé, le renommer d'abord
+        if (editingPageTitle.includes(':')) {
+          const [mainPageId, sectionId] = editingPageTitle.split(':');
+          const mainPage = wikiData[mainPageId];
+          logger.debug('🔧 Traitement de section', { mainPageId, sectionId, hasPage: !!mainPage });
+          
+          if (mainPage?.sections) {
+            const section = mainPage.sections.find(s => s.id === sectionId);
+            logger.debug('🔧 Section trouvée', { section: section ? { id: section.id, title: section.title } : null, newTitle: sectionTitle.trim() });
+            
+            if (section && section.title !== sectionTitle.trim() && sectionTitle.trim()) {
+              // Renommer le titre de la section d'abord
+              logger.info('🏷️ Renommage en cours', `"${section.title}" → "${sectionTitle.trim()}"`);
+              await renameSectionTitle(mainPageId, sectionId, sectionTitle.trim());
+              logger.info('🏷️ Titre de section modifié', `"${section.title}" → "${sectionTitle.trim()}"`);
+              
+              // IMPORTANT: Attendre un peu pour que les données se rechargent
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
           }
         }
+        
+        // Puis sauvegarder le contenu
+        await updatePage(editingPageTitle, content);
+        logger.info('✅ Section sauvegardée', editingPageTitle);
+        
+        setIsEditModalOpen(false);
+        setEditingPageTitle(null);
+      } catch (error) {
+        logger.error('❌ Erreur lors de la sauvegarde', error instanceof Error ? error.message : String(error));
       }
-      
-      setIsEditModalOpen(false);
-      setEditingPageTitle(null);
     }
   };
 

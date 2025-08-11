@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, LogIn, Edit3, Check, X } from 'lucide-react';
+import { Search, LogIn, Edit3, Check, X, Sun, Moon } from 'lucide-react';
 import { useWiki } from '../context/WikiContext';
 import { UserMenu } from './UserMenu';
 import { LoginModal } from './LoginModal';
@@ -12,7 +12,9 @@ export const Header: React.FC = () => {
     setSearchTerm, 
     user,
     isDarkMode,
-    setCurrentPage
+    toggleDarkMode,
+    setCurrentPage,
+    getFirstNavigationPage
   } = useWiki();
   
   const configService = getConfigService();
@@ -51,11 +53,17 @@ export const Header: React.FC = () => {
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => {
-                    setCurrentPage('home');
-                    logger.debug('🏠 Navigation vers l\'accueil');
+                    const firstPageId = getFirstNavigationPage();
+                    if (firstPageId) {
+                      setCurrentPage(firstPageId);
+                      logger.debug('🏠 Navigation vers la première page:', firstPageId);
+                    } else {
+                      setCurrentPage('home');
+                      logger.debug('🏠 Navigation vers l\'accueil (fallback)');
+                    }
                   }}
                   className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
-                  title="Retour à l'accueil"
+                  title="Retour à la première page"
                 >
                   <div className="w-10 h-10 flex items-center justify-center">
                     <img 
@@ -161,16 +169,32 @@ export const Header: React.FC = () => {
               {user ? (
                 <UserMenu />
               ) : (
-                <button
-                  onClick={() => {
-                    setShowLoginModal(true);
-                    logger.auth('🔐 Ouverture du modal de connexion');
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>Se connecter</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      setShowLoginModal(true);
+                      logger.auth('🔐 Ouverture du modal de connexion');
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Se connecter</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      toggleDarkMode();
+                      logger.debug('🎨 Basculement de thème:', !isDarkMode ? 'sombre' : 'clair');
+                    }}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDarkMode
+                        ? 'bg-slate-700 hover:bg-slate-600 text-yellow-400'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                    title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
+                  >
+                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  </button>
+                </div>
               )}
             </div>
           </div>

@@ -1,5 +1,6 @@
 // Service d'authentification utilisant l'API backend
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
+import { getConfigService } from './configService';
 
 export interface User {
   id: number;
@@ -36,9 +37,13 @@ interface VerifyResponse {
 }
 
 class AuthService {
-  private baseUrl = 'http://localhost:3001/api/auth';
+  private configService = getConfigService();
   private tokenKey = 'wiki_token';
   private userKey = 'wiki_user';
+
+  private getBaseUrl(): string {
+    return this.configService.getApiUrl('/auth');
+  }
 
   constructor() {
     // Nettoyer l'ancien localStorage au démarrage
@@ -112,7 +117,7 @@ class AuthService {
 
   async login(username: string, password: string): Promise<{ success: boolean; message: string; user?: User }> {
     try {
-      const response = await fetch(`${this.baseUrl}/login`, {
+      const response = await fetch(`${this.getBaseUrl()}/login`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({ username, password })
@@ -146,7 +151,7 @@ class AuthService {
 
   async register(username: string, email: string, password: string, avatar: string = 'avatar-openbookwiki.svg'): Promise<{ success: boolean; message: string; user?: User }> {
     try {
-      const response = await fetch(`${this.baseUrl}/register`, {
+      const response = await fetch(`${this.getBaseUrl()}/register`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({ username, email, password, avatar })
@@ -176,7 +181,7 @@ class AuthService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/me`, {
+      const response = await fetch(`${this.getBaseUrl()}/me`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -199,7 +204,7 @@ class AuthService {
 
   async logout(): Promise<void> {
     try {
-      await fetch(`${this.baseUrl}/logout`, {
+      await fetch(`${this.getBaseUrl()}/logout`, {
         method: 'POST',
         headers: this.getHeaders()
       });
@@ -266,6 +271,7 @@ class AuthService {
     return false;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async deleteUser(_userId: number): Promise<boolean> {
     // Pour l'instant, ne pas permettre la suppression
     // Dans une version future, créer un endpoint backend pour supprimer les utilisateurs

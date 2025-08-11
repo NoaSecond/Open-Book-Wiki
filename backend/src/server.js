@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Configuration de la base de données
+// Database configuration
 const DatabaseManager = require('./config/database');
 
 // Routes
@@ -16,48 +16,51 @@ const wikiRoutes = require('./routes/wiki');
 const tagsRoutes = require('./routes/tags');
 const permissionsRoutes = require('./routes/permissions');
 
-// Charger les variables d'environnement
+// Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Initialiser la base de données
+// Initialize database
 const dbManager = new DatabaseManager();
 
-// Middleware de sécurité
+// Security middleware
 app.use(helmet({
-  crossOriginEmbedderPolicy: false // Pour permettre les requêtes cross-origin
+  crossOriginEmbedderPolicy: false // Allow cross-origin requests
 }));
 
-// Middleware de limitation de taux
+// Rate limiting middleware
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limite à 100 requêtes par fenêtre par IP
+  max: 100, // Limit to 100 requests per window per IP
   message: 'Trop de requêtes depuis cette IP, réessayez plus tard.'
 });
 app.use(limiter);
 
-// Middleware CORS
+// CORS middleware
 app.use(cors({
   origin: [
-    'http://localhost:5176',
-    process.env.FRONTEND_URL
+    process.env.FRONTEND_URL || 'http://localhost:5176',
+    // In development, accept localhost on any port
+    /^http:\/\/localhost:\d+$/,
+    // In production, accept same domain
+    process.env.NODE_ENV === 'production' ? `https://${process.env.HOST || 'localhost'}` : null
   ].filter(Boolean),
   credentials: true
 }));
 
-// Middleware de parsing
+// Parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Middleware de logging
+// Logging middleware
 app.use(morgan('combined'));
 
-// Trust proxy pour obtenir les vraies IP derrière un reverse proxy
+// Trust proxy to get real IPs behind reverse proxy
 app.set('trust proxy', 1);
 
-// Middleware pour attacher la base de données aux requêtes
+// Middleware to attach database to requests
 app.use((req, res, next) => {
   req.db = dbManager;
   next();
@@ -70,7 +73,7 @@ app.use('/api/wiki', wikiRoutes);
 app.use('/api/tags', tagsRoutes);
 app.use('/api/permissions', permissionsRoutes);
 
-// Route de santé
+// Health check route
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -79,7 +82,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Route par défaut
+// Default route
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Open Book Wiki API',
@@ -101,7 +104,7 @@ app.use('*', (req, res) => {
   });
 });
 
-// Middleware de gestion d'erreurs globales
+// Global error handling middleware
 app.use((err, req, res, next) => {
   console.error('Erreur serveur:', err);
   res.status(500).json({ 
@@ -110,18 +113,20 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialiser la base de données et démarrer le serveur
+// Initialize database and start server
 async function startServer() {
   try {
     console.log('🚀 Initialisation de la base de données...');
     await dbManager.connect();
     await dbManager.initializeTables();
     
-    // Démarrage du serveur
+    // Start server
     app.listen(PORT, () => {
-      console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
-      console.log(`📊 Interface API disponible sur http://localhost:${PORT}`);
-      console.log(`🔗 Frontend attendu sur ${process.env.FRONTEND_URL || 'http://localhost:5176'}`);
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const host = process.env.HOST || 'localhost';
+      console.log(`✅ Serveur démarré sur ${protocol}://${host}:${PORT}`);
+      console.log(`📊 Interface API disponible sur ${protocol}://${host}:${PORT}`);
+      console.log(`🔗 Frontend attendu sur ${process.env.FRONTEND_URL || `http://${host}:5176`}`);
     });
     
   } catch (error) {
@@ -130,7 +135,7 @@ async function startServer() {
   }
 }
 
-// Gestion de l'arrêt propre
+// Graceful shutdown handling
 process.on('SIGINT', async () => {
   console.log('\n🛑 Arrêt du serveur...');
   await dbManager.close();
@@ -143,7 +148,7 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Démarrer le serveur
+// Start server
 startServer();
 
 module.exports = app;

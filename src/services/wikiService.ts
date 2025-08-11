@@ -1,187 +1,213 @@
-// Service de gestion des pages wiki utilisant l'API backend
-import logger from '../utils/logger';
-
-export interface WikiSection {
-  id: string;
-  title: string;
-  content: string;
-  lastModified: string;
-  author: string;
-}
-
-export interface WikiPage {
-  id: number;
-  title: string;
-  content: string;
-  author_id: number;
-  author_username: string;
-  created_at: string;
-  updated_at: string;
-  is_protected: boolean;
-  sections?: WikiSection[]; // Sections optionnelles
-}
+// Service pour la gestion des pages wiki utilisant l'API backend
+import { logger } from '../utils/logger';
+import { getConfigService } from './configService';
+import { WikiPage } from '../types';
 
 interface WikiPagesResponse {
   success: boolean;
-  pages?: WikiPage[];
-  page?: WikiPage;
+  pages: WikiPage[];
   message?: string;
 }
 
+interface WikiPageResponse {
+  success: boolean;
+  page: WikiPage;
+  message?: string;
+}
+
+interface WikiActionResponse {
+  success: boolean;
+  message: string;
+  page?: WikiPage;
+}
+
 class WikiService {
-  private baseUrl = 'http://localhost:3001/api/wiki';
+  private configService = getConfigService();
 
-  private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-
-    const token = localStorage.getItem('wiki_token');
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    return headers;
+  private getBaseUrl(): string {
+    return this.configService.getApiUrl('/wiki');
   }
 
-  async getAllPages(): Promise<WikiPage[] | null> {
+  private getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('wiki_token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+  }
+
+  async getAllPages(): Promise<WikiPage[]> {
     try {
-      const response = await fetch(this.baseUrl, {
+      logger.debug('Récupération de toutes les pages wiki');
+      
+      const response = await fetch(this.getBaseUrl(), {
         method: 'GET',
-        headers: this.getHeaders()
+        headers: this.getAuthHeaders()
       });
 
-      const data: WikiPagesResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
 
-      if (data.success && data.pages) {
+      const data: WikiPagesResponse = await response.json();
+      
+      if (data.success) {
+        logger.debug('Pages wiki récupérées avec succès', { count: data.pages.length });
         return data.pages;
       } else {
-        logger.warn('Échec de récupération des pages', { message: data.message });
-        return null;
+        throw new Error(data.message || 'Erreur lors de la récupération des pages');
       }
     } catch (error) {
-      logger.error('Erreur lors de la récupération des pages', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return null;
+      logger.error('Erreur lors de la récupération des pages wiki', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return [];
     }
   }
 
-  async getPage(title: string): Promise<WikiPage | null> {
+  async getPage(pageId: string | number): Promise<WikiPage | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/${encodeURIComponent(title)}`, {
+      logger.debug('Récupération de la page', { pageId });
+      
+      const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
         method: 'GET',
-        headers: this.getHeaders()
+        headers: this.getAuthHeaders()
       });
 
-      const data: WikiPagesResponse = await response.json();
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
 
+      const data: WikiPageResponse = await response.json();
+      
       if (data.success && data.page) {
+        logger.debug('Page récupérée avec succès', { pageId });
         return data.page;
       } else {
-        // Ne pas logger comme erreur si c'est juste une page non trouvée
-        if (response.status !== 404) {
-          logger.warn('Échec de récupération de la page', { title, message: data.message });
-        }
-        return null;
+        throw new Error(data.message || 'Page non trouvée');
       }
     } catch (error) {
-      logger.error('Erreur lors de la récupération de la page', { title, error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error('Erreur lors de la récupération de la page', { pageId, error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }
 
-  async createPage(title: string, content: string, isProtected: boolean = false): Promise<WikiPage | null> {
+  async createPage(title: string, content: string, isPrivate: boolean = false): Promise<WikiPage | null> {
     try {
-      const response = await fetch(this.baseUrl, {
+      logger.debug('Création d\'une nouvelle page', { title, isPrivate });
+      
+      const response = await fetch(this.getBaseUrl(), {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({
           title,
           content,
-          isProtected
+          isPrivate
         })
       });
 
-      const data: WikiPagesResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
 
+      const data: WikiActionResponse = await response.json();
+      
       if (data.success && data.page) {
-        logger.info('Page créée', { title });
+        logger.debug('Page créée avec succès', { pageId: data.page.id, title });
         return data.page;
       } else {
-        logger.warn('Échec de création de page', { title, message: data.message });
-        return null;
+        throw new Error(data.message || 'Erreur lors de la création de la page');
       }
     } catch (error) {
-      logger.error('Erreur lors de la création de page', { title, error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error('Erreur lors de la création de la page', { title, error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }
 
-  async updatePage(pageId: string, content: string): Promise<WikiPage | null> {
+  async updatePage(pageId: string | number, content: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/${encodeURIComponent(pageId)}`, {
+      logger.debug('Mise à jour de la page', { pageId });
+      
+      const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
         method: 'PUT',
-        headers: this.getHeaders(),
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({
           content
         })
       });
 
-      const data: WikiPagesResponse = await response.json();
-
-      if (data.success && data.page) {
-        logger.info('Page mise à jour', { pageId });
-        return data.page;
-      } else {
-        logger.warn('Échec de mise à jour de page', { pageId, message: data.message });
-        return null;
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
       }
-    } catch (error) {
-      logger.error('Erreur lors de la mise à jour de page', { pageId, error: error instanceof Error ? error.message : 'Unknown error' });
-      return null;
-    }
-  }
 
-  async deletePage(pageId: string): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/${pageId}`, {
-        method: 'DELETE',
-        headers: this.getHeaders()
-      });
-
-      const data: WikiPagesResponse = await response.json();
-
+      const data: WikiActionResponse = await response.json();
+      
       if (data.success) {
-        logger.success('Page supprimée avec succès', { pageId });
+        logger.debug('Page mise à jour avec succès', { pageId });
         return true;
       } else {
-        logger.warn('Échec de suppression de page', { pageId, message: data.message });
-        return false;
+        throw new Error(data.message || 'Erreur lors de la mise à jour de la page');
       }
     } catch (error) {
-      logger.error('Erreur lors de la suppression de page', { pageId, error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error('Erreur lors de la mise à jour de la page', { pageId, error: error instanceof Error ? error.message : 'Unknown error' });
       return false;
     }
   }
 
-  async renamePage(pageId: string, newTitle: string): Promise<WikiPage | null> {
+  async deletePage(pageId: string | number): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/${pageId}/rename`, {
-        method: 'PUT',
-        headers: this.getHeaders(),
-        body: JSON.stringify({ title: newTitle })
+      logger.debug('Suppression de la page', { pageId });
+      
+      const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
       });
 
-      const data: WikiPagesResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
 
-      if (data.success && data.page) {
-        logger.success('Page renommée avec succès', { pageId, newTitle });
-        return data.page;
+      const data: WikiActionResponse = await response.json();
+      
+      if (data.success) {
+        logger.debug('Page supprimée avec succès', { pageId });
+        return true;
       } else {
-        logger.warn('Échec de renommage de page', { pageId, newTitle, message: data.message });
-        return null;
+        throw new Error(data.message || 'Erreur lors de la suppression de la page');
       }
     } catch (error) {
-      logger.error('Erreur lors du renommage de page', { pageId, newTitle, error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error('Erreur lors de la suppression de la page', { pageId, error: error instanceof Error ? error.message : 'Unknown error' });
+      return false;
+    }
+  }
+
+  async renamePage(pageId: string | number, newTitle: string): Promise<WikiPage | null> {
+    try {
+      logger.debug('Renommage de la page', { pageId, newTitle });
+      
+      const response = await fetch(`${this.getBaseUrl()}/${pageId}/rename`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({
+          title: newTitle
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const data: WikiActionResponse = await response.json();
+      
+      if (data.success && data.page) {
+        logger.debug('Page renommée avec succès', { pageId, newTitle });
+        return data.page;
+      } else {
+        throw new Error(data.message || 'Erreur lors du renommage de la page');
+      }
+    } catch (error) {
+      logger.error('Erreur lors du renommage de la page', { pageId, newTitle, error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }

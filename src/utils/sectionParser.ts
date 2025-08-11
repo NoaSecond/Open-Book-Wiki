@@ -1,4 +1,6 @@
-// Utilitaire pour parser les sections d'une page Markdown
+// Utility to parse sections of a Markdown page
+import type { WikiPage } from '../types';
+
 export interface ParsedSection {
   id: string;
   title: string;
@@ -41,7 +43,7 @@ export class SectionParser {
       .trim();
   }
   
-  static getPageSections(wikiData: Record<string, any>, pageId: string): ParsedSection[] {
+  static getPageSections(wikiData: Record<string, WikiPage>, pageId: string): ParsedSection[] {
     const pageData = wikiData[pageId];
     if (!pageData || !pageData.content) {
       return [];

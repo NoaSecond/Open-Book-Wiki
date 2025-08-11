@@ -36,6 +36,34 @@ class ConfigService {
     }
   };
 
+  /**
+   * Obtient l'URL de base de l'API automatiquement
+   */
+  getApiBaseUrl(): string {
+    const currentUrl = window.location;
+    const protocol = currentUrl.protocol;
+    const hostname = currentUrl.hostname;
+    
+    // En production, utilise le même domaine avec le port 3001
+    // En développement, détecte automatiquement
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:3001`;
+    } else {
+      // En production, suppose que l'API est sur le même domaine mais port différent
+      // ou sur un sous-domaine api.
+      return `${protocol}//${hostname}:3001`;
+    }
+  }
+
+  /**
+   * Obtient l'URL complète pour un endpoint d'API
+   */
+  getApiUrl(endpoint: string): string {
+    const baseUrl = this.getApiBaseUrl();
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${baseUrl}/api${cleanEndpoint}`;
+  }
+
   constructor() {
     this.initializeConfig();
   }

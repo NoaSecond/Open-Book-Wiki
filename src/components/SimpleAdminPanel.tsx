@@ -4,37 +4,43 @@ import { useWiki } from '../context/WikiContext';
 import activityService, { ActivityLog } from '../services/activityService';
 import { UserProfileModal } from './UserProfileModal';
 import logger from '../utils/logger';
+import { getConfigService } from '../services/configService';
+import type { Tag as TagType, Permission, User, WikiPage, DatabaseActivity } from '../types';
 
-// Composant pour éditer les permissions d'un tag
+interface CategoryGroup {
+  [category: string]: Permission[];
+}
+
+// Component to edit tag permissions
 const PermissionEditor: React.FC<{
-  tag: any;
-  allPermissions: any[];
+  tag: TagType;
+  allPermissions: Permission[];
   onUpdate: (tagId: number, permissionIds: number[]) => void;
   isDarkMode: boolean;
   onUnsavedChanges?: (hasChanges: boolean) => void;
 }> = ({ tag, allPermissions, onUpdate, isDarkMode, onUnsavedChanges }) => {
   const [selectedPermissions, setSelectedPermissions] = useState<number[]>(
-    tag.permissions.map((p: any) => p.id)
+    tag.permissions?.map((p: Permission) => p.id) || []
   );
   const [originalPermissions, setOriginalPermissions] = useState<number[]>(
-    tag.permissions.map((p: any) => p.id)
+    tag.permissions?.map((p: Permission) => p.id) || []
   );
 
-  // Mettre à jour les permissions sélectionnées quand le tag change
+  // Update selected permissions when tag changes
   useEffect(() => {
-    const newPermissions = tag.permissions.map((p: any) => p.id);
+    const newPermissions = tag.permissions?.map((p: Permission) => p.id) || [];
     setSelectedPermissions(newPermissions);
     setOriginalPermissions(newPermissions);
   }, [tag.id, tag.permissions]);
 
-  // Détecter s'il y a des changements non sauvegardés
+  // Detect unsaved changes
   const hasUnsavedChanges = useMemo(() => {
     if (selectedPermissions.length !== originalPermissions.length) return true;
     return selectedPermissions.some(id => !originalPermissions.includes(id)) ||
            originalPermissions.some(id => !selectedPermissions.includes(id));
   }, [selectedPermissions, originalPermissions]);
 
-  // Notifier le parent des changements non sauvegardés
+  // Notify parent of unsaved changes
   useEffect(() => {
     if (onUnsavedChanges) {
       onUnsavedChanges(hasUnsavedChanges);
@@ -64,14 +70,14 @@ const PermissionEditor: React.FC<{
     }
   };
 
-  // Grouper les permissions par catégorie
-  const permissionsByCategory = allPermissions.reduce((acc: Record<string, any[]>, permission) => {
+  // Group permissions by category
+  const permissionsByCategory = allPermissions.reduce((acc: CategoryGroup, permission) => {
     if (!acc[permission.category]) {
       acc[permission.category] = [];
     }
     acc[permission.category].push(permission);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as CategoryGroup);
 
   const categoryLabels: Record<string, string> = {
     admin: 'Administration',
@@ -92,7 +98,7 @@ const PermissionEditor: React.FC<{
             {categoryLabels[category] || category}
           </h5>
           <div className="space-y-2">
-            {(permissions as any[]).map((permission: any) => (
+            {permissions.map((permission: Permission) => (
               <label key={permission.id} className="flex items-start space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -172,33 +178,34 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   onClose 
 }) => {
   const { isDarkMode, isAdmin, user, setUser } = useWiki();
+  const configService = getConfigService();
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
   const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'database' | 'tags' | 'permissions'>('activity');
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]); // TODO: Créer une interface User appropriée
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   
-  // États pour l'onglet Base de données
-  const [dbStats, setDbStats] = useState<{users: any[], pages: any[], activities: any[]}>({ users: [], pages: [], activities: [] });
+  // States for Database tab
+  const [dbStats, setDbStats] = useState<{users: User[], pages: WikiPage[], activities: DatabaseActivity[]}>({ users: [], pages: [], activities: [] });
   const [dbActiveTab, setDbActiveTab] = useState<'users' | 'pages' | 'activities'>('users');
   const [showPasswords, setShowPasswords] = useState(false);
 
-  // États pour la modal de profil utilisateur
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  // States for user profile modal
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // États pour l'onglet Tags
-  const [tags, setTags] = useState<any[]>([]);
-  const [editingTag, setEditingTag] = useState<any>(null);
+  // States for Tags tab
+  const [tags, setTags] = useState<TagType[]>([]);
+  const [editingTag, setEditingTag] = useState<TagType | null>(null);
   const [newTag, setNewTag] = useState({ name: '', color: '#3B82F6' });
   const [isAddingTag, setIsAddingTag] = useState(false);
 
-  // États pour l'onglet Permissions
-  const [permissions, setPermissions] = useState<any[]>([]);
-  const [tagPermissions, setTagPermissions] = useState<any[]>([]);
-  const [selectedTagForPermissions, setSelectedTagForPermissions] = useState<any>(null);
+  // States for Permissions tab
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [tagPermissions, setTagPermissions] = useState<TagType[]>([]);
+  const [selectedTagForPermissions, setSelectedTagForPermissions] = useState<TagType | null>(null);
   const [hasUnsavedPermissionChanges, setHasUnsavedPermissionChanges] = useState(false);
 
-  // États pour le tri et la recherche des utilisateurs
+  // States for user sorting and search
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [userSortBy, setUserSortBy] = useState<'permissions' | 'name' | 'email' | 'contributions' | 'joinDate'>('permissions');
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -206,17 +213,17 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   // Fonction pour obtenir le nombre de permissions d'un tag
   const getTagPermissionCount = (tagName: string): number => {
     const tagPerm = tagPermissions.find(tp => tp.name === tagName);
-    return tagPerm ? tagPerm.permissions.length : 0;
+    return tagPerm ? (tagPerm.permissions?.length || 0) : 0;
   };
 
   // Fonction pour obtenir le score de permissions maximum d'un utilisateur
-  const getUserMaxPermissionScore = (user: any): number => {
+  const getUserMaxPermissionScore = (user: User): number => {
     if (!user.tags || user.tags.length === 0) return 0;
     return Math.max(...user.tags.map((tag: string) => getTagPermissionCount(tag)));
   };
 
   // Fonction de tri des utilisateurs
-  const sortUsers = (users: any[], sortBy: string, sortOrder: 'asc' | 'desc') => {
+  const sortUsers = (users: User[], sortBy: string, sortOrder: 'asc' | 'desc') => {
     return [...users].sort((a, b) => {
       let valueA, valueB;
       
@@ -288,7 +295,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       // Charger les utilisateurs
       const loadUsers = async () => {
         try {
-          const response = await fetch('http://localhost:3001/api/auth/users', {
+          const response = await fetch(configService.getApiUrl('/auth/users'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -307,7 +314,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       const loadDatabaseData = async () => {
         try {
           // Charger les utilisateurs pour l'onglet BDD
-          const usersResponse = await fetch('http://localhost:3001/api/auth/users', {
+          const usersResponse = await fetch(configService.getApiUrl('/auth/users'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -320,14 +327,14 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           }
 
           // Charger les pages
-          const pagesResponse = await fetch('http://localhost:3001/api/wiki');
+          const pagesResponse = await fetch(configService.getApiUrl('/wiki'));
           if (pagesResponse.ok) {
             const pagesData = await pagesResponse.json();
             setDbStats(prev => ({ ...prev, pages: pagesData.pages || [] }));
           }
 
           // Charger les activités
-          const activitiesResponse = await fetch('http://localhost:3001/api/activities/admin/all', {
+          const activitiesResponse = await fetch(configService.getApiUrl('/activities/admin/all'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -346,7 +353,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       // Charger les tags
       const loadTags = async () => {
         try {
-          const response = await fetch('http://localhost:3001/api/tags', {
+          const response = await fetch(configService.getApiUrl('/tags'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -366,7 +373,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       const loadPermissions = async () => {
         try {
           // Charger toutes les permissions
-          const permissionsResponse = await fetch('http://localhost:3001/api/permissions', {
+          const permissionsResponse = await fetch(configService.getApiUrl('/permissions'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -379,7 +386,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           }
 
           // Charger les permissions des tags
-          const tagPermissionsResponse = await fetch('http://localhost:3001/api/permissions/tags', {
+          const tagPermissionsResponse = await fetch(configService.getApiUrl('/permissions/tags'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -401,18 +408,18 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       loadTags();
       loadPermissions();
     }
-  }, [isOpen]);
+  }, [isOpen, configService]);
 
   // Fonction pour ouvrir la modal de profil utilisateur
-  const handleEditUser = (user: any) => {
+  const handleEditUser = (user: User) => {
     setSelectedUser(user);
     setIsProfileModalOpen(true);
   };
 
   // Fonction pour sauvegarder les modifications de profil utilisateur
-  const handleSaveUserProfile = async (userData: any) => {
+  const handleSaveUserProfile = async (userData: Partial<User>) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/auth/users/${userData.id}`, {
+      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/auth/users/${userData.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -429,7 +436,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
       if (response.ok) {
         // Recharger la liste des utilisateurs
-        const usersResponse = await fetch('http://localhost:3001/api/auth/users', {
+        const usersResponse = await fetch(configService.getApiUrl('/auth/users'), {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
             'Content-Type': 'application/json'
@@ -445,7 +452,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         // Si l'utilisateur modifié est l'utilisateur connecté, mettre à jour le contexte
         if (user && userData.id === user.id) {
           // Récupérer les données mises à jour de l'utilisateur connecté
-          const meResponse = await fetch('http://localhost:3001/api/auth/me', {
+          const meResponse = await fetch(configService.getApiUrl('/auth/me'), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
               'Content-Type': 'application/json'
@@ -482,7 +489,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     if (!newTag.name.trim()) return;
     
     try {
-      const response = await fetch('http://localhost:3001/api/tags', {
+      const response = await fetch(configService.getApiUrl('/tags'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -493,7 +500,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
       if (response.ok) {
         // Recharger les tags
-        const tagsResponse = await fetch('http://localhost:3001/api/tags', {
+        const tagsResponse = await fetch(configService.getApiUrl('/tags'), {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
             'Content-Type': 'application/json'
@@ -517,9 +524,9 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     }
   };
 
-  const handleUpdateTag = async (tag: any) => {
+  const handleUpdateTag = async (tag: TagType) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/tags/${tag.id}`, {
+      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/tags/${tag.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -530,7 +537,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
       if (response.ok) {
         // Recharger les tags
-        const tagsResponse = await fetch('http://localhost:3001/api/tags', {
+        const tagsResponse = await fetch(configService.getApiUrl('/tags'), {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
             'Content-Type': 'application/json'
@@ -559,7 +566,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     }
     
     try {
-      const response = await fetch(`http://localhost:3001/api/tags/${tagId}`, {
+      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/tags/${tagId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -569,7 +576,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
       if (response.ok) {
         // Recharger les tags
-        const tagsResponse = await fetch('http://localhost:3001/api/tags', {
+        const tagsResponse = await fetch(configService.getApiUrl('/tags'), {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
             'Content-Type': 'application/json'
@@ -592,7 +599,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
   const handleUpdateTagPermissions = async (tagId: number, permissionIds: number[]) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/permissions/tags/${tagId}`, {
+      const response = await fetch(`http://' + getConfigService().getApiBaseUrl().replace('http://', '').replace('https://', '') + '/api/permissions/tags/${tagId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
@@ -603,7 +610,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
       if (response.ok) {
         // Recharger les permissions des tags
-        const tagPermissionsResponse = await fetch('http://localhost:3001/api/permissions/tags', {
+        const tagPermissionsResponse = await fetch(configService.getApiUrl('/permissions/tags'), {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
             'Content-Type': 'application/json'
@@ -615,7 +622,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           setTagPermissions(tagPermissionsData.tagPermissions || []);
           
           // Mettre à jour le tag sélectionné
-          const updatedTag = tagPermissionsData.tagPermissions.find((tp: any) => tp.id === tagId);
+          const updatedTag = tagPermissionsData.tagPermissions.find((tp: TagType) => tp.id === tagId);
           if (updatedTag) {
             setSelectedTagForPermissions(updatedTag);
           }
@@ -630,7 +637,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     }
   };
 
-  const handleTagSelectionForPermissions = (newTag: any) => {
+  const handleTagSelectionForPermissions = (newTag: TagType) => {
     if (hasUnsavedPermissionChanges) {
       if (confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment changer de tag sans sauvegarder ?')) {
         setSelectedTagForPermissions(newTag);
@@ -767,7 +774,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                     </label>
                     <select
                       value={userSortBy}
-                      onChange={(e) => setUserSortBy(e.target.value as any)}
+                      onChange={(e) => setUserSortBy(e.target.value as 'permissions' | 'name' | 'email' | 'contributions' | 'joinDate')}
                       className={`px-3 py-2 rounded-lg border text-sm ${
                         isDarkMode 
                           ? 'bg-gray-700 border-gray-600 text-white' 
@@ -1109,10 +1116,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                             <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Auteur:</strong> {page.author_username}
                           </div>
                           <div>
-                            <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Créé le:</strong> {new Date(page.created_at).toLocaleString('fr-FR')}
+                            <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Créé le:</strong> {page.created_at ? new Date(page.created_at).toLocaleString('fr-FR') : 'N/A'}
                           </div>
                           <div>
-                            <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Modifié le:</strong> {new Date(page.updated_at).toLocaleString('fr-FR')}
+                            <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Modifié le:</strong> {page.updated_at ? new Date(page.updated_at).toLocaleString('fr-FR') : 'N/A'}
                           </div>
                           <div>
                             <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Taille:</strong> {page.content?.length || 0} caractères
@@ -1409,7 +1416,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                                   ? isDarkMode ? 'text-blue-200' : 'text-blue-700'
                                   : isDarkMode ? 'text-gray-400' : 'text-gray-600'
                               }`}>
-                                {tagPerm.permissions.length} permission(s)
+                                {tagPerm.permissions?.length || 0} permission(s)
                               </div>
                             </div>
                           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   User, Plus, ExternalLink, Edit3, Trash2, MoreHorizontal, Check, X, Clock, ChevronRight
 } from 'lucide-react';
@@ -8,6 +8,14 @@ import activityService, { ActivityLog } from '../services/activityService';
 import SvgIcon from './SvgIcon';
 import DragHandle from './DragHandle';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import type { WikiPage } from '../types';
+
+interface PageSection {
+  id: string;
+  title: string;
+  level?: number;
+  anchor?: string;
+}
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -86,7 +94,7 @@ export const Sidebar: React.FC = () => {
   const [orderUpdateTrigger, setOrderUpdateTrigger] = useState(0);
 
   // Créer les éléments de navigation dynamiquement à partir de wikiData
-  const createNavigationItems = (): NavigationItem[] => {
+  const createNavigationItems = useCallback((): NavigationItem[] => {
     const items: NavigationItem[] = [];
     
     // Ajouter toutes les pages depuis wikiData
@@ -136,9 +144,10 @@ export const Sidebar: React.FC = () => {
     }
     
     return items;
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wikiData, orderUpdateTrigger]); // orderUpdateTrigger est nécessaire pour détecter les changements de localStorage
 
-  const dynamicNavigationItems = useMemo(() => createNavigationItems(), [wikiData, orderUpdateTrigger]);
+  const dynamicNavigationItems = useMemo(() => createNavigationItems(), [createNavigationItems]);
 
   // Fonction pour récupérer la version de l'application
   useEffect(() => {
@@ -618,7 +627,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Sections de la page courante */}
         {currentPage && wikiData[currentPage] && (() => {
-          const currentPageData = wikiData[currentPage] as any; // Type temporaire
+          const currentPageData = wikiData[currentPage] as unknown as WikiPage & { sections?: PageSection[] };
           // Utiliser les sections si elles existent, sinon créer une section unique
           const sections = currentPageData.sections || [{
             id: 'main-content',
@@ -635,7 +644,7 @@ export const Sidebar: React.FC = () => {
                 Sections de la page
               </h3>
               <ul className="space-y-1">
-                {sections.map((section: any) => (
+                {sections.map((section: PageSection) => (
                   <li key={section.id}>
                     <button
                       onClick={() => {

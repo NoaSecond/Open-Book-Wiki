@@ -14,7 +14,7 @@ export const SvgIcon: React.FC<SvgIconProps> = ({ name, className = '', size = 2
       try {
         const response = await fetch(`/icons/${name}.svg`);
         const svgText = await response.text();
-        // Remplacer stroke="currentColor" pour s'assurer que la couleur est héritée
+        // Replace stroke="currentColor" to ensure color is inherited
         const modifiedSvg = svgText.replace(/stroke="[^"]*"/g, 'stroke="currentColor"');
         setSvgContent(modifiedSvg);
       } catch (error) {
