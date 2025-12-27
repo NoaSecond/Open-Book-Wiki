@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, Eye } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import { MarkdownRenderer } from './MarkdownRenderer';
+import { useWiki } from '../context/wiki-context';
+import { MarkdownRenderer } from './markdown-renderer';
 import logger from '../utils/logger';
 
 export const EditModal: React.FC = () => {
-  const { 
-    isEditModalOpen, 
-    setIsEditModalOpen, 
-    editingPageTitle, 
+  const {
+    isEditModalOpen,
+    setIsEditModalOpen,
+    editingPageTitle,
     setEditingPageTitle,
-    wikiData, 
+    wikiData,
     updatePage,
     renameSectionTitle,
-    isDarkMode 
+    isDarkMode
   } = useWiki();
-  
+
   const [content, setContent] = useState('');
   const [sectionTitle, setSectionTitle] = useState('');
   const [isPreview, setIsPreview] = useState(false);
@@ -48,33 +48,33 @@ export const EditModal: React.FC = () => {
     if (editingPageTitle) {
       try {
         logger.debug('🔧 Début de la sauvegarde', { editingPageTitle, sectionTitle, content: content.substring(0, 50) + '...' });
-        
+
         // Si c'est une section et que le titre a changé, le renommer d'abord
         if (editingPageTitle.includes(':')) {
           const [mainPageId, sectionId] = editingPageTitle.split(':');
           const mainPage = wikiData[mainPageId];
           logger.debug('🔧 Traitement de section', { mainPageId, sectionId, hasPage: !!mainPage });
-          
+
           if (mainPage?.sections) {
             const section = mainPage.sections.find(s => s.id === sectionId);
             logger.debug('🔧 Section trouvée', { section: section ? { id: section.id, title: section.title } : null, newTitle: sectionTitle.trim() });
-            
+
             if (section && section.title !== sectionTitle.trim() && sectionTitle.trim()) {
               // Renommer le titre de la section d'abord
               logger.info('🏷️ Renommage en cours', `"${section.title}" → "${sectionTitle.trim()}"`);
               await renameSectionTitle(mainPageId, sectionId, sectionTitle.trim());
               logger.info('🏷️ Titre de section modifié', `"${section.title}" → "${sectionTitle.trim()}"`);
-              
+
               // IMPORTANT: Attendre un peu pour que les données se rechargent
               await new Promise(resolve => setTimeout(resolve, 100));
             }
           }
         }
-        
+
         // Puis sauvegarder le contenu
         await updatePage(editingPageTitle, content);
         logger.info('✅ Section sauvegardée', editingPageTitle);
-        
+
         setIsEditModalOpen(false);
         setEditingPageTitle(null);
       } catch (error) {
@@ -119,11 +119,10 @@ export const EditModal: React.FC = () => {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsPreview(!isPreview)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                isPreview
-                  ? `${isDarkMode ? 'bg-slate-600 text-white' : 'bg-gray-300 text-gray-800'}`
-                  : 'bg-violet-600 hover:bg-violet-700 text-white'
-              }`}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${isPreview
+                ? `${isDarkMode ? 'bg-slate-600 text-white' : 'bg-gray-300 text-gray-800'}`
+                : 'bg-violet-600 hover:bg-violet-700 text-white'
+                }`}
             >
               <Eye className="w-4 h-4" />
               <span>{isPreview ? 'Éditer' : 'Aperçu'}</span>
@@ -156,11 +155,10 @@ export const EditModal: React.FC = () => {
                 type="text"
                 value={sectionTitle}
                 onChange={(e) => setSectionTitle(e.target.value)}
-                className={`flex-1 px-3 py-2 rounded-lg border ${
-                  isDarkMode 
-                    ? 'bg-slate-700 border-slate-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                className={`flex-1 px-3 py-2 rounded-lg border ${isDarkMode
+                  ? 'bg-slate-700 border-slate-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-cyan-500`}
                 placeholder="Entrez le titre de la section..."
               />
             </div>
@@ -181,11 +179,10 @@ export const EditModal: React.FC = () => {
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className={`w-full h-full border rounded-lg p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 mini-scrollbar ${
-                  isDarkMode 
-                    ? 'bg-slate-900 text-white border-slate-600' 
-                    : 'bg-gray-50 text-gray-900 border-gray-300'
-                }`}
+                className={`w-full h-full border rounded-lg p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 mini-scrollbar ${isDarkMode
+                  ? 'bg-slate-900 text-white border-slate-600'
+                  : 'bg-gray-50 text-gray-900 border-gray-300'
+                  }`}
                 placeholder="Tapez votre contenu ici..."
               />
             </div>

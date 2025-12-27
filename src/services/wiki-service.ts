@@ -1,6 +1,6 @@
 // Service pour la gestion des pages wiki utilisant l'API backend
 import { logger } from '../utils/logger';
-import { getConfigService } from './configService';
+import { getConfigService } from './config-service';
 import { WikiPage } from '../types';
 
 interface WikiPagesResponse {
@@ -39,7 +39,7 @@ class WikiService {
   async getAllPages(): Promise<WikiPage[]> {
     try {
       logger.debug('Récupération de toutes les pages wiki');
-      
+
       const response = await fetch(this.getBaseUrl(), {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -50,7 +50,7 @@ class WikiService {
       }
 
       const data: WikiPagesResponse = await response.json();
-      
+
       if (data.success) {
         logger.debug('Pages wiki récupérées avec succès', { count: data.pages.length });
         return data.pages;
@@ -66,7 +66,7 @@ class WikiService {
   async getPage(pageId: string | number): Promise<WikiPage | null> {
     try {
       logger.debug('Récupération de la page', { pageId });
-      
+
       const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -80,7 +80,7 @@ class WikiService {
       }
 
       const data: WikiPageResponse = await response.json();
-      
+
       if (data.success && data.page) {
         logger.debug('Page récupérée avec succès', { pageId });
         return data.page;
@@ -96,7 +96,7 @@ class WikiService {
   async createPage(title: string, content: string, isPrivate: boolean = false): Promise<WikiPage | null> {
     try {
       logger.debug('Création d\'une nouvelle page', { title, isPrivate });
-      
+
       const response = await fetch(this.getBaseUrl(), {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -112,7 +112,7 @@ class WikiService {
       }
 
       const data: WikiActionResponse = await response.json();
-      
+
       if (data.success && data.page) {
         logger.debug('Page créée avec succès', { pageId: data.page.id, title });
         return data.page;
@@ -128,7 +128,7 @@ class WikiService {
   async updatePage(pageId: string | number, content: string): Promise<boolean> {
     try {
       logger.debug('Mise à jour de la page', { pageId });
-      
+
       const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
@@ -142,7 +142,7 @@ class WikiService {
       }
 
       const data: WikiActionResponse = await response.json();
-      
+
       if (data.success) {
         logger.debug('Page mise à jour avec succès', { pageId });
         return true;
@@ -158,7 +158,7 @@ class WikiService {
   async deletePage(pageId: string | number): Promise<boolean> {
     try {
       logger.debug('Suppression de la page', { pageId });
-      
+
       const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
         method: 'DELETE',
         headers: this.getAuthHeaders()
@@ -169,7 +169,7 @@ class WikiService {
       }
 
       const data: WikiActionResponse = await response.json();
-      
+
       if (data.success) {
         logger.debug('Page supprimée avec succès', { pageId });
         return true;
@@ -185,7 +185,7 @@ class WikiService {
   async renamePage(pageId: string | number, newTitle: string): Promise<WikiPage | null> {
     try {
       logger.debug('Renommage de la page', { pageId, newTitle });
-      
+
       const response = await fetch(`${this.getBaseUrl()}/${pageId}/rename`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
@@ -199,7 +199,7 @@ class WikiService {
       }
 
       const data: WikiActionResponse = await response.json();
-      
+
       if (data.success && data.page) {
         logger.debug('Page renommée avec succès', { pageId, newTitle });
         return data.page;

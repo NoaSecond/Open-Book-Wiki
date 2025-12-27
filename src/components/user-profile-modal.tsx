@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Save, X, Shield, UserCheck, Eye, Tag, Edit3 } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import { AvatarEditor } from './AvatarEditor';
+import { useWiki } from '../context/wiki-context';
+import { AvatarEditor } from './avatar-editor';
 import type { User as UserType, Tag as TagType } from '../types';
 
 interface UserProfileModalProps {
@@ -95,7 +95,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   const handleTagToggle = (tag: string) => {
     if (!isAdmin) return;
-    
+
     setFormData(prev => ({
       ...prev,
       tags: prev.tags.includes(tag)
@@ -124,24 +124,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto ${
-        isDarkMode ? 'bg-gray-800' : 'bg-white'
-      } rounded-lg shadow-xl`}>
-        
+      <div className={`w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+        } rounded-lg shadow-xl`}>
+
         {/* Header */}
-        <div className={`flex items-center justify-between p-6 border-b ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
-          <h1 className={`text-xl font-bold ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
+        <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'
           }`}>
+          <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
             Profil de {user.username}
           </h1>
           <button
             onClick={onClose}
-            className={`p-2 rounded-md transition-colors ${
-              isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-            }`}
+            className={`p-2 rounded-md transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+              }`}
           >
             <X className="w-5 h-5" />
           </button>
@@ -155,9 +151,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="relative">
               <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
                 {user.avatar ? (
-                  <img 
-                    src={user.avatar} 
-                    alt="Avatar utilisateur" 
+                  <img
+                    src={user.avatar}
+                    alt="Avatar utilisateur"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -174,7 +170,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </button>
               )}
             </div>
-            
+
             {/* Basic Info */}
             <div className="flex-1">
               {isEditing ? (
@@ -184,11 +180,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     name="username"
                     value={formData.username}
                     onChange={handleChange}
-                    className={`text-xl font-bold rounded px-3 py-2 w-full border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                      isDarkMode 
-                        ? 'bg-slate-700 text-white border-slate-600' 
-                        : 'bg-gray-100 text-gray-900 border-gray-300'
-                    }`}
+                    className={`text-xl font-bold rounded px-3 py-2 w-full border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${isDarkMode
+                      ? 'bg-slate-700 text-white border-slate-600'
+                      : 'bg-gray-100 text-gray-900 border-gray-300'
+                      }`}
                     placeholder="Nom d'utilisateur"
                   />
                   <input
@@ -196,11 +191,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`rounded px-3 py-2 w-full border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                      isDarkMode 
-                        ? 'bg-slate-700 text-slate-300 border-slate-600' 
-                        : 'bg-gray-100 text-gray-700 border-gray-300'
-                    }`}
+                    className={`rounded px-3 py-2 w-full border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${isDarkMode
+                      ? 'bg-slate-700 text-slate-300 border-slate-600'
+                      : 'bg-gray-100 text-gray-700 border-gray-300'
+                      }`}
                     placeholder="Email"
                   />
                 </div>
@@ -215,7 +209,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </p>
                 </div>
               )}
-              
+
               <div className={`text-sm mt-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                 Contributions: {user.contributions || 0}
               </div>
@@ -233,9 +227,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 availableTags.map((tagObj) => (
                   <label
                     key={tagObj.name}
-                    className={`flex items-center space-x-3 ${
-                      isAdmin ? 'cursor-pointer' : 'cursor-default'
-                    }`}
+                    className={`flex items-center space-x-3 ${isAdmin ? 'cursor-pointer' : 'cursor-default'
+                      }`}
                   >
                     <input
                       type="checkbox"
@@ -288,17 +281,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 value={formData.bio}
                 onChange={handleChange}
                 rows={4}
-                className={`w-full rounded-lg p-3 border focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none ${
-                  isDarkMode 
-                    ? 'bg-slate-700 text-white border-slate-600' 
-                    : 'bg-gray-100 text-gray-900 border-gray-300'
-                }`}
+                className={`w-full rounded-lg p-3 border focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none ${isDarkMode
+                  ? 'bg-slate-700 text-white border-slate-600'
+                  : 'bg-gray-100 text-gray-900 border-gray-300'
+                  }`}
                 placeholder="Biographie de l'utilisateur..."
               />
             ) : (
-              <div className={`p-3 rounded-lg ${
-                isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'
-              }`}>
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'
+                }`}>
                 {user.bio ? (
                   <p className="whitespace-pre-wrap">{user.bio}</p>
                 ) : (
@@ -317,11 +308,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <button
                   onClick={handleCancel}
                   disabled={isLoading}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'bg-slate-600 hover:bg-slate-700 text-white' 
-                      : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
-                  } disabled:opacity-50`}
+                  className={`px-4 py-2 rounded-lg transition-colors ${isDarkMode
+                    ? 'bg-slate-600 hover:bg-slate-700 text-white'
+                    : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
+                    } disabled:opacity-50`}
                 >
                   Annuler
                 </button>

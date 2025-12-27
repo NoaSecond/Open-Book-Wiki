@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import { MarkdownRenderer } from './MarkdownRenderer';
+import { useWiki } from '../context/wiki-context';
+import { MarkdownRenderer } from './markdown-renderer';
 import { SectionParser } from '../utils/sectionParser';
 import logger from '../utils/logger';
 
@@ -21,25 +21,25 @@ interface ContentRendererProps {
 
 export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageId, searchTerm }) => {
   const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, canContribute } = useWiki();
-  
+
   // Parser le contenu en sections basées sur les titres Markdown
   const parseSections = (text: string): Section[] => {
     const lines = text.split('\n');
     const sections: Section[] = [];
     let currentSection: Section | null = null;
     let contentLines: string[] = [];
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
-      
+
       if (headerMatch) {
         // Sauvegarder la section précédente
         if (currentSection) {
           currentSection.content = contentLines.join('\n').trim();
           sections.push(currentSection);
         }
-        
+
         // Créer une nouvelle section
         const level = headerMatch[1].length;
         const title = headerMatch[2];
@@ -55,13 +55,13 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
         contentLines.push(line);
       }
     }
-    
+
     // Ajouter la dernière section
     if (currentSection) {
       currentSection.content = contentLines.join('\n').trim();
       sections.push(currentSection);
     }
-    
+
     // Si aucune section trouvée, traiter tout le contenu comme une seule section
     if (sections.length === 0) {
       sections.push({
@@ -72,7 +72,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
         anchor: 'contenu-principal'
       });
     }
-    
+
     return sections;
   };
 
@@ -112,26 +112,24 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
     <div className="space-y-4">
       {sections.map((section) => {
         const isExpanded = expandedSections.has(section.id);
-        const headerSize = section.level === 1 ? 'text-xl' : 
-                          section.level === 2 ? 'text-lg' : 'text-base';
-        
+        const headerSize = section.level === 1 ? 'text-xl' :
+          section.level === 2 ? 'text-lg' : 'text-base';
+
         return (
           <div
             key={section.id}
             id={section.anchor}
-            className={`border rounded-lg overflow-hidden transition-all duration-200 ${
-              isDarkMode 
-                ? 'border-slate-700 bg-slate-800/50' 
-                : 'border-gray-200 bg-white'
-            }`}
+            className={`border rounded-lg overflow-hidden transition-all duration-200 ${isDarkMode
+              ? 'border-slate-700 bg-slate-800/50'
+              : 'border-gray-200 bg-white'
+              }`}
           >
             {/* En-tête de section */}
             <div
-              className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
-                isDarkMode 
-                  ? 'hover:bg-slate-700/50' 
-                  : 'hover:bg-gray-50'
-              }`}
+              className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${isDarkMode
+                ? 'hover:bg-slate-700/50'
+                : 'hover:bg-gray-50'
+                }`}
               onClick={() => toggleSection(section.id)}
             >
               <div className="flex items-center space-x-3 flex-1">
@@ -140,24 +138,22 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
                 ) : (
                   <ChevronRight className="w-5 h-5 text-blue-500 flex-shrink-0" />
                 )}
-                <h3 className={`font-semibold ${headerSize} ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+                <h3 className={`font-semibold ${headerSize} ${isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                   {section.title}
                 </h3>
               </div>
-              
+
               {canContribute() && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEditSection(section.id);
                   }}
-                  className={`p-2 rounded-md transition-colors ${
-                    isDarkMode 
-                      ? 'hover:bg-slate-600 text-slate-400 hover:text-white' 
-                      : 'hover:bg-gray-200 text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`p-2 rounded-md transition-colors ${isDarkMode
+                    ? 'hover:bg-slate-600 text-slate-400 hover:text-white'
+                    : 'hover:bg-gray-200 text-gray-500 hover:text-gray-700'
+                    }`}
                   title="Éditer cette section"
                 >
                   <Edit3 className="w-4 h-4" />
@@ -169,8 +165,8 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
             {isExpanded && (
               <div className={`border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
                 <div className="p-6">
-                  <MarkdownRenderer 
-                    content={section.content} 
+                  <MarkdownRenderer
+                    content={section.content}
                     searchTerm={searchTerm}
                   />
                 </div>

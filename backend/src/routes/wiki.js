@@ -3,223 +3,223 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Récupérer toutes les pages wiki
+// Get all wiki pages
 router.get('/', async (req, res) => {
   try {
     const db = req.db;
-    const pages = await db.getAllWikiPages();
+    const pages = await db.wikiPages.getAllWikiPages();
 
-    res.json({ 
-      success: true, 
-      pages: pages 
+    res.json({
+      success: true,
+      pages: pages
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des pages:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error fetching pages:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Récupérer une page wiki par titre
+// Get a wiki page by title
 router.get('/:title', async (req, res) => {
   try {
     const { title } = req.params;
     const db = req.db;
-    
-    const page = await db.findWikiPageByTitle(title);
+
+    const page = await db.wikiPages.findWikiPageByTitle(title);
 
     if (!page) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Page non trouvée' 
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found'
       });
     }
 
-    res.json({ 
-      success: true, 
-      page: page 
+    res.json({
+      success: true,
+      page: page
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération de la page:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error fetching page:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Créer une nouvelle page wiki
+// Create a new wiki page
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { title, content, isProtected = false } = req.body;
 
     if (!title || !content) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Titre et contenu requis' 
+      return res.status(400).json({
+        success: false,
+        message: 'Title and content required'
       });
     }
 
     const db = req.db;
-    
-    // Vérifier si la page existe déjà
-    const existingPage = await db.findWikiPageByTitle(title);
+
+    // Check if page already exists
+    const existingPage = await db.wikiPages.findWikiPageByTitle(title);
     if (existingPage) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Une page avec ce titre existe déjà' 
+      return res.status(409).json({
+        success: false,
+        message: 'A page with this title already exists'
       });
     }
 
-    const pageId = await db.createWikiPage({
+    const pageId = await db.wikiPages.createWikiPage({
       title,
       content,
       authorId: req.user.userId,
       isProtected
     });
 
-    // Créer une activité de création de page
-    await db.createActivity({
+    // Create a page creation activity
+    await db.activities.createActivity({
       userId: req.user.userId,
       type: 'wiki',
-      title: 'Page créée',
-      description: `Création de la page "${title}"`,
+      title: 'Page created',
+      description: `Created page "${title}"`,
       icon: 'file-plus',
       metadata: { pageTitle: title, pageId }
     });
 
-    const newPage = await db.findWikiPageByTitle(title);
+    const newPage = await db.wikiPages.findWikiPageByTitle(title);
 
-    res.status(201).json({ 
-      success: true, 
-      message: 'Page créée avec succès',
+    res.status(201).json({
+      success: true,
+      message: 'Page created successfully',
       page: newPage
     });
 
   } catch (error) {
-    console.error('Erreur lors de la création de la page:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error creating page:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Mettre à jour une page wiki
+// Update a wiki page
 router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
 
     if (!content) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Contenu requis' 
+      return res.status(400).json({
+        success: false,
+        message: 'Content required'
       });
     }
 
     const db = req.db;
-    
-    // Vérifier que la page existe
-    const page = await db.findWikiPageByTitle(id); // On utilise le titre comme ID pour l'instant
+
+    // Check that the page exists
+    const page = await db.wikiPages.findWikiPageByTitle(id); // Using title as ID for now
     if (!page) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Page non trouvée' 
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found'
       });
     }
 
-    await db.updateWikiPage(page.id, content);
+    await db.wikiPages.updateWikiPage(page.id, content);
 
-    // Créer une activité de modification de page
-    await db.createActivity({
+    // Create a page modification activity
+    await db.activities.createActivity({
       userId: req.user.userId,
       type: 'wiki',
-      title: 'Page modifiée',
-      description: `Modification de la page "${page.title}"`,
+      title: 'Page modified',
+      description: `Modified page "${page.title}"`,
       icon: 'edit',
       metadata: { pageTitle: page.title, pageId: page.id }
     });
 
-    const updatedPage = await db.findWikiPageByTitle(page.title);
+    const updatedPage = await db.wikiPages.findWikiPageByTitle(page.title);
 
-    res.json({ 
-      success: true, 
-      message: 'Page mise à jour avec succès',
+    res.json({
+      success: true,
+      message: 'Page updated successfully',
       page: updatedPage
     });
 
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la page:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error updating page:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Renommer une page wiki
+// Rename a wiki page
 router.put('/:id/rename', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { title } = req.body;
 
     if (!title) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Nouveau titre requis' 
+      return res.status(400).json({
+        success: false,
+        message: 'New title required'
       });
     }
 
     const db = req.db;
-    
-    // Vérifier que la page existe
-    const page = await db.findWikiPageByTitle(id); // On utilise le titre comme ID pour l'instant
+
+    // Check that the page exists
+    const page = await db.wikiPages.findWikiPageByTitle(id); // Using title as ID for now
     if (!page) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Page non trouvée' 
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found'
       });
     }
 
-    // Vérifier qu'une page avec le nouveau titre n'existe pas déjà
-    const existingPage = await db.findWikiPageByTitle(title);
+    // Check if a page with the new title already exists
+    const existingPage = await db.wikiPages.findWikiPageByTitle(title);
     if (existingPage && existingPage.id !== page.id) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Une page avec ce titre existe déjà' 
+      return res.status(409).json({
+        success: false,
+        message: 'A page with this title already exists'
       });
     }
 
-    await db.renameWikiPage(page.id, title);
+    await db.wikiPages.renameWikiPage(page.id, title);
 
-    // Créer une activité de renommage de page
-    await db.createActivity({
+    // Create a page rename activity
+    await db.activities.createActivity({
       userId: req.user.userId,
       type: 'wiki',
-      title: 'Page renommée',
-      description: `Renommage de la page "${page.title}" en "${title}"`,
+      title: 'Page renamed',
+      description: `Renamed page "${page.title}" to "${title}"`,
       icon: 'edit',
       metadata: { oldTitle: page.title, newTitle: title, pageId: page.id }
     });
 
-    const renamedPage = await db.findWikiPageById(page.id);
+    const renamedPage = await db.wikiPages.findWikiPageById(page.id);
 
-    res.json({ 
-      success: true, 
-      message: 'Page renommée avec succès',
+    res.json({
+      success: true,
+      message: 'Page renamed successfully',
       page: renamedPage
     });
 
   } catch (error) {
-    console.error('Erreur lors du renommage de la page:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error renaming page:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });

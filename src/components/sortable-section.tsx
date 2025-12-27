@@ -2,7 +2,7 @@ import React from 'react';
 import { UniqueIdentifier } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import SectionDragHandle from './SectionDragHandle';
+import SectionDragHandle from './section-drag-handle';
 
 interface SortableSectionProps {
   id: UniqueIdentifier;

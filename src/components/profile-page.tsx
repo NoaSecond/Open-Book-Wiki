@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Calendar, Edit3, Save, X, Award, Tag, Shield, UserCheck, Eye } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import { AvatarEditor } from './AvatarEditor';
+import { useWiki } from '../context/wiki-context';
+import { AvatarEditor } from './avatar-editor';
 import { DateUtils } from '../utils/dateUtils';
-import { getConfigService } from '../services/configService';
+import { getConfigService } from '../services/config-service';
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUser, isDarkMode } = useWiki();
   const configService = getConfigService();
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
-  const [tags, setTags] = useState<Array<{id: number, name: string, color: string}>>([]);
+  const [tags, setTags] = useState<Array<{ id: number, name: string, color: string }>>([]);
   const [currentUser, setCurrentUser] = useState(user); // State local pour les données à jour
   const [formData, setFormData] = useState({
     username: user?.username || '',
@@ -134,9 +134,9 @@ export const ProfilePage: React.FC = () => {
               <div className="relative">
                 <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
                   {currentUser.avatar ? (
-                    <img 
-                      src={currentUser.avatar} 
-                      alt="Avatar utilisateur" 
+                    <img
+                      src={currentUser.avatar}
+                      alt="Avatar utilisateur"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -152,7 +152,7 @@ export const ProfilePage: React.FC = () => {
                   <Edit3 className="w-4 h-4" />
                 </button>
               </div>
-              
+
               {/* Informations de base */}
               <div className="flex-1">
                 {isEditing ? (
@@ -162,11 +162,10 @@ export const ProfilePage: React.FC = () => {
                       name="username"
                       value={formData.username}
                       onChange={handleChange}
-                      className={`text-2xl font-bold rounded px-3 py-1 w-full max-w-md border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                        isDarkMode 
-                          ? 'bg-slate-700 text-white border-slate-600' 
-                          : 'bg-gray-100 text-gray-900 border-gray-300'
-                      }`}
+                      className={`text-2xl font-bold rounded px-3 py-1 w-full max-w-md border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${isDarkMode
+                        ? 'bg-slate-700 text-white border-slate-600'
+                        : 'bg-gray-100 text-gray-900 border-gray-300'
+                        }`}
                       placeholder="Nom d'utilisateur"
                     />
                     <input
@@ -174,11 +173,10 @@ export const ProfilePage: React.FC = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className={`rounded px-3 py-1 w-full max-w-md border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                        isDarkMode 
-                          ? 'bg-slate-700 text-slate-300 border-slate-600' 
-                          : 'bg-gray-100 text-gray-700 border-gray-300'
-                      }`}
+                      className={`rounded px-3 py-1 w-full max-w-md border focus:outline-none focus:ring-2 focus:ring-cyan-500 ${isDarkMode
+                        ? 'bg-slate-700 text-slate-300 border-slate-600'
+                        : 'bg-gray-100 text-gray-700 border-gray-300'
+                        }`}
                       placeholder="Email"
                     />
                   </div>
@@ -191,7 +189,7 @@ export const ProfilePage: React.FC = () => {
                     </p>
                   </div>
                 )}
-                
+
                 <div className={`flex items-center space-x-4 mt-3 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
@@ -234,11 +232,10 @@ export const ProfilePage: React.FC = () => {
                   </button>
                   <button
                     onClick={handleCancel}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                      isDarkMode 
-                        ? 'bg-slate-600 hover:bg-slate-700 text-white' 
-                        : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
-                    }`}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${isDarkMode
+                      ? 'bg-slate-600 hover:bg-slate-700 text-white'
+                      : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
+                      }`}
                   >
                     <X className="w-4 h-4" />
                     <span>Annuler</span>
@@ -266,11 +263,10 @@ export const ProfilePage: React.FC = () => {
               value={formData.bio}
               onChange={handleChange}
               rows={4}
-              className={`w-full rounded-lg p-3 border focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none ${
-                isDarkMode 
-                  ? 'bg-slate-700 text-white border-slate-600' 
-                  : 'bg-gray-100 text-gray-900 border-gray-300'
-              }`}
+              className={`w-full rounded-lg p-3 border focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none ${isDarkMode
+                ? 'bg-slate-700 text-white border-slate-600'
+                : 'bg-gray-100 text-gray-900 border-gray-300'
+                }`}
               placeholder="Parlez-nous de vous..."
             />
           ) : (
@@ -290,14 +286,14 @@ export const ProfilePage: React.FC = () => {
             <div className="text-3xl font-bold text-cyan-400 mb-2">{currentUser.contributions || 0}</div>
             <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Contributions</div>
           </div>
-          
+
           <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-violet-400 mb-2">
               {Math.floor(Math.random() * 50) + 10}
             </div>
             <div className={isDarkMode ? 'text-slate-400' : 'text-gray-600'}>Articles édités</div>
           </div>
-          
+
           <div className={`rounded-lg p-6 text-center ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-green-400 mb-2">
               {currentUser.joinDate ? DateUtils.formatDateShort(currentUser.joinDate) : 'N/A'}

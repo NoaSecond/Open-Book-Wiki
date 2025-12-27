@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, User } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
+import { useWiki } from '../context/wiki-context';
 
 interface AvatarEditorProps {
   currentAvatar?: string;
@@ -58,9 +58,9 @@ export const AvatarEditor: React.FC<AvatarEditorProps> = ({ currentAvatar, onSav
         <div className="text-center mb-6">
           <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center">
             {selectedImage ? (
-              <img 
-                src={selectedImage} 
-                alt="Avatar sélectionné" 
+              <img
+                src={selectedImage}
+                alt="Avatar sélectionné"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -81,11 +81,10 @@ export const AvatarEditor: React.FC<AvatarEditorProps> = ({ currentAvatar, onSav
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors border-2 border-dashed ${
-              isDarkMode 
-                ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600' 
+            className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors border-2 border-dashed ${isDarkMode
+                ? 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600'
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-300'
-            }`}
+              }`}
           >
             <Upload className="w-5 h-5" />
             <span>Télécharger une image</span>
@@ -101,16 +100,15 @@ export const AvatarEditor: React.FC<AvatarEditorProps> = ({ currentAvatar, onSav
               <button
                 key={index}
                 onClick={() => setSelectedImage(avatar)}
-                className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all hover:scale-105 ${
-                  selectedImage === avatar 
-                    ? 'border-cyan-500 scale-110 shadow-lg shadow-cyan-500/30' 
+                className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all hover:scale-105 ${selectedImage === avatar
+                    ? 'border-cyan-500 scale-110 shadow-lg shadow-cyan-500/30'
                     : `${isDarkMode ? 'border-slate-600 hover:border-slate-400' : 'border-gray-300 hover:border-gray-400'}`
-                }`}
+                  }`}
                 title={`Avatar ${index + 1}`}
               >
-                <img 
-                  src={avatar} 
-                  alt={`Avatar ${index + 1}`} 
+                <img
+                  src={avatar}
+                  alt={`Avatar ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
               </button>
@@ -125,11 +123,10 @@ export const AvatarEditor: React.FC<AvatarEditorProps> = ({ currentAvatar, onSav
         <div className="flex space-x-3">
           <button
             onClick={onCancel}
-            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-              isDarkMode 
-                ? 'bg-slate-600 hover:bg-slate-700 text-white' 
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${isDarkMode
+                ? 'bg-slate-600 hover:bg-slate-700 text-white'
                 : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
-            }`}
+              }`}
           >
             Annuler
           </button>

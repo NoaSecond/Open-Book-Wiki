@@ -7,7 +7,7 @@ const { requireAuth, requireAdmin, JWT_SECRET } = require('../middleware/auth');
 // Get guest permissions (for unauthenticated users)
 router.get('/guest-permissions', async (req, res) => {
   try {
-    const permissions = await req.db.getGuestPermissions();
+    const permissions = await req.db.tags.getGuestPermissions();
     const permissionNames = permissions.map(p => p.name);
 
     res.json({
@@ -33,17 +33,17 @@ router.post('/login', async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Nom d\'utilisateur et mot de passe requis'
+        message: 'Username and password required'
       });
     }
 
     // Find user in database
-    const user = await req.db.findUserByUsername(username);
+    const user = await req.db.users.findUserByUsername(username);
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Identifiants invalides'
+        message: 'Invalid credentials'
       });
     }
 
@@ -53,12 +53,12 @@ router.post('/login', async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Identifiants invalides'
+        message: 'Invalid credentials'
       });
     }
 
     // Update last login
-    await req.db.updateLastLogin(user.id);
+    await req.db.users.updateLastLogin(user.id);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -72,7 +72,7 @@ router.post('/login', async (req, res) => {
     );
 
     // Get user permissions
-    const permissions = await req.db.getUserPermissions(user.id);
+    const permissions = await req.db.tags.getUserPermissions(user.id);
     const permissionNames = permissions.map(p => p.name);
 
     // Prepare user data (without password hash)
@@ -83,31 +83,31 @@ router.post('/login', async (req, res) => {
       isAdmin: user.is_admin,
       avatar: user.avatar,
       lastLogin: new Date().toISOString(),
-      tags: user.is_admin ? ['Administrateur'] : ['Contributeur'],
+      tags: user.is_admin ? ['Administrator'] : ['Contributor'],
       permissions: permissionNames
     };
 
     // Log login activity
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: user.id,
       type: 'auth',
-      title: 'Connexion réussie',
-      description: `Connexion de ${user.username}`,
+      title: 'Successful login',
+      description: `Login by ${user.username}`,
       icon: 'shield'
     });
 
     res.json({
       success: true,
-      message: 'Connexion réussie',
+      message: 'Login successful',
       token,
       user: userData
     });
 
   } catch (error) {
-    console.error('Erreur lors de la connexion:', error);
+    console.error('Error during login:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
     });
   }
 });
@@ -120,29 +120,29 @@ router.post('/register', async (req, res) => {
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Tous les champs sont requis'
+        message: 'All fields are required'
       });
     }
 
     // Check if user already exists
-    const existingUser = await req.db.findUserByUsername(username);
+    const existingUser = await req.db.users.findUserByUsername(username);
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'Ce nom d\'utilisateur est déjà pris'
+        message: 'This username is already taken'
       });
     }
 
-    const existingEmail = await req.db.findUserByEmail(email);
+    const existingEmail = await req.db.users.findUserByEmail(email);
     if (existingEmail) {
       return res.status(400).json({
         success: false,
-        message: 'Cette adresse email est déjà utilisée'
+        message: 'This email is already in use'
       });
     }
 
     // Create new user
-    const userId = await req.db.createUser({
+    const userId = await req.db.users.createUser({
       username,
       email,
       password,
@@ -151,7 +151,7 @@ router.post('/register', async (req, res) => {
     });
 
     // Get created user
-    const newUser = await req.db.findUserById(userId);
+    const newUser = await req.db.users.findUserById(userId);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -172,30 +172,30 @@ router.post('/register', async (req, res) => {
       isAdmin: newUser.is_admin,
       avatar: newUser.avatar,
       lastLogin: new Date().toISOString(),
-      tags: newUser.is_admin ? ['Administrateur'] : ['Contributeur']
+      tags: newUser.is_admin ? ['Administrator'] : ['Contributor']
     };
 
     // Log registration activity
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: newUser.id,
       type: 'auth',
-      title: 'Inscription réussie',
-      description: `Nouvel utilisateur: ${newUser.username}`,
+      title: 'Registration successful',
+      description: `New user: ${newUser.username}`,
       icon: 'user'
     });
 
     res.status(201).json({
       success: true,
-      message: 'Inscription réussie',
+      message: 'Registration successful',
       token,
       user: userData
     });
 
   } catch (error) {
-    console.error('Erreur lors de l\'inscription:', error);
+    console.error('Error during registration:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
     });
   }
 });
@@ -203,12 +203,12 @@ router.post('/register', async (req, res) => {
 // Token verification route (current user)
 router.get('/me', requireAuth, async (req, res) => {
   try {
-    const user = await req.db.findUserById(req.user.userId);
+    const user = await req.db.users.findUserById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Utilisateur non trouvé'
+        message: 'User not found'
       });
     }
 
@@ -225,15 +225,15 @@ router.get('/me', requireAuth, async (req, res) => {
         }
       } else {
         // Default tags based on role
-        userTags = user.is_admin ? ['Administrateur'] : ['Contributeur'];
+        userTags = user.is_admin ? ['Administrator'] : ['Contributor'];
       }
     } catch (error) {
-      console.error('Erreur lors du parsing des tags:', error);
-      userTags = user.is_admin ? ['Administrateur'] : ['Contributeur'];
+      console.error('Error parsing tags:', error);
+      userTags = user.is_admin ? ['Administrator'] : ['Contributor'];
     }
 
     // Get user permissions
-    const permissions = await req.db.getUserPermissions(user.id);
+    const permissions = await req.db.tags.getUserPermissions(user.id);
     const permissionNames = permissions.map(p => p.name);
 
     const userData = {
@@ -256,10 +256,10 @@ router.get('/me', requireAuth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    console.error('Error retrieving user:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
     });
   }
 });
@@ -267,12 +267,12 @@ router.get('/me', requireAuth, async (req, res) => {
 // Token verification route (alias for /me)
 router.get('/verify', requireAuth, async (req, res) => {
   try {
-    const user = await req.db.findUserById(req.user.userId);
+    const user = await req.db.users.findUserById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Utilisateur non trouvé'
+        message: 'User not found'
       });
     }
 
@@ -288,12 +288,12 @@ router.get('/verify', requireAuth, async (req, res) => {
         }
       }
     } catch (tagError) {
-      console.warn('Erreur lors du parsing des tags:', tagError);
+      console.warn('Error parsing tags:', tagError);
       userTags = [];
     }
 
     // Get user permissions
-    const permissions = await req.db.getUserPermissions(user.id);
+    const permissions = await req.db.tags.getUserPermissions(user.id);
     const permissionNames = permissions.map(p => p.name);
 
     // Create user object with all properties
@@ -317,10 +317,10 @@ router.get('/verify', requireAuth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la vérification du token:', error);
+    console.error('Error verifying token:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
     });
   }
 });
@@ -339,22 +339,22 @@ router.put('/profile', requireAuth, async (req, res) => {
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Aucune donnée à mettre à jour'
+        message: 'No data to update'
       });
     }
 
     // Update profile
-    const updatedUser = await req.db.updateUserProfile(req.user.userId, updates);
+    const updatedUser = await req.db.users.updateUserProfile(req.user.userId, updates);
 
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
-        message: 'Utilisateur non trouvé'
+        message: 'User not found'
       });
     }
 
     // Get user permissions
-    const permissions = await req.db.getUserPermissions(updatedUser.id);
+    const permissions = await req.db.tags.getUserPermissions(updatedUser.id);
     const permissionNames = permissions.map(p => p.name);
 
     // Prepare user data (without password hash)
@@ -365,30 +365,30 @@ router.put('/profile', requireAuth, async (req, res) => {
       isAdmin: updatedUser.is_admin,
       avatar: updatedUser.avatar,
       lastLogin: updatedUser.last_login,
-      tags: updatedUser.is_admin ? ['Administrateur'] : ['Contributeur'],
+      tags: updatedUser.is_admin ? ['Administrator'] : ['Contributor'],
       permissions: permissionNames
     };
 
     // Log update activity
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: updatedUser.id,
       type: 'auth',
-      title: 'Profil mis à jour',
-      description: `Mise à jour du profil de ${updatedUser.username}`,
+      title: 'Profile updated',
+      description: `Profile update for ${updatedUser.username}`,
       icon: 'user'
     });
 
     res.json({
       success: true,
-      message: 'Profil mis à jour avec succès',
+      message: 'Profile updated successfully',
       user: userData
     });
 
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du profil:', error);
+    console.error('Error updating profile:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
     });
   }
 });
@@ -397,24 +397,24 @@ router.put('/profile', requireAuth, async (req, res) => {
 router.post('/logout', requireAuth, async (req, res) => {
   try {
     // Log logout activity
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: req.user.userId,
       type: 'auth',
-      title: 'Déconnexion',
-      description: `Déconnexion de ${req.user.username}`,
+      title: 'Logout',
+      description: `Logout by ${req.user.username}`,
       icon: 'shield'
     });
 
     res.json({
       success: true,
-      message: 'Déconnexion réussie'
+      message: 'Logout successful'
     });
 
   } catch (error) {
-    console.error('Erreur lors de la déconnexion:', error);
+    console.error('Error during logout:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
     });
   }
 });
@@ -422,8 +422,7 @@ router.post('/logout', requireAuth, async (req, res) => {
 // Admin route: list all users
 router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   try {
-    // This method must be added to DatabaseManager
-    const users = await req.db.getAllUsers();
+    const users = await req.db.users.getAllUsers();
 
     const userData = users.map(user => ({
       id: user.id,
@@ -444,10 +443,10 @@ router.get('/users', requireAuth, requireAdmin, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des utilisateurs:', error);
+    console.error('Error fetching users:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
     });
   }
 });
@@ -469,26 +468,26 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Aucune donnée à mettre à jour'
+        message: 'No data to update'
       });
     }
 
     // Check if user exists
-    const existingUser = await req.db.getUserById(parseInt(id));
+    const existingUser = await req.db.users.getUserById(parseInt(id));
     if (!existingUser) {
       return res.status(404).json({
         success: false,
-        message: 'Utilisateur non trouvé'
+        message: 'User not found'
       });
     }
 
     // Update profile
-    const updatedUser = await req.db.updateUserProfile(parseInt(id), updates);
+    const updatedUser = await req.db.users.updateUserProfile(parseInt(id), updates);
 
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
-        message: 'Erreur lors de la mise à jour'
+        message: 'Error updating'
       });
     }
 
@@ -506,25 +505,74 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
     };
 
     // Log update activity
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: req.user.userId,
       type: 'admin',
-      title: 'Profil utilisateur modifié',
-      description: `Modification du profil de ${updatedUser.username} par ${req.user.username}`,
+      title: 'User profile modified',
+      description: `User profile ${updatedUser.username} modified by ${req.user.username}`,
       icon: 'user'
     });
 
     res.json({
       success: true,
-      message: 'Profil utilisateur mis à jour avec succès',
+      message: 'User profile updated successfully',
       user: userData
     });
 
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du profil utilisateur:', error);
+    console.error('Error updating user profile:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Internal server error'
+    });
+  }
+});
+
+
+// Admin route: delete user
+router.delete('/users/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const existingUser = await req.db.users.getUserById(parseInt(id));
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deleting self
+    if (existingUser.id === req.user.userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account'
+      });
+    }
+
+    // Delete user
+    await req.db.users.deleteUser(parseInt(id));
+
+    // Log activity
+    await req.db.activities.createActivity({
+      userId: req.user.userId,
+      type: 'admin',
+      title: 'User deleted',
+      description: `User ${existingUser.username} deleted by ${req.user.username}`,
+      icon: 'trash'
+    });
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });

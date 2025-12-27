@@ -4,14 +4,18 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  is_admin: boolean;
-  created_at: string;
-  last_login?: string;
+  isAdmin?: boolean | number;
+  is_admin?: boolean; // Legacy/DB
+  created_at?: string;
+  lastLogin?: string; // camelCase
+  last_login?: string; // Legacy/DB
   avatar?: string;
   tags?: string[];
   bio?: string;
   contributions?: number;
+  joinDate?: string;
   password_hash?: string;
+  permissions?: string[];
 }
 
 export interface Tag {
@@ -64,7 +68,7 @@ export interface Activity {
   id: number;
   type: string;
   title?: string;
-  description: string;
+  description?: string;
   user_id?: number;
   username?: string;
   created_at: string;
@@ -137,4 +141,11 @@ export interface WikiConfig {
     admin: boolean;
     search: boolean;
   };
+}
+
+export interface SidebarNavigationItem {
+  id: string;
+  label: string;
+  title?: string;
+  iconName: string;
 }

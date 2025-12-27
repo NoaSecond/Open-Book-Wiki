@@ -1,21 +1,7 @@
 // Service d'authentification utilisant l'API backend
 import { logger } from '../utils/logger';
-import { getConfigService } from './configService';
-
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  isAdmin: boolean | number; // SQLite peut retourner 0/1 ou true/false
-  avatar: string;
-  lastLogin?: string;
-  // Propriétés étendues pour compatibilité
-  tags?: string[];
-  bio?: string;
-  contributions?: number;
-  joinDate?: string;
-  permissions?: string[];
-}
+import { getConfigService } from './config-service';
+import { User } from '../types';
 
 interface LoginResponse {
   success: boolean;
@@ -243,40 +229,56 @@ class AuthService {
 
   // Méthodes pour la gestion des utilisateurs (compatibilité)
   async getAllUsers(): Promise<User[]> {
-    // Pour l'instant, retourner l'utilisateur actuel uniquement
-    // Dans une version future, créer un endpoint backend pour lister tous les utilisateurs
-    const currentUser = this.getCurrentUser();
-    return currentUser ? [currentUser] : [];
+    try {
+      const response = await fetch(`${this.getBaseUrl()}/users`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      const data = await response.json();
+      if (data.success && Array.isArray(data.users)) {
+        return data.users;
+      }
+      return [];
+    } catch (error) {
+      logger.error('Erreur lors de la récupération des utilisateurs', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return [];
+    }
   }
 
   async updateUser(userId: number, updates: Partial<User>): Promise<boolean> {
-    // Pour l'instant, mettre à jour l'utilisateur actuel en local
-    // Dans une version future, créer un endpoint backend pour mettre à jour les utilisateurs
-    const currentUser = this.getCurrentUser();
-    if (currentUser && currentUser.id === userId) {
-      const updatedUser = { ...currentUser, ...updates };
-      this.setUser(updatedUser);
-      return true;
+    try {
+      const response = await fetch(`${this.getBaseUrl()}/users/${userId}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(updates)
+      });
+
+      const data = await response.json();
+      return data.success === true;
+    } catch (error) {
+      logger.error('Erreur lors de la mise à jour de l\'utilisateur', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return false;
     }
-    return false;
   }
 
-  updateUserTags(userId: number, tags: string[]): boolean {
-    // Compatibilité avec l'ancien système
-    const currentUser = this.getCurrentUser();
-    if (currentUser && currentUser.id === userId) {
-      currentUser.tags = tags;
-      this.setUser(currentUser);
-      return true;
-    }
-    return false;
+  async updateUserTags(userId: number, tags: string[]): Promise<boolean> {
+    return this.updateUser(userId, { tags });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async deleteUser(_userId: number): Promise<boolean> {
-    // Pour l'instant, ne pas permettre la suppression
-    // Dans une version future, créer un endpoint backend pour supprimer les utilisateurs
-    return false;
+  async deleteUser(userId: number): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.getBaseUrl()}/users/${userId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+
+      const data = await response.json();
+      return data.success === true;
+    } catch (error) {
+      logger.error('Erreur lors de la suppression de l\'utilisateur', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return false;
+    }
   }
 }
 

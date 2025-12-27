@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Users, FileText, Activity, Eye, EyeOff } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
+import { useWiki } from '../context/wiki-context';
 import logger from '../utils/logger';
-import { getConfigService } from '../services/configService';
+import { getConfigService } from '../services/config-service';
 import type { User, WikiPage, Activity as ActivityType } from '../types';
 
 interface DatabaseStats {
@@ -23,7 +23,7 @@ export const DatabasePage: React.FC = () => {
     const loadDatabaseData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Charger les utilisateurs (nécessite les droits admin)
         if (isAdmin()) {
           try {
@@ -33,7 +33,7 @@ export const DatabasePage: React.FC = () => {
                 'Content-Type': 'application/json'
               }
             });
-            
+
             if (usersResponse.ok) {
               const usersData = await usersResponse.json();
               setDbStats(prev => ({ ...prev, users: usersData.users || [] }));
@@ -62,7 +62,7 @@ export const DatabasePage: React.FC = () => {
               'Content-Type': 'application/json'
             }
           });
-          
+
           if (activitiesResponse.ok) {
             const activitiesData = await activitiesResponse.json();
             setDbStats(prev => ({ ...prev, activities: activitiesData.activities || [] }));
@@ -114,9 +114,8 @@ export const DatabasePage: React.FC = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className={`p-6 rounded-lg border ${
-            isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-          }`}>
+          <div className={`p-6 rounded-lg border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+            }`}>
             <div className="flex items-center space-x-3">
               <Users className="w-8 h-8 text-blue-600" />
               <div>
@@ -126,9 +125,8 @@ export const DatabasePage: React.FC = () => {
             </div>
           </div>
 
-          <div className={`p-6 rounded-lg border ${
-            isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-          }`}>
+          <div className={`p-6 rounded-lg border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+            }`}>
             <div className="flex items-center space-x-3">
               <FileText className="w-8 h-8 text-green-600" />
               <div>
@@ -138,9 +136,8 @@ export const DatabasePage: React.FC = () => {
             </div>
           </div>
 
-          <div className={`p-6 rounded-lg border ${
-            isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-          }`}>
+          <div className={`p-6 rounded-lg border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+            }`}>
             <div className="flex items-center space-x-3">
               <Activity className="w-8 h-8 text-purple-600" />
               <div>
@@ -162,13 +159,12 @@ export const DatabasePage: React.FC = () => {
               <button
                 key={id}
                 onClick={() => setActiveTab(id as 'users' | 'pages' | 'activities')}
-                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === id
-                    ? 'border-cyan-600 text-cyan-600'
-                    : isDarkMode
+                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${activeTab === id
+                  ? 'border-cyan-600 text-cyan-600'
+                  : isDarkMode
                     ? 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-300'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
@@ -178,23 +174,20 @@ export const DatabasePage: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className={`rounded-lg border overflow-hidden ${
-          isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`rounded-lg border overflow-hidden ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+          }`}>
           {activeTab === 'users' && (
             <div>
-              <div className={`px-6 py-4 border-b flex items-center justify-between ${
-                isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-50'
-              }`}>
+              <div className={`px-6 py-4 border-b flex items-center justify-between ${isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-50'
+                }`}>
                 <h3 className="text-lg font-semibold">Utilisateurs ({dbStats.users.length})</h3>
                 {isAdmin() && (
                   <button
                     onClick={() => setShowPasswords(!showPasswords)}
-                    className={`flex items-center space-x-2 px-3 py-1 rounded text-sm ${
-                      showPasswords 
-                        ? 'bg-red-600 text-white hover:bg-red-700' 
-                        : 'bg-gray-600 text-white hover:bg-gray-700'
-                    }`}
+                    className={`flex items-center space-x-2 px-3 py-1 rounded text-sm ${showPasswords
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-gray-600 text-white hover:bg-gray-700'
+                      }`}
                   >
                     {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     <span>{showPasswords ? 'Masquer' : 'Afficher'} mots de passe</span>
@@ -220,15 +213,14 @@ export const DatabasePage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{user.username}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{user.email}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            user.is_admin 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs ${user.is_admin
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                            }`}>
                             {user.is_admin ? 'Admin' : 'Utilisateur'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(user.created_at)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{user.created_at ? formatDate(user.created_at) : 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {user.last_login ? formatDate(user.last_login) : 'Jamais'}
                         </td>
@@ -242,9 +234,8 @@ export const DatabasePage: React.FC = () => {
 
           {activeTab === 'pages' && (
             <div>
-              <div className={`px-6 py-4 border-b ${
-                isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-50'
-              }`}>
+              <div className={`px-6 py-4 border-b ${isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-50'
+                }`}>
                 <h3 className="text-lg font-semibold">Pages Wiki ({dbStats.pages.length})</h3>
               </div>
               <div className="overflow-x-auto">
@@ -266,11 +257,10 @@ export const DatabasePage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{page.title}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{page.author_username}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            page.is_protected 
-                              ? 'bg-yellow-100 text-yellow-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs ${page.is_protected
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-green-100 text-green-800'
+                            }`}>
                             {page.is_protected ? 'Protégée' : 'Libre'}
                           </span>
                         </td>
@@ -286,9 +276,8 @@ export const DatabasePage: React.FC = () => {
 
           {activeTab === 'activities' && (
             <div>
-              <div className={`px-6 py-4 border-b ${
-                isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-50'
-              }`}>
+              <div className={`px-6 py-4 border-b ${isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-50'
+                }`}>
                 <h3 className="text-lg font-semibold">Activités récentes ({dbStats.activities.length})</h3>
               </div>
               <div className="overflow-x-auto">
@@ -308,13 +297,12 @@ export const DatabasePage: React.FC = () => {
                       <tr key={activity.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{activity.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            activity.type === 'auth' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : activity.type === 'wiki'
+                          <span className={`px-2 py-1 rounded-full text-xs ${activity.type === 'auth'
+                            ? 'bg-blue-100 text-blue-800'
+                            : activity.type === 'wiki'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-gray-100 text-gray-800'
-                          }`}>
+                            }`}>
                             {activity.type}
                           </span>
                         </td>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useWiki } from '../context/WikiContext';
+import { useWiki } from '../context/wiki-context';
 
 interface MarkdownRendererProps {
   content: string;
@@ -8,7 +8,7 @@ interface MarkdownRendererProps {
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, searchTerm }) => {
   const { isDarkMode } = useWiki();
-  
+
   const renderContent = (text: string) => {
     let processedText = text;
 

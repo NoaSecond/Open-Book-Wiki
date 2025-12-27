@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Activity, Users, Database, Eye, EyeOff, FileText, Edit3, Tag, Plus, Trash2, Save, Shield, Search } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import activityService, { ActivityLog } from '../services/activityService';
-import { UserProfileModal } from './UserProfileModal';
+import { X, Activity as ActivityIcon, Users, Database, Eye, EyeOff, FileText, Edit3, Tag, Plus, Trash2, Save, Shield, Search } from 'lucide-react';
+import { useWiki } from '../context/wiki-context';
+import type { Tag as TagType, Permission, User, WikiPage, Activity } from '../types';
+import activityService, { ActivityLog } from '../services/activity-service';
+import authService from '../services/auth-service';
+import { UserProfileModal } from './user-profile-modal';
 import logger from '../utils/logger';
-import { getConfigService } from '../services/configService';
-import type { Tag as TagType, Permission, User, WikiPage, DatabaseActivity } from '../types';
+import { getConfigService } from '../services/config-service';
 
 interface CategoryGroup {
   [category: string]: Permission[];
@@ -37,7 +39,7 @@ const PermissionEditor: React.FC<{
   const hasUnsavedChanges = useMemo(() => {
     if (selectedPermissions.length !== originalPermissions.length) return true;
     return selectedPermissions.some(id => !originalPermissions.includes(id)) ||
-           originalPermissions.some(id => !selectedPermissions.includes(id));
+      originalPermissions.some(id => !selectedPermissions.includes(id));
   }, [selectedPermissions, originalPermissions]);
 
   // Notify parent of unsaved changes
@@ -93,7 +95,7 @@ const PermissionEditor: React.FC<{
           <button
             type="button"
             onClick={() => setSelectedPermissions(allPermissions.map(p => p.id))}
-            className={`px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors`}
+            className={`px - 3 py - 1 rounded bg - blue - 600 hover: bg - blue - 700 text - white text - sm font - medium transition - colors`}
           >
             Donner toutes les permissions
           </button>
@@ -102,19 +104,17 @@ const PermissionEditor: React.FC<{
           <button
             type="button"
             onClick={() => setSelectedPermissions([])}
-            className={`px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors`}
+            className={`px - 3 py - 1 rounded bg - red - 600 hover: bg - red - 700 text - white text - sm font - medium transition - colors`}
           >
             Retirer toutes les permissions
           </button>
         )}
       </div>
       {Object.entries(permissionsByCategory).map(([category, permissions]) => (
-        <div key={category} className={`p-4 rounded-lg border ${
-          isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'
-        }`}>
-          <h5 className={`font-medium mb-3 ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+        <div key={category} className={`p - 4 rounded - lg border ${isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'
+          } `}>
+          <h5 className={`font - medium mb - 3 ${isDarkMode ? 'text-white' : 'text-gray-900'
+            } `}>
             {categoryLabels[category] || category}
           </h5>
           <div className="space-y-2">
@@ -127,14 +127,12 @@ const PermissionEditor: React.FC<{
                   className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
-                  <div className={`text-sm font-medium ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <div className={`text - sm font - medium ${isDarkMode ? 'text-white' : 'text-gray-900'
+                    } `}>
                     {permission.name}
                   </div>
-                  <div className={`text-xs ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
+                  <div className={`text - xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    } `}>
                     {permission.description}
                   </div>
                 </div>
@@ -143,47 +141,43 @@ const PermissionEditor: React.FC<{
           </div>
         </div>
       ))}
-      
+
       {/* Indicateur de changements non sauvegardés */}
       {hasUnsavedChanges && (
-        <div className={`p-3 rounded-lg mb-4 border-l-4 ${
-          isDarkMode 
-            ? 'bg-yellow-900/30 border-yellow-500 text-yellow-300' 
-            : 'bg-yellow-50 border-yellow-400 text-yellow-800'
-        }`}>
+        <div className={`p - 3 rounded - lg mb - 4 border - l - 4 ${isDarkMode
+          ? 'bg-yellow-900/30 border-yellow-500 text-yellow-300'
+          : 'bg-yellow-50 border-yellow-400 text-yellow-800'
+          } `}>
           <div className="flex items-center">
-            <div className={`w-2 h-2 rounded-full mr-2 ${
-              isDarkMode ? 'bg-yellow-400' : 'bg-yellow-500'
-            }`}></div>
+            <div className={`w - 2 h - 2 rounded - full mr - 2 ${isDarkMode ? 'bg-yellow-400' : 'bg-yellow-500'
+              } `}></div>
             <span className="text-sm font-medium">
               Vous avez des modifications non sauvegardées
             </span>
           </div>
         </div>
       )}
-      
+
       <div className="flex justify-end space-x-3">
         {hasUnsavedChanges && (
           <button
             onClick={handleCancel}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              isDarkMode
-                ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-            }`}
+            className={`px - 4 py - 2 rounded - lg transition - colors ${isDarkMode
+              ? 'bg-gray-600 hover:bg-gray-500 text-white'
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+              } `}
           >
             Annuler
           </button>
         )}
         <button
           onClick={handleSave}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            hasUnsavedChanges
-              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-              : isDarkMode
-                ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
-                : 'bg-gray-300 hover:bg-gray-400 text-gray-600'
-          }`}
+          className={`px - 4 py - 2 rounded - lg transition - colors ${hasUnsavedChanges
+            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+            : isDarkMode
+              ? 'bg-gray-600 hover:bg-gray-500 text-gray-300'
+              : 'bg-gray-300 hover:bg-gray-400 text-gray-600'
+            } `}
           disabled={!hasUnsavedChanges}
         >
           {hasUnsavedChanges ? 'Sauvegarder les modifications' : 'Aucun changement'}
@@ -193,9 +187,9 @@ const PermissionEditor: React.FC<{
   );
 };
 
-export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => void }> = ({ 
-  isOpenFromMenu = false, 
-  onClose 
+export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => void }> = ({
+  isOpenFromMenu = false,
+  onClose
 }) => {
   const { isDarkMode, isAdmin, user, setUser } = useWiki();
   const configService = getConfigService();
@@ -218,9 +212,9 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     setOpenDays(prev => ({ ...prev, [date]: !prev[date] }));
   };
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  
+
   // States for Database tab
-  const [dbStats, setDbStats] = useState<{users: User[], pages: WikiPage[], activities: DatabaseActivity[]}>({ users: [], pages: [], activities: [] });
+  const [dbStats, setDbStats] = useState<{ users: User[], pages: WikiPage[], activities: Activity[] }>({ users: [], pages: [], activities: [] });
   const [dbActiveTab, setDbActiveTab] = useState<'users' | 'pages' | 'activities'>('users');
   const [showPasswords, setShowPasswords] = useState(false);
 
@@ -261,7 +255,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   const sortUsers = (users: User[], sortBy: string, sortOrder: 'asc' | 'desc') => {
     return [...users].sort((a, b) => {
       let valueA, valueB;
-      
+
       switch (sortBy) {
         case 'permissions':
           valueA = getUserMaxPermissionScore(a);
@@ -287,10 +281,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           valueA = getUserMaxPermissionScore(a);
           valueB = getUserMaxPermissionScore(b);
       }
-      
+
       if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
       if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
-      
+
       // Tri secondaire par nom d'utilisateur
       return a.username.localeCompare(b.username);
     });
@@ -299,7 +293,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   // Filtrer les utilisateurs par terme de recherche
   const filteredUsers = allUsers.filter(user => {
     if (!userSearchTerm) return true;
-    
+
     const searchLower = userSearchTerm.toLowerCase();
     return (
       user.username.toLowerCase().includes(searchLower) ||
@@ -330,16 +324,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       // Charger les utilisateurs
       const loadUsers = async () => {
         try {
-          const response = await fetch(configService.getApiUrl('/auth/users'), {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setAllUsers(data.users || []);
-          }
+          const users = await authService.getAllUsers();
+          setAllUsers(users);
         } catch (error) {
           console.error('Erreur lors du chargement des utilisateurs:', error);
         }
@@ -349,17 +335,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       const loadDatabaseData = async () => {
         try {
           // Charger les utilisateurs pour l'onglet BDD
-          const usersResponse = await fetch(configService.getApiUrl('/auth/users'), {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (usersResponse.ok) {
-            const usersData = await usersResponse.json();
-            setDbStats(prev => ({ ...prev, users: usersData.users || [] }));
-          }
+          const users = await authService.getAllUsers();
+          setDbStats(prev => ({ ...prev, users: users }));
 
           // Charger les pages
           const pagesResponse = await fetch(configService.getApiUrl('/wiki'));
@@ -369,16 +346,9 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           }
 
           // Charger les activités
-          const activitiesResponse = await fetch(configService.getApiUrl('/activities/admin/all'), {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (activitiesResponse.ok) {
-            const activitiesData = await activitiesResponse.json();
-            setDbStats(prev => ({ ...prev, activities: activitiesData.activities || [] }));
+          const activitiesResult = await activityService.getAllActivities(1, 100);
+          if (activitiesResult) {
+            setDbStats(prev => ({ ...prev, activities: activitiesResult.activities }));
           }
         } catch (error) {
           logger.error('Erreur lors du chargement des données BDD', { error: error instanceof Error ? error.message : String(error) });
@@ -390,11 +360,11 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         try {
           const response = await fetch(configService.getApiUrl('/tags'), {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+              'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
               'Content-Type': 'application/json'
             }
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             setTags(data.tags || []);
@@ -410,11 +380,11 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           // Charger toutes les permissions
           const permissionsResponse = await fetch(configService.getApiUrl('/permissions'), {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+              'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
               'Content-Type': 'application/json'
             }
           });
-          
+
           if (permissionsResponse.ok) {
             const permissionsData = await permissionsResponse.json();
             setPermissions(permissionsData.permissions || []);
@@ -423,11 +393,11 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           // Charger les permissions des tags
           const tagPermissionsResponse = await fetch(configService.getApiUrl('/permissions/tags'), {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+              'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
               'Content-Type': 'application/json'
             }
           });
-          
+
           if (tagPermissionsResponse.ok) {
             const tagPermissionsData = await tagPermissionsResponse.json();
             setTagPermissions(tagPermissionsData.tagPermissions || []);
@@ -454,54 +424,30 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   // Fonction pour sauvegarder les modifications de profil utilisateur
   const handleSaveUserProfile = async (userData: Partial<User>) => {
     try {
-  const response = await fetch(configService.getApiUrl(`/auth/users/${userData.id}`), {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: userData.username,
-          email: userData.email,
-          bio: userData.bio,
-          tags: userData.tags,
-          avatar: userData.avatar
-        })
+      if (!userData.id) throw new Error("ID utilisateur manquant");
+
+      const success = await authService.updateUser(userData.id, {
+        username: userData.username,
+        email: userData.email,
+        bio: userData.bio,
+        tags: userData.tags,
+        avatar: userData.avatar
       });
 
-      if (response.ok) {
+      if (success) {
         // Recharger la liste des utilisateurs
-        const usersResponse = await fetch(configService.getApiUrl('/auth/users'), {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (usersResponse.ok) {
-          const data = await usersResponse.json();
-          setAllUsers(data.users || []);
-          setDbStats(prev => ({ ...prev, users: data.users || [] }));
-        }
+        const users = await authService.getAllUsers();
+        setAllUsers(users);
+        setDbStats(prev => ({ ...prev, users: users }));
 
         // Si l'utilisateur modifié est l'utilisateur connecté, mettre à jour le contexte
         if (user && userData.id === user.id) {
-          // Récupérer les données mises à jour de l'utilisateur connecté
-          const meResponse = await fetch(configService.getApiUrl('/auth/me'), {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (meResponse.ok) {
-            const meData = await meResponse.json();
-            if (meData.success && meData.user) {
-              setUser(meData.user);
-            }
+          const updatedUser = await authService.checkAuth();
+          if (updatedUser) {
+            setUser(updatedUser);
           }
         }
-        
+
         setIsProfileModalOpen(false);
         setSelectedUser(null);
       } else {
@@ -522,12 +468,12 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   // Fonctions de gestion des tags
   const handleCreateTag = async () => {
     if (!newTag.name.trim()) return;
-    
+
     try {
       const response = await fetch(configService.getApiUrl('/tags'), {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(newTag)
@@ -537,16 +483,16 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         // Recharger les tags
         const tagsResponse = await fetch(configService.getApiUrl('/tags'), {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (tagsResponse.ok) {
           const data = await tagsResponse.json();
           setTags(data.tags || []);
         }
-        
+
         setNewTag({ name: '', color: '#3B82F6' });
         setIsAddingTag(false);
       } else {
@@ -561,10 +507,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
   const handleUpdateTag = async (tag: TagType) => {
     try {
-  const response = await fetch(configService.getApiUrl(`/tags/${tag.id}`), {
+      const response = await fetch(configService.getApiUrl(`/ tags / ${tag.id} `), {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name: tag.name, color: tag.color })
@@ -574,16 +520,16 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         // Recharger les tags
         const tagsResponse = await fetch(configService.getApiUrl('/tags'), {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (tagsResponse.ok) {
           const data = await tagsResponse.json();
           setTags(data.tags || []);
         }
-        
+
         setEditingTag(null);
       } else {
         const errorData = await response.json();
@@ -599,12 +545,12 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce tag ?')) {
       return;
     }
-    
+
     try {
-  const response = await fetch(configService.getApiUrl(`/tags/${tagId}`), {
+      const response = await fetch(configService.getApiUrl(`/ tags / ${tagId} `), {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
           'Content-Type': 'application/json'
         }
       });
@@ -613,11 +559,11 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         // Recharger les tags
         const tagsResponse = await fetch(configService.getApiUrl('/tags'), {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (tagsResponse.ok) {
           const data = await tagsResponse.json();
           setTags(data.tags || []);
@@ -634,10 +580,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
   const handleUpdateTagPermissions = async (tagId: number, permissionIds: number[]) => {
     try {
-  const response = await fetch(configService.getApiUrl(`/permissions/tags/${tagId}`), {
+      const response = await fetch(configService.getApiUrl(`/ permissions / tags / ${tagId} `), {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ permissionIds })
@@ -647,15 +593,15 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         // Recharger les permissions des tags
         const tagPermissionsResponse = await fetch(configService.getApiUrl('/permissions/tags'), {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('wiki_token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (tagPermissionsResponse.ok) {
           const tagPermissionsData = await tagPermissionsResponse.json();
           setTagPermissions(tagPermissionsData.tagPermissions || []);
-          
+
           // Mettre à jour le tag sélectionné
           const updatedTag = tagPermissionsData.tagPermissions.find((tp: TagType) => tp.id === tagId);
           if (updatedTag) {
@@ -704,36 +650,31 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`w-11/12 max-w-6xl h-5/6 ${
-        isDarkMode ? 'bg-gray-800' : 'bg-white'
-      } rounded-lg shadow-xl flex flex-col overflow-hidden`}>
-        
+      <div className={`w - 11 / 12 max - w - 6xl h - 5 / 6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+        } rounded - lg shadow - xl flex flex - col overflow - hidden`}>
+
         {/* Header */}
-        <div className={`flex items-center justify-between p-4 border-b ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
-          <h1 className={`text-xl font-bold ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+        <div className={`flex items - center justify - between p - 4 border - b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'
+          } `}>
+          <h1 className={`text - xl font - bold ${isDarkMode ? 'text-white' : 'text-gray-900'
+            } `}>
             Panel d'Administration
           </h1>
           <button
             onClick={handleClose}
-            className={`p-2 rounded-md transition-colors ${
-              isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-            }`}
+            className={`p - 2 rounded - md transition - colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+              } `}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className={`flex border-b ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
+        <div className={`flex border - b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'
+          } `}>
           {[
             { id: 'users', label: 'Utilisateurs', icon: Users },
-            { id: 'activity', label: 'Activité', icon: Activity },
+            { id: 'activity', label: 'Activité', icon: ActivityIcon },
             { id: 'database', label: 'Base de données', icon: Database },
             { id: 'tags', label: 'Tags', icon: Tag },
             { id: 'permissions', label: 'Permissions', icon: Shield }
@@ -741,15 +682,14 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'users' | 'activity' | 'database' | 'tags' | 'permissions')}
-              className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? isDarkMode
-                    ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-800'
-                    : 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:text-gray-300'
-                    : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`flex items - center space - x - 2 px - 4 py - 3 text - sm font - medium transition - colors ${activeTab === tab.id
+                ? isDarkMode
+                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-800'
+                  : 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                : isDarkMode
+                  ? 'text-gray-400 hover:text-gray-300'
+                  : 'text-gray-600 hover:text-gray-800'
+                } `}
             >
               <tab.icon className="w-4 h-4" />
               <span>{tab.label}</span>
@@ -763,34 +703,30 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
             <div>
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1">
-                  <h2 className={`text-lg font-semibold mb-4 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <h2 className={`text - lg font - semibold mb - 4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                    } `}>
                     Utilisateurs ({filteredUsers.length}/{allUsers.length})
                   </h2>
-                  
+
                   {/* Barre de recherche */}
                   <div className="relative">
-                    <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`} />
+                    <Search className={`absolute left - 3 top - 1 / 2 transform - translate - y - 1 / 2 w - 4 h - 4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                      } `} />
                     <input
                       type="text"
                       placeholder="Rechercher par nom, email ou tag..."
                       value={userSearchTerm}
                       onChange={(e) => setUserSearchTerm(e.target.value)}
-                      className={`w-full pl-10 pr-10 py-2 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                      className={`w - full pl - 10 pr - 10 py - 2 rounded - lg border ${isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        } focus: ring - 2 focus: ring - blue - 500 focus: border - transparent`}
                     />
                     {userSearchTerm && (
                       <button
                         onClick={() => setUserSearchTerm('')}
-                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
-                          isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                        } transition-colors`}
+                        className={`absolute right - 3 top - 1 / 2 transform - translate - y - 1 / 2 p - 1 rounded - full ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                          } transition - colors`}
                         title="Effacer la recherche"
                       >
                         <X className="w-3 h-3" />
@@ -798,23 +734,21 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                     )}
                   </div>
                 </div>
-                
+
                 {/* Contrôles de tri */}
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex flex-col">
-                    <label className={`text-xs font-medium mb-1 ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
+                    <label className={`text - xs font - medium mb - 1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      } `}>
                       Trier par
                     </label>
                     <select
                       value={userSortBy}
                       onChange={(e) => setUserSortBy(e.target.value as 'permissions' | 'name' | 'email' | 'contributions' | 'joinDate')}
-                      className={`px-3 py-2 rounded-lg border text-sm ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                      className={`px - 3 py - 2 rounded - lg border text - sm ${isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-900'
+                        } focus: ring - 2 focus: ring - blue - 500 focus: border - transparent`}
                     >
                       <option value="permissions">Permissions</option>
                       <option value="name">Nom</option>
@@ -823,20 +757,18 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                       <option value="joinDate">Date d'inscription</option>
                     </select>
                   </div>
-                  
+
                   <div className="flex flex-col">
-                    <label className={`text-xs font-medium mb-1 ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
+                    <label className={`text - xs font - medium mb - 1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      } `}>
                       Ordre
                     </label>
                     <button
                       onClick={() => setUserSortOrder(userSortOrder === 'asc' ? 'desc' : 'asc')}
-                      className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600' 
-                          : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
-                      } focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center gap-1`}
+                      className={`px - 3 py - 2 rounded - lg border text - sm font - medium transition - colors ${isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                        : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
+                        } focus: ring - 2 focus: ring - blue - 500 focus: border - transparent flex items - center gap - 1`}
                     >
                       {userSortOrder === 'asc' ? (
                         <>↑ Croissant</>
@@ -853,35 +785,32 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                   sortedUsers.map(u => (
                     <div
                       key={u.id}
-                      className={`p-4 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600' 
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
+                      className={`p - 4 rounded - lg border ${isDarkMode
+                        ? 'bg-gray-700 border-gray-600'
+                        : 'bg-gray-50 border-gray-200'
+                        } `}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
                             <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden">
                               {u.avatar ? (
-                                <img 
-                                  src={u.avatar} 
-                                  alt="Avatar" 
+                                <img
+                                  src={u.avatar}
+                                  alt="Avatar"
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <Users className="w-5 h-5 text-white" />
+                                <ActivityIcon className="w-8 h-8 text-purple-600" />
                               )}
                             </div>
                             <div>
-                              <h3 className={`font-semibold ${
-                                isDarkMode ? 'text-white' : 'text-gray-900'
-                              }`}>
+                              <h3 className={`font - semibold ${isDarkMode ? 'text-white' : 'text-gray-900'
+                                } `}>
                                 {u.username}
                               </h3>
-                              <p className={`text-sm ${
-                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
+                              <p className={`text - sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                } `}>
                                 {u.email}
                               </p>
                             </div>
@@ -906,23 +835,20 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <div className={`text-sm flex items-center gap-3 ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
+                          <div className={`text - sm flex items - center gap - 3 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            } `}>
                             <span>Contributions: {u.contributions || 0}</span>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
-                            }`}>
+                            <span className={`px - 2 py - 1 rounded text - xs font - medium ${isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
+                              } `}>
                               Max permissions: {getUserMaxPermissionScore(u)}
                             </span>
                           </div>
                           <button
                             onClick={() => handleEditUser(u)}
-                            className={`p-2 rounded-lg transition-colors ${
-                              isDarkMode
-                                ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                            }`}
+                            className={`p - 2 rounded - lg transition - colors ${isDarkMode
+                              ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                              : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                              } `}
                             title="Modifier le profil"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -932,9 +858,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                     </div>
                   ))
                 ) : (
-                  <div className={`text-center py-8 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
+                  <div className={`text - center py - 8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    } `}>
                     {userSearchTerm ? (
                       <div>
                         <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -955,123 +880,111 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
           {activeTab === 'activity' && (
             <div>
-              <h2 className={`text-lg font-semibold mb-4 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}>
+              <h2 className={`text - lg font - semibold mb - 4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                } `}>
                 Logs d'activité récents
               </h2>
               <div className="space-y-4">
                 {Object.keys(groupedActivityLogs).length === 0 && (
-                  <div className={`text-center py-8 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
+                  <div className={`text - center py - 8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    } `}>
                     Aucun log d'activité trouvé
                   </div>
                 )}
                 {Object.entries(groupedActivityLogs)
                   .sort((a, b) => b[0].localeCompare(a[0]))
                   .map(([date, logs]) => (
-                  <div key={date}>
-                    <button
-                      className={`w-full flex items-center justify-between px-4 py-2 rounded-lg border font-semibold text-left transition-colors ${
-                        isDarkMode
+                    <div key={date}>
+                      <button
+                        className={`w - full flex items - center justify - between px - 4 py - 2 rounded - lg border font - semibold text - left transition - colors ${isDarkMode
                           ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
                           : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200'
-                      }`}
-                      onClick={() => toggleDay(date)}
-                    >
-                      <span>{new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                      <span className="ml-2 text-xs opacity-70">{logs.length} activité{logs.length > 1 ? 's' : ''}</span>
-                      <span className="ml-auto">{openDays[date] ? '▲' : '▼'}</span>
-                    </button>
-                    {openDays[date] && (
-                      <div className="space-y-2 mt-2">
-                        {logs.map(log => (
-                          <div
-                            key={log.id}
-                            className={`p-3 rounded-lg border ${
-                              isDarkMode 
-                                ? 'bg-gray-700 border-gray-600' 
+                          } `}
+                        onClick={() => toggleDay(date)}
+                      >
+                        <span>{new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        <span className="ml-2 text-xs opacity-70">{logs.length} activité{logs.length > 1 ? 's' : ''}</span>
+                        <span className="ml-auto">{openDays[date] ? '▲' : '▼'}</span>
+                      </button>
+                      {openDays[date] && (
+                        <div className="space-y-2 mt-2">
+                          {logs.map(log => (
+                            <div
+                              key={log.id}
+                              className={`p - 3 rounded - lg border ${isDarkMode
+                                ? 'bg-gray-700 border-gray-600'
                                 : 'bg-gray-50 border-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <span className="text-lg">
-                                  {activityService.getActionIcon(log.action)}
-                                </span>
-                                <div>
-                                  <span className={`font-medium ${
-                                    isDarkMode ? 'text-white' : 'text-gray-900'
-                                  }`}>
-                                    {log.username}
+                                } `}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-lg">
+                                    {activityService.getActionIcon(log.action)}
                                   </span>
-                                  <span className={`ml-2 ${
-                                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                                  }`}>
-                                    {activityService.formatAction(log.action)}
-                                  </span>
-                                  {log.target && (
-                                    <span className={`ml-2 font-medium ${
-                                      isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                                    }`}>
-                                      "{log.target}"
+                                  <div>
+                                    <span className={`font - medium ${isDarkMode ? 'text-white' : 'text-gray-900'
+                                      } `}>
+                                      {log.username}
                                     </span>
-                                  )}
+                                    <span className={`ml - 2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                      } `}>
+                                      {activityService.formatAction(log.action)}
+                                    </span>
+                                    {log.target && (
+                                      <span className={`ml - 2 font - medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                                        } `}>
+                                        "{log.target}"
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
+                                <span className={`text - sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                  } `}>
+                                  {new Date(log.timestamp).toLocaleTimeString('fr-FR')}
+                                </span>
                               </div>
-                              <span className={`text-sm ${
-                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
-                                {new Date(log.timestamp).toLocaleTimeString('fr-FR')}
-                              </span>
+                              {log.details && (
+                                <div className={`mt - 2 text - sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                  } `}>
+                                  {log.details}
+                                </div>
+                              )}
                             </div>
-                            {log.details && (
-                              <div className={`mt-2 text-sm ${
-                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
-                                {log.details}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
             </div>
           )}
 
           {activeTab === 'database' && (
             <div>
-              <h2 className={`text-lg font-semibold mb-4 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}>
+              <h2 className={`text - lg font - semibold mb - 4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                } `}>
                 Base de données
               </h2>
-              
+
               {/* Sous-onglets pour la BDD */}
-              <div className={`flex space-x-4 mb-6 border-b ${
-                isDarkMode ? 'border-gray-600' : 'border-gray-300'
-              }`}>
+              <div className={`flex space - x - 4 mb - 6 border - b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'
+                } `}>
                 {[
                   { id: 'users', label: 'Utilisateurs', icon: Users, count: dbStats.users.length },
                   { id: 'pages', label: 'Pages', icon: FileText, count: dbStats.pages.length },
-                  { id: 'activities', label: 'Activités', icon: Activity, count: dbStats.activities.length }
+                  { id: 'activities', label: 'Activités', icon: ActivityIcon, count: dbStats.activities.length }
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setDbActiveTab(tab.id as 'users' | 'pages' | 'activities')}
-                    className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors ${
-                      dbActiveTab === tab.id
-                        ? isDarkMode
-                          ? 'text-blue-400 border-b-2 border-blue-400'
-                          : 'text-blue-600 border-b-2 border-blue-600'
-                        : isDarkMode
-                          ? 'text-gray-400 hover:text-gray-300'
-                          : 'text-gray-600 hover:text-gray-800'
-                    }`}
+                    className={`flex items - center space - x - 2 px - 3 py - 2 text - sm font - medium transition - colors ${dbActiveTab === tab.id
+                      ? isDarkMode
+                        ? 'text-blue-400 border-b-2 border-blue-400'
+                        : 'text-blue-600 border-b-2 border-blue-600'
+                      : isDarkMode
+                        ? 'text-gray-400 hover:text-gray-300'
+                        : 'text-gray-600 hover:text-gray-800'
+                      } `}
                   >
                     <tab.icon className="w-4 h-4" />
                     <span>{tab.label} ({tab.count})</span>
@@ -1083,33 +996,30 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
               {dbActiveTab === 'users' && (
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className={`text-md font-medium ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <h3 className={`text - md font - medium ${isDarkMode ? 'text-white' : 'text-gray-900'
+                      } `}>
                       Utilisateurs ({dbStats.users.length})
                     </h3>
                     <button
                       onClick={() => setShowPasswords(!showPasswords)}
-                      className={`flex items-center space-x-2 px-3 py-1 rounded-md text-sm transition-colors ${
-                        isDarkMode
-                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`flex items - center space - x - 2 px - 3 py - 1 rounded - md text - sm transition - colors ${isDarkMode
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        } `}
                     >
                       {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       <span>{showPasswords ? 'Masquer' : 'Afficher'} mots de passe</span>
                     </button>
                   </div>
-                  
+
                   <div className="grid gap-4">
                     {dbStats.users.map(user => (
                       <div
                         key={user.id}
-                        className={`p-4 rounded-lg border ${
-                          isDarkMode 
-                            ? 'bg-gray-700 border-gray-600' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
+                        className={`p - 4 rounded - lg border ${isDarkMode
+                          ? 'bg-gray-700 border-gray-600'
+                          : 'bg-gray-50 border-gray-200'
+                          } `}
                       >
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
@@ -1124,15 +1034,14 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                           {showPasswords && (
                             <div>
                               <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Password Hash:</strong>
-                              <span className={`text-xs font-mono break-all ${
-                                isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
+                              <span className={`text - xs font - mono break-all ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                } `}>
                                 {user.password_hash}
                               </span>
                             </div>
                           )}
                           <div>
-                            <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Créé le:</strong> {new Date(user.created_at).toLocaleString('fr-FR')}
+                            <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Créé le:</strong> {new Date(user.created_at || new Date().toISOString()).toLocaleString('fr-FR')}
                           </div>
                           <div>
                             <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>Tags:</strong> {user.tags || 'Aucun'}
@@ -1146,21 +1055,19 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
               {dbActiveTab === 'pages' && (
                 <div>
-                  <h3 className={`text-md font-medium mb-4 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <h3 className={`text - md font - medium mb - 4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                    } `}>
                     Pages ({dbStats.pages.length})
                   </h3>
-                  
+
                   <div className="grid gap-4">
                     {dbStats.pages.map(page => (
                       <div
                         key={page.id}
-                        className={`p-4 rounded-lg border ${
-                          isDarkMode 
-                            ? 'bg-gray-700 border-gray-600' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
+                        className={`p - 4 rounded - lg border ${isDarkMode
+                          ? 'bg-gray-700 border-gray-600'
+                          : 'bg-gray-50 border-gray-200'
+                          } `}
                       >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
@@ -1190,57 +1097,51 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
               {dbActiveTab === 'activities' && (
                 <div>
-                  <h3 className={`text-md font-medium mb-4 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <h3 className={`text - md font - medium mb - 4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                    } `}>
                     Activités ({dbStats.activities.length})
                   </h3>
-                  
+
                   <div className="grid gap-2">
                     {dbStats.activities.map(activity => (
                       <div
                         key={activity.id}
-                        className={`p-3 rounded-lg border ${
-                          isDarkMode 
-                            ? 'bg-gray-700 border-gray-600' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
+                        className={`p - 3 rounded - lg border ${isDarkMode
+                          ? 'bg-gray-700 border-gray-600'
+                          : 'bg-gray-50 border-gray-200'
+                          } `}
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <strong className={isDarkMode ? 'text-white' : 'text-gray-900'}>
                               {activity.username}
                             </strong>
-                            <span className={`ml-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                              {activity.action}
+                            <span className={`ml - 2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} `}>
+                              {activity.type}
                             </span>
-                            {activity.target && (
-                              <span className={`ml-2 font-medium ${
-                                isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                              }`}>
-                                "{activity.target}"
+                            {activity.username && (
+                              <span className={`ml - 2 font - medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                                } `}>
+                                by {activity.username}
                               </span>
                             )}
                           </div>
-                          <span className={`text-sm ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {new Date(activity.timestamp).toLocaleString('fr-FR')}
+                          <span className={`text - sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            } `}>
+                            {new Date(activity.created_at || new Date().toISOString()).toLocaleString('fr-FR')}
                           </span>
                         </div>
-                        {activity.details && (
-                          <div className={`mt-1 text-sm ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {activity.details}
+                        {activity.title && (
+                          <div className={`mt - 1 text - sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            } `}>
+                            {activity.title}
                           </div>
                         )}
                       </div>
                     ))}
                     {dbStats.activities.length === 0 && (
-                      <div className={`text-center py-8 ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
+                      <div className={`text - center py - 8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        } `}>
                         Aucune activité trouvée
                       </div>
                     )}
@@ -1253,9 +1154,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           {activeTab === 'tags' && (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-lg font-semibold ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+                <h2 className={`text - lg font - semibold ${isDarkMode ? 'text-white' : 'text-gray-900'
+                  } `}>
                   Gestion des Tags ({tags.length})
                 </h2>
                 <button
@@ -1269,14 +1169,12 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
               {/* Formulaire d'ajout de tag */}
               {isAddingTag && (
-                <div className={`p-4 rounded-lg border mb-4 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600' 
-                    : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <h3 className={`font-medium mb-3 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
+                <div className={`p - 4 rounded - lg border mb - 4 ${isDarkMode
+                  ? 'bg-gray-700 border-gray-600'
+                  : 'bg-gray-50 border-gray-200'
+                  } `}>
+                  <h3 className={`font - medium mb - 3 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                    } `}>
                     Nouveau tag
                   </h3>
                   <div className="flex items-center space-x-3">
@@ -1285,11 +1183,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                       value={newTag.name}
                       onChange={(e) => setNewTag({ ...newTag, name: e.target.value })}
                       placeholder="Nom du tag"
-                      className={`flex-1 px-3 py-2 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isDarkMode 
-                          ? 'bg-slate-700 text-white border-slate-600' 
-                          : 'bg-white text-gray-900 border-gray-300'
-                      }`}
+                      className={`flex - 1 px - 3 py - 2 rounded border focus: outline - none focus: ring - 2 focus: ring - blue - 500 ${isDarkMode
+                        ? 'bg-slate-700 text-white border-slate-600'
+                        : 'bg-white text-gray-900 border-gray-300'
+                        } `}
                     />
                     <input
                       type="color"
@@ -1309,11 +1206,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                         setIsAddingTag(false);
                         setNewTag({ name: '', color: '#3B82F6' });
                       }}
-                      className={`px-4 py-2 rounded transition-colors ${
-                        isDarkMode 
-                          ? 'bg-gray-600 hover:bg-gray-700 text-white' 
-                          : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
-                      }`}
+                      className={`px - 4 py - 2 rounded transition - colors ${isDarkMode
+                        ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                        : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
+                        } `}
                     >
                       Annuler
                     </button>
@@ -1326,11 +1222,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                 {tags.map(tag => (
                   <div
                     key={tag.id}
-                    className={`p-4 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600' 
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
+                    className={`p - 4 rounded - lg border ${isDarkMode
+                      ? 'bg-gray-700 border-gray-600'
+                      : 'bg-gray-50 border-gray-200'
+                      } `}
                   >
                     {editingTag?.id === tag.id ? (
                       <div className="flex items-center space-x-3">
@@ -1338,11 +1233,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                           type="text"
                           value={editingTag.name}
                           onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
-                          className={`flex-1 px-3 py-2 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            isDarkMode 
-                              ? 'bg-slate-700 text-white border-slate-600' 
-                              : 'bg-white text-gray-900 border-gray-300'
-                          }`}
+                          className={`flex - 1 px - 3 py - 2 rounded border focus: outline - none focus: ring - 2 focus: ring - blue - 500 ${isDarkMode
+                            ? 'bg-slate-700 text-white border-slate-600'
+                            : 'bg-white text-gray-900 border-gray-300'
+                            } `}
                         />
                         <input
                           type="color"
@@ -1359,11 +1253,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                         </button>
                         <button
                           onClick={() => setEditingTag(null)}
-                          className={`px-3 py-2 rounded transition-colors ${
-                            isDarkMode 
-                              ? 'bg-gray-600 hover:bg-gray-700 text-white' 
-                              : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
-                          }`}
+                          className={`px - 3 py - 2 rounded transition - colors ${isDarkMode
+                            ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                            : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
+                            } `}
                         >
                           Annuler
                         </button>
@@ -1375,25 +1268,22 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                             className="w-6 h-6 rounded"
                             style={{ backgroundColor: tag.color }}
                           ></div>
-                          <span className={`font-medium ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
+                          <span className={`font - medium ${isDarkMode ? 'text-white' : 'text-gray-900'
+                            } `}>
                             {tag.name}
                           </span>
-                          <span className={`text-sm ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
+                          <span className={`text - sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            } `}>
                             {tag.color}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => setEditingTag({ ...tag })}
-                            className={`p-2 rounded transition-colors ${
-                              isDarkMode
-                                ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                            }`}
+                            className={`p - 2 rounded transition - colors ${isDarkMode
+                              ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                              : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                              } `}
                             title="Modifier"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -1411,9 +1301,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                   </div>
                 ))}
                 {tags.length === 0 && (
-                  <div className={`text-center py-8 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
+                  <div className={`text - center py - 8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    } `}>
                     Aucun tag trouvé
                   </div>
                 )}
@@ -1424,26 +1313,22 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           {/* Onglet Permissions */}
           {activeTab === 'permissions' && (
             <div className="space-y-6">
-              <div className={`p-6 border rounded-lg ${
-                isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
-              }`}>
-                <h3 className={`text-lg font-medium mb-4 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+              <div className={`p - 6 border rounded - lg ${isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
+                } `}>
+                <h3 className={`text - lg font - medium mb - 4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                  } `}>
                   Gestion des Permissions par Tag
                 </h3>
-                <p className={`text-sm mb-6 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
+                <p className={`text - sm mb - 6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  } `}>
                   Configurez les permissions pour chaque tag. Les utilisateurs héritent automatiquement des permissions de leurs tags.
                 </p>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Liste des tags */}
                   <div>
-                    <h4 className={`text-md font-medium mb-3 ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <h4 className={`text - md font - medium mb - 3 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                      } `}>
                       Tags
                     </h4>
                     <div className="space-y-2">
@@ -1451,15 +1336,14 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                         <button
                           key={tagPerm.id}
                           onClick={() => handleTagSelectionForPermissions(tagPerm)}
-                          className={`w-full p-3 rounded-lg text-left transition-colors ${
-                            selectedTagForPermissions?.id === tagPerm.id
-                              ? isDarkMode
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-blue-100 text-blue-900 border border-blue-300'
-                              : isDarkMode
-                                ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                                : 'bg-white hover:bg-gray-50 border border-gray-200'
-                          }`}
+                          className={`w - full p - 3 rounded - lg text - left transition - colors ${selectedTagForPermissions?.id === tagPerm.id
+                            ? isDarkMode
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-blue-100 text-blue-900 border border-blue-300'
+                            : isDarkMode
+                              ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                              : 'bg-white hover:bg-gray-50 border border-gray-200'
+                            } `}
                         >
                           <div className="flex items-center space-x-3">
                             <div
@@ -1468,11 +1352,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                             ></div>
                             <div>
                               <div className="font-medium">{tagPerm.name}</div>
-                              <div className={`text-sm ${
-                                selectedTagForPermissions?.id === tagPerm.id
-                                  ? isDarkMode ? 'text-blue-200' : 'text-blue-700'
-                                  : isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
+                              <div className={`text - sm ${selectedTagForPermissions?.id === tagPerm.id
+                                ? isDarkMode ? 'text-blue-200' : 'text-blue-700'
+                                : isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                                } `}>
                                 {tagPerm.permissions?.length || 0} permission(s)
                               </div>
                             </div>
@@ -1491,9 +1374,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                             className="w-4 h-4 rounded"
                             style={{ backgroundColor: selectedTagForPermissions.color }}
                           ></div>
-                          <h4 className={`text-md font-medium ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
+                          <h4 className={`text - md font - medium ${isDarkMode ? 'text-white' : 'text-gray-900'
+                            } `}>
                             Permissions de "{selectedTagForPermissions.name}"
                           </h4>
                         </div>
@@ -1506,9 +1388,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
                         />
                       </>
                     ) : (
-                      <div className={`text-center py-8 ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
+                      <div className={`text - center py - 8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        } `}>
                         Sélectionnez un tag pour voir et modifier ses permissions
                       </div>
                     )}

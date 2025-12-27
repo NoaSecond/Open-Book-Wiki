@@ -7,17 +7,17 @@ const requireAuth = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
-    return res.status(401).json({ 
+    return res.status(401).json({
       success: false,
-      message: 'Token d\'accès requis' 
+      message: 'Access token required'
     });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         success: false,
-        message: 'Token invalide' 
+        message: 'Invalid token'
       });
     }
     req.user = user;
@@ -25,13 +25,32 @@ const requireAuth = (req, res, next) => {
   });
 };
 
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      req.user = null; // Invalid token but continue as guest
+    } else {
+      req.user = user;
+    }
+    next();
+  });
+};
+
 const generateToken = (user) => {
   return jwt.sign(
-    { 
-      userId: user.id, 
-      username: user.username, 
+    {
+      userId: user.id,
+      username: user.username,
       email: user.email,
-      isAdmin: user.is_admin 
+      isAdmin: user.is_admin
     },
     JWT_SECRET,
     { expiresIn: '7d' }
@@ -40,9 +59,9 @@ const generateToken = (user) => {
 
 const requireAdmin = (req, res, next) => {
   if (!req.user || !req.user.isAdmin) {
-    return res.status(403).json({ 
+    return res.status(403).json({
       success: false,
-      message: 'Accès administrateur requis' 
+      message: 'Administrator access required'
     });
   }
   next();
@@ -50,6 +69,7 @@ const requireAdmin = (req, res, next) => {
 
 module.exports = {
   requireAuth,
+  optionalAuth,
   generateToken,
   requireAdmin,
   JWT_SECRET

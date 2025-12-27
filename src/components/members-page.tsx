@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Edit3, Calendar, Trophy, Shield, UserCheck, Eye, Trash2 } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import type { User } from '../services/authService';
+import { useWiki } from '../context/wiki-context';
+import { User } from '../types';
+import authService from '../services/auth-service';
 import { DateUtils } from '../utils/dateUtils';
 
 // Type étendu pour l'affichage des membres avec propriétés optionnelles
@@ -21,25 +22,38 @@ interface EditingUserData {
 }
 
 export const MembersPage: React.FC = () => {
-  const { allUsers, updateUserProfile, deleteUserProfile, isAdmin, isDarkMode } = useWiki();
+  const { isAdmin, isDarkMode } = useWiki();
   const [editingUserData, setEditingUserData] = useState<EditingUserData | null>(null);
+  const [allUsers, setAllUsers] = useState<DisplayUser[]>([]);
+
+  // Charger les utilisateurs
+  React.useEffect(() => {
+    const fetchUsers = async () => {
+      if (isAdmin()) {
+        try {
+          const users = await authService.getAllUsers();
+          setAllUsers(users);
+        } catch (error) {
+          console.error('Erreur lors du chargement des utilisateurs:', error);
+        }
+      }
+    };
+    fetchUsers();
+  }, [isAdmin]);
 
   const availableTags = ['Visiteur', 'Contributeur', 'Administrateur'];
 
   if (!isAdmin()) {
     return (
-      <main className={`flex-1 p-6 content-scrollbar ${
-        isDarkMode ? 'bg-gray-900' : 'bg-white'
-      }`}>
+      <main className={`flex-1 p-6 content-scrollbar ${isDarkMode ? 'bg-gray-900' : 'bg-white'
+        }`}>
         <div className="text-center">
-          <h1 className={`text-2xl font-bold mb-4 ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+          <h1 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
             Accès refusé
           </h1>
-          <p className={`${
-            isDarkMode ? 'text-gray-300' : 'text-gray-600'
-          }`}>
+          <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}>
             Vous devez être administrateur pour accéder à cette page.
           </p>
         </div>
@@ -53,25 +67,28 @@ export const MembersPage: React.FC = () => {
       username: user.username,
       email: user.email || '',
       avatar: user.avatar || '',
-      tags: [...user.tags],
+      tags: [...(user.tags || [])],
       password: ''
     });
   };
 
   const handleSaveProfile = async () => {
     if (!editingUserData) return;
-    
+
     try {
-      const success = await updateUserProfile(editingUserData.id, {
+      const success = await authService.updateUser(editingUserData.id, {
         username: editingUserData.username,
         email: editingUserData.email,
         avatar: editingUserData.avatar,
-        tags: editingUserData.tags,
-        password: editingUserData.password || undefined
+        tags: editingUserData.tags
+        // password: editingUserData.password || undefined // Note: authService.updateUser doesn't support password update yet via simple PUT
       });
-      
+
       if (success) {
         setEditingUserData(null);
+        // Recharger la liste
+        const users = await authService.getAllUsers();
+        setAllUsers(users);
       } else {
         alert('Erreur lors de la mise à jour du profil');
       }
@@ -81,10 +98,14 @@ export const MembersPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = (userId: number) => {
+  const handleDeleteUser = async (userId: number) => {
     try {
-      const success = deleteUserProfile(userId);
-      if (!success) {
+      const success = await authService.deleteUser(userId);
+      if (success) {
+        // Recharger la liste
+        const users = await authService.getAllUsers();
+        setAllUsers(users);
+      } else {
         alert('Erreur lors de la suppression du compte');
       }
     } catch (error) {
@@ -120,13 +141,11 @@ export const MembersPage: React.FC = () => {
   };
 
   return (
-    <main className={`flex-1 p-6 content-scrollbar ${
-      isDarkMode ? 'bg-gray-900' : 'bg-white'
-    }`}>
+    <main className={`flex-1 p-6 content-scrollbar ${isDarkMode ? 'bg-gray-900' : 'bg-white'
+      }`}>
       <div className="max-w-6xl mx-auto">
-        <h1 className={`text-3xl font-bold mb-8 ${
-          isDarkMode ? 'text-white' : 'text-gray-900'
-        }`}>
+        <h1 className={`text-3xl font-bold mb-8 ${isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
           Gestion des membres
         </h1>
 
@@ -134,11 +153,10 @@ export const MembersPage: React.FC = () => {
           {allUsers.map((user: DisplayUser) => (
             <div
               key={user.id}
-              className={`p-6 rounded-lg border transition-all duration-200 ${
-                isDarkMode
-                  ? 'bg-slate-800 border-slate-700 hover:bg-slate-750'
-                  : 'bg-white border-gray-200 hover:shadow-md'
-              }`}
+              className={`p-6 rounded-lg border transition-all duration-200 ${isDarkMode
+                ? 'bg-slate-800 border-slate-700 hover:bg-slate-750'
+                : 'bg-white border-gray-200 hover:shadow-md'
+                }`}
             >
               <div className="flex items-start justify-between">
                 {/* Informations utilisateur */}
@@ -146,9 +164,9 @@ export const MembersPage: React.FC = () => {
                   {/* Avatar */}
                   <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
                     {user.avatar ? (
-                      <img 
-                        src={user.avatar} 
-                        alt={user.username} 
+                      <img
+                        src={user.avatar}
+                        alt={user.username}
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     ) : (
@@ -158,15 +176,13 @@ export const MembersPage: React.FC = () => {
 
                   {/* Nom et email */}
                   <div>
-                    <h3 className={`text-xl font-semibold ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>
                       {user.username}
                     </h3>
                     {user.email && (
-                      <p className={`text-sm ${
-                        isDarkMode ? 'text-slate-400' : 'text-gray-600'
-                      }`}>
+                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
+                        }`}>
                         {user.email}
                       </p>
                     )}
@@ -175,10 +191,10 @@ export const MembersPage: React.FC = () => {
 
                 <div className="flex items-center space-x-4">
                   {/* Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    {user.tags.map((tag: string) => (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {(user.tags || []).map((tag, index) => (
                       <span
-                        key={tag}
+                        key={index}
                         className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium text-white ${getTagColor(tag)}`}
                       >
                         {getTagIcon(tag)}
@@ -191,27 +207,25 @@ export const MembersPage: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleEditProfile(user)}
-                      className={`p-2 rounded-md transition-colors ${
-                        isDarkMode 
-                          ? 'hover:bg-slate-700 text-slate-300' 
-                          : 'hover:bg-gray-200 text-gray-600'
-                      }`}
+                      className={`p-2 rounded-md transition-colors ${isDarkMode
+                        ? 'hover:bg-slate-700 text-slate-300'
+                        : 'hover:bg-gray-200 text-gray-600'
+                        }`}
                       title="Modifier le profil"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
-                    
+
                     <button
                       onClick={() => {
                         if (window.confirm(`Êtes-vous sûr de vouloir supprimer le compte de ${user.username} ?`)) {
                           handleDeleteUser(user.id);
                         }
                       }}
-                      className={`p-2 rounded-md transition-colors ${
-                        isDarkMode 
-                          ? 'hover:bg-red-700 text-red-400' 
-                          : 'hover:bg-red-100 text-red-600'
-                      }`}
+                      className={`p-2 rounded-md transition-colors ${isDarkMode
+                        ? 'hover:bg-red-700 text-red-400'
+                        : 'hover:bg-red-100 text-red-600'
+                        }`}
                       title="Supprimer le compte"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -221,9 +235,8 @@ export const MembersPage: React.FC = () => {
               </div>
 
               {/* Informations supplémentaires */}
-              <div className={`mt-4 flex items-center space-x-6 text-sm ${
-                isDarkMode ? 'text-slate-400' : 'text-gray-600'
-              }`}>
+              <div className={`mt-4 flex items-center space-x-6 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
+                }`}>
                 <div className="flex items-center space-x-1">
                   <Calendar className="w-4 h-4" />
                   <span>Membre depuis le {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}</span>
@@ -235,12 +248,10 @@ export const MembersPage: React.FC = () => {
               </div>
 
               {user.bio && (
-                <div className={`mt-3 p-3 rounded-lg ${
-                  isDarkMode ? 'bg-slate-700' : 'bg-gray-50'
-                }`}>
-                  <p className={`text-sm ${
-                    isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                <div className={`mt-3 p-3 rounded-lg ${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'
                   }`}>
+                  <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
                     {user.bio}
                   </p>
                 </div>
@@ -253,107 +264,96 @@ export const MembersPage: React.FC = () => {
       {/* Modal d'édition du profil */}
       {editingUserData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`p-6 rounded-lg shadow-xl w-96 max-w-90vw max-h-[90vh] overflow-y-auto ${
-            isDarkMode ? 'bg-gray-800' : 'bg-white'
-          }`}>
-            <h2 className={`text-xl font-bold mb-4 ${
-              isDarkMode ? 'text-white' : 'text-gray-900'
+          <div className={`p-6 rounded-lg shadow-xl w-96 max-w-90vw max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'
             }`}>
+            <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
               Modifier le profil de {editingUserData.username}
             </h2>
-            
+
             <div className="space-y-4">
               {/* Nom d'utilisateur */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                   Nom d'utilisateur
                 </label>
                 <input
                   type="text"
                   value={editingUserData.username}
-                  onChange={(e) => setEditingUserData(prev => 
+                  onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, username: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-900'
+                    }`}
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                   Email
                 </label>
                 <input
                   type="email"
                   value={editingUserData.email || ''}
-                  onChange={(e) => setEditingUserData(prev => 
+                  onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, email: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-900'
+                    }`}
                 />
               </div>
 
               {/* Avatar URL */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                   URL de l'avatar
                 </label>
                 <input
                   type="url"
                   value={editingUserData.avatar || ''}
-                  onChange={(e) => setEditingUserData(prev => 
+                  onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, avatar: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-900'
+                    }`}
                   placeholder="https://example.com/avatar.jpg"
                 />
               </div>
 
               {/* Nouveau mot de passe */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                   Nouveau mot de passe (optionnel)
                 </label>
                 <input
                   type="password"
                   value={editingUserData.password || ''}
-                  onChange={(e) => setEditingUserData(prev => 
+                  onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, password: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-900'
+                    }`}
                   placeholder="Laisser vide pour conserver l'actuel"
                 />
               </div>
 
               {/* Tags */}
               <div>
-                <label className={`block text-sm font-medium mb-2 ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                   Rôles
                 </label>
                 <div className="space-y-2">
@@ -385,15 +385,14 @@ export const MembersPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-3 justify-end mt-6">
               <button
                 onClick={() => setEditingUserData(null)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-600 text-white hover:bg-gray-700'
-                    : 'bg-gray-500 text-white hover:bg-gray-600'
-                }`}
+                className={`px-4 py-2 rounded-lg transition-colors ${isDarkMode
+                  ? 'bg-gray-600 text-white hover:bg-gray-700'
+                  : 'bg-gray-500 text-white hover:bg-gray-600'
+                  }`}
               >
                 Annuler
               </button>

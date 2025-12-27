@@ -5,7 +5,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 // Route publique : lister tous les tags (accessible à tous les utilisateurs connectés)
 router.get('/public', requireAuth, async (req, res) => {
   try {
-    const tags = await req.db.getAllTags();
+    const tags = await req.db.tags.getAllTags();
 
     res.json({
       success: true,
@@ -24,7 +24,7 @@ router.get('/public', requireAuth, async (req, res) => {
 // Route admin : lister tous les tags
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const tags = await req.db.getAllTags();
+    const tags = await req.db.tags.getAllTags();
 
     res.json({
       success: true,
@@ -52,10 +52,10 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    const tagId = await req.db.createTag(name, color);
+    const tagId = await req.db.tags.createTag(name, color);
 
     // Enregistrer l'activité
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: req.user.userId,
       type: 'admin',
       title: 'Tag créé',
@@ -100,7 +100,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
     }
 
     // Vérifier que le tag existe
-    const existingTag = await req.db.getTagById(parseInt(id));
+    const existingTag = await req.db.tags.getTagById(parseInt(id));
     if (!existingTag) {
       return res.status(404).json({
         success: false,
@@ -116,10 +116,10 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    const updatedTag = await req.db.updateTag(parseInt(id), name, color);
+    const updatedTag = await req.db.tags.updateTag(parseInt(id), name, color);
 
     // Enregistrer l'activité
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: req.user.userId,
       type: 'admin',
       title: 'Tag modifié',
@@ -156,7 +156,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
     const { id } = req.params;
 
     // Vérifier que le tag existe
-    const existingTag = await req.db.getTagById(parseInt(id));
+    const existingTag = await req.db.tags.getTagById(parseInt(id));
     if (!existingTag) {
       return res.status(404).json({
         success: false,
@@ -172,10 +172,10 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    await req.db.deleteTag(parseInt(id));
+    await req.db.tags.deleteTag(parseInt(id));
 
     // Enregistrer l'activité
-    await req.db.createActivity({
+    await req.db.activities.createActivity({
       userId: req.user.userId,
       type: 'admin',
       title: 'Tag supprimé',

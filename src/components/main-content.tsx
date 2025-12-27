@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, User, Plus } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import { ProfilePage } from './ProfilePage';
-import { MembersPage } from './MembersPage';
-import { CollapsibleSections } from './CollapsibleSections';
+import { useWiki } from '../context/wiki-context';
+import { ProfilePage } from './profile-page';
+import { MembersPage } from './members-page';
+import { CollapsibleSections } from './collapsible-sections';
 import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 
@@ -18,7 +18,7 @@ export const MainContent: React.FC = () => {
       logger.debug('📊 Page vue', currentPage);
     }
   }, [currentPage, wikiData]);
-  
+
   // Si c'est la page profil, afficher le composant ProfilePage
   if (currentPage === 'profile') {
     return <ProfilePage />;
@@ -28,21 +28,19 @@ export const MainContent: React.FC = () => {
   if (currentPage === 'members') {
     return <MembersPage />;
   }
-  
+
   const currentPageData = wikiData[currentPage];
-  
+
   if (!currentPageData) {
     return (
       <main className="flex-1 p-6">
         <div className="text-center py-12">
-          <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+          <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
             Page non trouvée
           </h2>
-          <p className={`transition-colors duration-300 ${
-            isDarkMode ? 'text-slate-400' : 'text-gray-600'
-          }`}>
+          <p className={`transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
+            }`}>
             La page demandée n'existe pas.
           </p>
         </div>
@@ -83,28 +81,28 @@ export const MainContent: React.FC = () => {
       <div className="max-w-4xl mx-auto p-6">
         {/* Page Header */}
         <div className={`mb-6 pb-4 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentPageData.title}</h1>
-          {canContribute() && (
-            <button
-              onClick={handleAddSection}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Ajouter une section</span>
-            </button>
-          )}
-        </div>
-        <div className={`flex items-center space-x-6 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-          <div className="flex items-center space-x-1">
-            <Calendar className="w-4 h-4" />
-            <span>Modifié {DateUtils.getRelativeTime(currentPageData.updated_at)}</span>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentPageData.title}</h1>
+            {canContribute() && (
+              <button
+                onClick={handleAddSection}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Ajouter une section</span>
+              </button>
+            )}
           </div>
-          <div className="flex items-center space-x-1">
-            <User className="w-4 h-4" />
-            <span>Par {currentPageData.author_username}</span>
+          <div className={`flex items-center space-x-6 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+            <div className="flex items-center space-x-1">
+              <Calendar className="w-4 h-4" />
+              <span>Modifié {DateUtils.getRelativeTime(currentPageData.updated_at || DateUtils.getCurrentTimestamp())}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <User className="w-4 h-4" />
+              <span>Par {currentPageData.author_username}</span>
+            </div>
           </div>
-        </div>
         </div>
 
         {/* Search Results Indicator */}
@@ -134,10 +132,10 @@ export const MainContent: React.FC = () => {
                       </button>
                     </h3>
                     <div className={`text-sm mb-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                      Par {page.author_username} • Modifié {DateUtils.getRelativeTime(page.updated_at)}
+                      Par {page.author_username} • Modifié {DateUtils.getRelativeTime(page.updated_at || DateUtils.getCurrentTimestamp())}
                     </div>
                     {enrichedPage.sections && enrichedPage.sections.length > 0 && (
-                      <CollapsibleSections 
+                      <CollapsibleSections
                         sections={enrichedPage.sections}
                         pageId={page.title}
                       />
@@ -153,7 +151,7 @@ export const MainContent: React.FC = () => {
           </div>
         ) : currentPageWithSections ? (
           /* Afficher le contenu normal de la page */
-          <CollapsibleSections 
+          <CollapsibleSections
             sections={currentPageWithSections.sections || []}
             pageId={currentPage}
           />

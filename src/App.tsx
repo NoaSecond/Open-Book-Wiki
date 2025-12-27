@@ -1,37 +1,37 @@
 import React, { useEffect } from 'react';
-import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
-import { MainContent } from './components/MainContent';
-import { EditModal } from './components/EditModal';
-import SimpleAdminPanel from './components/SimpleAdminPanel';
-import { WikiProvider, useWiki } from './context/WikiContext';
-import { getConfigService } from './services/configService';
+import { Header } from './components/app-header';
+import { Sidebar } from './components/app-sidebar';
+import { MainContent } from './components/main-content';
+import { EditModal } from './components/edit-modal';
+import SimpleAdminPanel from './components/simple-admin-panel';
+import { WikiProvider, useWiki } from './context/wiki-context';
+import { getConfigService } from './services/config-service';
 import logger from './utils/logger';
 
 const AppContent: React.FC = () => {
-  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData, isLoading, loadingMessage, isBackendConnected, retryConnection } = useWiki();
+  const { isDarkMode, isAdminPanelOpen, setIsAdminPanelOpen, user, wikiData, isLoading, loadingMessage, isBackendConnected, retryConnection, showRetry } = useWiki();
   const configService = getConfigService();
   const siteName = configService.getSiteName();
-  
+
   useEffect(() => {
-    logger.info('🚀 Application démarrée', siteName);
+    logger.info('🚀 Application started', siteName);
     const pageCount = Object.keys(wikiData).length;
-    logger.debug('📄 Pages chargées', pageCount);
+    logger.debug('📄 Pages loaded', pageCount);
     if (user) {
-      logger.user('👤 Utilisateur connecté', user.username);
+      logger.user('👤 User connected', user.username);
     }
   }, [user, wikiData, siteName]);
-  
+
   useEffect(() => {
     // Exposer la fonction de retry globalement
     (window as typeof window & { retryBackendConnection?: () => void }).retryBackendConnection = retryConnection;
-    
+
     return () => {
       // Nettoyer lors du démontage
       delete (window as typeof window & { retryBackendConnection?: () => void }).retryBackendConnection;
     };
   }, [retryConnection]);
-  
+
   useEffect(() => {
     // Mettre à jour le message de chargement dans l'écran de chargement HTML
     const updateLoadingMessage = () => {
@@ -40,23 +40,23 @@ const AppContent: React.FC = () => {
         loadingSubtitle.innerHTML = `${loadingMessage}<span class="loading-dots"></span>`;
       }
     };
-    
+
     // Gérer l'affichage du bouton retry
     const updateRetryButton = () => {
       const retryButton = document.getElementById('retry-button');
       if (retryButton) {
-        if (isLoading && !isBackendConnected && loadingMessage.includes('Connexion à la base de données')) {
+        if (showRetry) {
           retryButton.classList.add('show');
         } else {
           retryButton.classList.remove('show');
         }
       }
     };
-    
+
     updateLoadingMessage();
     updateRetryButton();
-  }, [loadingMessage, isLoading, isBackendConnected]);
-  
+  }, [loadingMessage, isLoading, showRetry]);
+
   useEffect(() => {
     // Masquer l'écran de chargement seulement quand l'initialisation est terminée ET que le backend est connecté
     // OU si on décide de continuer sans backend (pour l'instant, on reste en chargement)
@@ -70,30 +70,29 @@ const AppContent: React.FC = () => {
           }, 500);
         }
       };
-      
+
       // Petit délai pour s'assurer que le rendu est terminé
       const timer = setTimeout(() => {
         hideLoadingScreen();
-        logger.success('✨ Interface utilisateur prête');
+        logger.success('✨ User interface ready');
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isLoading, isBackendConnected]);
-  
+
   return (
-    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
-      isDarkMode 
-        ? 'dark bg-slate-900 text-slate-100' 
-        : 'light bg-gray-50 text-gray-900'
-    }`}>
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode
+      ? 'dark bg-slate-900 text-slate-100'
+      : 'light bg-gray-50 text-gray-900'
+      }`}>
       <Header />
       <div className="flex flex-1 min-h-0">
         <Sidebar />
         <MainContent />
       </div>
       <EditModal />
-      <SimpleAdminPanel 
+      <SimpleAdminPanel
         isOpenFromMenu={isAdminPanelOpen}
         onClose={() => setIsAdminPanelOpen(false)}
       />

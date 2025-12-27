@@ -53,14 +53,6 @@ cd backend
 npm start
 ```
 
-4. **Démarrez l'application :**
-
-Dans un premier terminal (Backend) :
-```bash
-cd backend
-npm start
-```
-
 Dans un second terminal (Frontend) :
 ```bash
 npm run dev

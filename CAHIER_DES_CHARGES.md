@@ -1,6 +1,6 @@
 # Cahier des charges - Open Book Wiki
 
-## 📋 Informations générales
+## Informations générales
 
 **Nom du projet** : Open Book Wiki  
 **Version** : 1.0.0  
@@ -8,11 +8,11 @@
 **Licence** : MIT  
 **Date de création** : Août 2025  
 
-## 🎯 Objectif du projet
+## Objectif du projet
 
 Open Book Wiki est une plateforme de documentation collaborative moderne, conçue pour permettre aux équipes et aux individus de créer, organiser et partager leurs connaissances de manière efficace et intuitive.
 
-## 📊 Vue d'ensemble technique
+## Vue d'ensemble technique
 
 ### Architecture
 - **Type** : Application web full-stack
@@ -39,7 +39,7 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **Sécurité** : Helmet, CORS, Rate Limiting
 - **Logging** : Morgan
 
-## 🎨 Interface utilisateur et fonctionnalités détaillées
+## Interface utilisateur et fonctionnalités détaillées
 
 ### **HEADER (Barre supérieure)**
 
@@ -345,12 +345,12 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **Sauvegarde** : Application de l'avatar à l'utilisateur
 - **Annulation** : Fermeture sans modification
 
-## 🔍 Fonctionnalités de recherche
+## Fonctionnalités de recherche
 
 ### Recherche globale
-- **Déclenchement** : 2 caractères minimum dans la barre de recherche
+- **Déclenchement** : 1 caractère minimum dans la barre de recherche
 - **Scope** : Titres et contenu des pages, sections si disponibles
-- **Affichage** : Remplacement du contenu principal par les résultats
+- **Affichage** : Surligner les occurences dans une couleur contrastée
 - **Performance** : Recherche côté client avec filtrage optimisé
 
 ### Navigation et ancres
@@ -358,7 +358,7 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **Navigation interne** : Liens directs vers sections spécifiques
 - **Breadcrumbs** : Localisation dans l'arborescence (futur)
 
-## 👥 Système d'authentification et permissions
+## Système d'authentification et permissions
 
 ### Authentification
 - **Login/Logout** : JWT avec localStorage persistant
@@ -375,7 +375,7 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **Permissions héritées** : Cumul des droits par tags
 - **Gestion centralisée** : Interface admin pour la configuration
 
-## 📊 Journalisation et activités
+## Journalisation et activités
 
 ### Types d'activités
 - **Authentification** : login, logout, profil mis à jour
@@ -392,7 +392,7 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **Historique global** : Toutes activités (panel admin)
 - **Filtrage** : Par type, utilisateur, période
 
-## 💾 Structure de données
+## Structure de données
 
 ### Tables principales
 - **users** : Comptes utilisateurs avec métadonnées
@@ -407,7 +407,7 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **configService** : Paramètres système (nom, description)
 - **Persistance** : Sauvegarde automatique des modifications
 
-## 🎨 Interface et expérience utilisateur
+## Interface et expérience utilisateur
 
 ### Thèmes
 - **Mode sombre** : Thème par défaut avec Tailwind CSS
@@ -430,7 +430,7 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **Optimisation bundle** : Tree shaking et code splitting
 - **Lazy loading** : Chargement différé des composants lourds
 
-## 🔧 Architecture technique
+## Architecture technique
 
 ### Frontend (React + TypeScript)
 - **État global** : Context API (WikiContext)
@@ -448,11 +448,9 @@ Open Book Wiki est une plateforme de documentation collaborative moderne, conçu
 - **Développement** : Vite dev server (port 5176) + Node.js (port 3001)
 - **Production** : Build optimisé avec assets statiques
 - **Configuration** : Variables d'environnement pour adaptation
-
-Cette spécification détaille exhaustivement toutes les fonctionnalités implémentées dans Open Book Wiki, servant de référence complète pour le développement et la maintenance du projet.
 - **Permissions** : Jeu complet de permissions par catégorie
 
-## 🔒 Sécurité
+## Sécurité
 
 ### Authentification
 - **JWT** : Tokens sécurisés avec expiration
@@ -470,7 +468,7 @@ Cette spécification détaille exhaustivement toutes les fonctionnalités implé
 - **Rate limiting** : Protection contre le spam
 - **Injection SQL** : Requêtes préparées SQLite
 
-## 📱 Responsive Design
+## Responsive Design
 
 ### Breakpoints
 - **Mobile** : < 768px
@@ -482,7 +480,7 @@ Cette spécification détaille exhaustivement toutes les fonctionnalités implé
 - **Édition** : Interface tactile optimisée
 - **Modales** : Redimensionnement automatique
 
-## 🚀 Performance
+## Performance
 
 ### Frontend
 - **Lazy loading** : Chargement composants à la demande
@@ -494,47 +492,14 @@ Cette spécification détaille exhaustivement toutes les fonctionnalités implé
 - **Pagination** : Chargement par lots des données
 - **Compression** : Gzip pour les réponses HTTP
 
-## 🔄 API REST
+## API REST
 
 ### Structure
 - **Base URL** : `/api`
 - **Versioning** : Préparé pour versioning futur
 - **Format** : JSON uniquement
 
-### Endpoints principaux
-
-#### Authentification (`/api/auth`)
-- `POST /login` : Connexion utilisateur
-- `POST /register` : Inscription utilisateur
-- `GET /verify` : Vérification token
-- `GET /me` : Informations utilisateur connecté
-- `POST /logout` : Déconnexion
-
-#### Wiki (`/api/wiki`)
-- `GET /` : Liste toutes les pages
-- `GET /:id` : Page spécifique
-- `POST /` : Créer nouvelle page
-- `PUT /:id` : Modifier page
-- `DELETE /:id` : Supprimer page
-
-#### Tags (`/api/tags`)
-- `GET /` : Liste tous les tags
-- `POST /` : Créer nouveau tag
-- `PUT /:id` : Modifier tag
-- `DELETE /:id` : Supprimer tag
-
-#### Permissions (`/api/permissions`)
-- `GET /` : Liste permissions
-- `GET /by-category` : Permissions par catégorie
-- `POST /` : Créer permission
-- `PUT /:id` : Modifier permission
-- `DELETE /:id` : Supprimer permission
-
-#### Activités (`/api/activities`)
-- `GET /` : Historique activités
-- `GET /user/:id` : Activités utilisateur spécifique
-
-## 📦 Déploiement
+## Déploiement
 
 ### Prérequis
 - **Node.js** : Version 16+ recommandée
@@ -552,13 +517,13 @@ Cette spécification détaille exhaustivement toutes les fonctionnalités implé
 - **Base de données** : Chemin configurable SQLite
 - **Logs** : Niveau de logging ajustable
 
-## 🔮 Évolutions futures
+## Évolutions futures
 
 ### Fonctionnalités envisagées
 - **Versioning** : Historique des modifications pages
 - **Commentaires** : Système de commentaires par page
 - **Notifications** : Alertes modifications importantes
-- **Export** : Export PDF/Word des pages
+- **Export** : Export PDF/Json/Markdown des pages
 - **Thèmes** : Personnalisation avancée interface
 - **Plugins** : Système d'extensions
 - **API externe** : Intégration services tiers
@@ -571,7 +536,7 @@ Cette spécification détaille exhaustivement toutes les fonctionnalités implé
 - **PWA** : Application web progressive
 - **Tests** : Suite de tests automatisés
 
-## 📞 Support et maintenance
+## Support et maintenance
 
 ### Documentation
 - **README** : Guide installation et utilisation
@@ -582,12 +547,3 @@ Cette spécification détaille exhaustivement toutes les fonctionnalités implé
 - **Logs** : Système de logging complet
 - **Erreurs** : Gestion centralisée des erreurs
 - **Monitoring** : Surveillance performance (à implémenter)
-
-### Communauté
-- **Issues** : GitHub pour signalement bugs
-- **Contributions** : Guide contribution avec Gitmoji
-- **License** : MIT pour usage libre
-
----
-
-*Ce cahier des charges représente l'état actuel d'Open Book Wiki et ses spécifications techniques. Il peut évoluer selon les besoins et retours utilisateurs.*

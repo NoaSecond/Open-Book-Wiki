@@ -1,25 +1,44 @@
 const express = require('express');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Récupérer toutes les activités de l'utilisateur connecté
-router.get('/', requireAuth, async (req, res) => {
+// Get all activities (user-specific or public for guests)
+router.get('/', optionalAuth, async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
-    
+
     const db = req.db;
-    const activities = await db.getActivitiesByUser(req.user.userId, parseInt(limit), offset);
-    
-    // Parser les métadonnées JSON
+    const userId = req.user ? req.user.userId : null;
+
+    // If user is connected, their activities + public? Or just theirs?
+    // For now, getActivitiesByUser filtered by user_id.
+    // We need a method to get public activities if not connected.
+    // BUT, the frontend uses this for "Recent Activity".
+    // If guest, we probably want to see global activities (or nothing).
+    // Let's modify to use getAllActivities if guest or getAllActivities (non-admin filtered?)
+    // To simplify: if userId, getActivitiesByUser. Else getAllActivities limited?
+
+    let activities;
+    if (userId) {
+      activities = await db.activities.getActivitiesByUser(userId, parseInt(limit), offset);
+    } else {
+      // Public activities for guests (maybe limit to non-sensitive types)
+      // Use getAllActivities but filter or create a getPublicActivities method
+      // For now, reusing getActivitiesByUser with null ID won't work.
+      // We will use getAllActivities (which does a JOIN users).
+      activities = (await db.activities.getAllActivities(parseInt(limit), offset)).filter(a => a.type !== 'admin');
+    }
+
+    // Parse JSON metadata
     const parsedActivities = activities.map(activity => ({
       ...activity,
       metadata: activity.metadata ? JSON.parse(activity.metadata) : {}
     }));
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       activities: parsedActivities,
       pagination: {
         page: parseInt(page),
@@ -29,92 +48,92 @@ router.get('/', requireAuth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des activités:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error retrieving activities:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Récupérer les activités d'aujourd'hui
+// Get today's activities
 router.get('/today', requireAuth, async (req, res) => {
   try {
     const db = req.db;
-    const activities = await db.getTodayActivitiesByUser(req.user.userId);
-    
-    // Parser les métadonnées JSON
+    const activities = await db.activities.getTodayActivitiesByUser(req.user.userId);
+
+    // Parse JSON metadata
     const parsedActivities = activities.map(activity => ({
       ...activity,
       metadata: activity.metadata ? JSON.parse(activity.metadata) : {}
     }));
 
-    res.json({ 
-      success: true, 
-      activities: parsedActivities 
+    res.json({
+      success: true,
+      activities: parsedActivities
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des activités du jour:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error retrieving today\'s activities:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Rechercher des activités
+// Search activities
 router.get('/search', requireAuth, async (req, res) => {
   try {
     const { q: searchTerm, limit = 50 } = req.query;
-    
+
     if (!searchTerm) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Terme de recherche requis' 
+      return res.status(400).json({
+        success: false,
+        message: 'Search term required'
       });
     }
 
     const db = req.db;
-    const activities = await db.searchActivities(req.user.userId, searchTerm, parseInt(limit));
-    
-    // Parser les métadonnées JSON
+    const activities = await db.activities.searchActivities(req.user.userId, searchTerm, parseInt(limit));
+
+    // Parse JSON metadata
     const parsedActivities = activities.map(activity => ({
       ...activity,
       metadata: activity.metadata ? JSON.parse(activity.metadata) : {}
     }));
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       activities: parsedActivities,
-      searchTerm 
+      searchTerm
     });
 
   } catch (error) {
-    console.error('Erreur lors de la recherche d\'activités:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error searching activities:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Créer une nouvelle activité
+// Create a new activity
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { type, title, description, icon, metadata } = req.body;
 
-    // Validation des données
+    // Data validation
     if (!type || !title) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Type et titre requis' 
+      return res.status(400).json({
+        success: false,
+        message: 'Type and title required'
       });
     }
 
     const db = req.db;
-    
-    const activityId = await db.createActivity({
+
+    const activityId = await db.activities.createActivity({
       userId: req.user.userId,
       type,
       title,
@@ -123,48 +142,48 @@ router.post('/', requireAuth, async (req, res) => {
       metadata: metadata || {}
     });
 
-    // Récupérer l'activité créée pour la retourner
-    const newActivity = await db.getActivitiesByUser(req.user.userId, 1, 0);
+    // Retrieve the created activity to return it
+    const newActivity = await db.activities.getActivitiesByUser(req.user.userId, 1, 0);
     const activity = newActivity[0];
 
-    // Parser les métadonnées JSON
+    // Parse JSON metadata
     const parsedActivity = {
       ...activity,
       metadata: activity.metadata ? JSON.parse(activity.metadata) : {}
     };
 
-    res.status(201).json({ 
-      success: true, 
-      message: 'Activité créée avec succès',
+    res.status(201).json({
+      success: true,
+      message: 'Activity created successfully',
       activity: parsedActivity
     });
 
   } catch (error) {
-    console.error('Erreur lors de la création de l\'activité:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error creating activity:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
 
-// Route admin : récupérer toutes les activités de tous les utilisateurs
+// Admin route: get all activities from all users
 router.get('/admin/all', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 100 } = req.query;
     const offset = (page - 1) * limit;
-    
+
     const db = req.db;
-    const activities = await db.getAllActivities(parseInt(limit), offset);
-    
-    // Parser les métadonnées JSON
+    const activities = await db.activities.getAllActivities(parseInt(limit), offset);
+
+    // Parse JSON metadata
     const parsedActivities = activities.map(activity => ({
       ...activity,
       metadata: activity.metadata ? JSON.parse(activity.metadata) : {}
     }));
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       activities: parsedActivities,
       pagination: {
         page: parseInt(page),
@@ -174,10 +193,10 @@ router.get('/admin/all', requireAuth, requireAdmin, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des activités (admin):', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur interne du serveur' 
+    console.error('Error retrieving activities (admin):', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });

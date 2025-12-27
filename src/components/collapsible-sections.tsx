@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import SortableSection from './SortableSection';
+import SortableSection from './sortable-section';
 import { ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
+import { useWiki } from '../context/wiki-context';
 
 
 import DateUtils from '../utils/dateUtils';
 import logger from '../utils/logger';
-import { MarkdownRenderer } from './MarkdownRenderer';
+import { MarkdownRenderer } from './markdown-renderer';
 
 export interface CollapsibleSectionsProps {
   sections: Array<{
     id: string;
     title: string;
     content: string;
-    lastModified: string;
-    author: string;
+    lastModified?: string;
+    author?: string;
   }>;
   pageId: string;
 }
@@ -128,7 +128,7 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
                       <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{section.title}</h3>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{DateUtils.getRelativeTime(section.lastModified)} par {section.author}</div>
+                      <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{DateUtils.getRelativeTime(section.lastModified || DateUtils.getCurrentTimestamp())} par {section.author || 'Inconnu'}</div>
                       {hasPermission('edit_sections') && (
                         <button
                           onClick={(e) => {

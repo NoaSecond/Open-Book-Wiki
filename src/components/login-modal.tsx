@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, User, Lock } from 'lucide-react';
-import { useWiki } from '../context/WikiContext';
-import authService from '../services/authService';
+import { useWiki } from '../context/wiki-context';
+import authService from '../services/auth-service';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
     try {
       const result = await authService.login(username, password);
-      
+
       if (result.success && result.user) {
         setUser(result.user);
         onClose();
@@ -49,20 +49,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`p-6 rounded-lg shadow-xl w-96 max-w-90vw ${
-        isDarkMode ? 'bg-gray-800' : 'bg-white'
-      }`}>
+      <div className={`p-6 rounded-lg shadow-xl w-96 max-w-90vw ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className={`text-xl font-bold ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+          <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
             Connexion
           </h2>
           <button
             onClick={handleClose}
-            className={`p-1 rounded-md transition-colors ${
-              isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-            }`}
+            className={`p-1 rounded-md transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+              }`}
           >
             <X className="w-5 h-5" />
           </button>
@@ -71,50 +68,44 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 mb-6">
             <div>
-              <label className={`block text-sm font-medium mb-2 ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}>
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                 Identifiant
               </label>
               <div className="relative">
-                <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`} />
+                <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`} />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Votre identifiant"
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' 
-                      : 'bg-white text-gray-900 border-gray-300 placeholder-gray-500'
-                  }`}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${isDarkMode
+                    ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400'
+                    : 'bg-white text-gray-900 border-gray-300 placeholder-gray-500'
+                    }`}
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className={`block text-sm font-medium mb-2 ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}>
+              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                 Mot de passe
               </label>
               <div className="relative">
-                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`} />
+                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`} />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Votre mot de passe"
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' 
-                      : 'bg-white text-gray-900 border-gray-300 placeholder-gray-500'
-                  }`}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${isDarkMode
+                    ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400'
+                    : 'bg-white text-gray-900 border-gray-300 placeholder-gray-500'
+                    }`}
                   required
                 />
               </div>
@@ -131,11 +122,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={handleClose}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                isDarkMode 
-                  ? 'bg-gray-600 hover:bg-gray-700 text-white' 
-                  : 'bg-gray-500 hover:bg-gray-600 text-white'
-              }`}
+              className={`px-4 py-2 rounded-lg transition-colors ${isDarkMode
+                ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                : 'bg-gray-500 hover:bg-gray-600 text-white'
+                }`}
             >
               Annuler
             </button>

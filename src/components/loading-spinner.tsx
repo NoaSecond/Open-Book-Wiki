@@ -7,15 +7,15 @@ interface LoadingSpinnerProps {
   className?: string;
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-  size = "40", 
-  speed = "1.5", 
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+  size = "40",
+  speed = "1.5",
   color = "#06b6d4",
-  className = "" 
+  className = ""
 }) => {
   return (
     <div className={`flex items-center justify-center ${className}`}>
-      <div 
+      <div
         className="animate-spin rounded-full border-4 border-t-transparent"
         style={{
           width: `${size}px`,
@@ -36,9 +36,9 @@ interface LoadingPageProps {
   color?: string;
 }
 
-export const LoadingPage: React.FC<LoadingPageProps> = ({ 
-  title = "Chargement...",
-  subtitle = "Veuillez patienter",
+export const LoadingPage: React.FC<LoadingPageProps> = ({
+  title = "Loading...",
+  subtitle = "Please wait while we prepare your session",
   size = "60",
   speed = "1.5",
   color = "#06b6d4"

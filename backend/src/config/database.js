@@ -3,10 +3,24 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const { promisify } = require('util');
 
+// Repositories
+const UserRepository = require('../repositories/user-repository');
+const WikiPageRepository = require('../repositories/wiki-page-repository');
+const TagRepository = require('../repositories/tag-repository');
+const ActivityRepository = require('../repositories/activity-repository');
+const PermissionRepository = require('../repositories/permission-repository');
+
 class DatabaseManager {
   constructor() {
     this.dbPath = path.join(__dirname, '../../data/openbookwiki.db');
     this.db = null;
+
+    // Repositories initialization
+    this.users = null;
+    this.wikiPages = null;
+    this.tags = null;
+    this.activities = null;
+    this.permissions = null;
   }
 
   async connect() {
@@ -35,6 +49,14 @@ class DatabaseManager {
 
           this.db.get = promisify(this.db.get.bind(this.db));
           this.db.all = promisify(this.db.all.bind(this.db));
+
+          // Initialize repositories
+          this.users = new UserRepository(this.db);
+          this.wikiPages = new WikiPageRepository(this.db);
+          this.tags = new TagRepository(this.db);
+          this.activities = new ActivityRepository(this.db);
+          this.permissions = new PermissionRepository(this.db);
+
           resolve();
         }
       });
@@ -169,82 +191,64 @@ class DatabaseManager {
   async seedDefaultData() {
     try {
       // Check if admin user exists
-      const adminUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['admin']);
+      const adminUser = await this.users.findUserByUsername('admin');
 
       if (!adminUser) {
         // Create default admin user
-        const hashedPassword = await bcrypt.hash('admin123', 10);
+        await this.users.createUser({
+          username: 'admin',
+          email: 'admin@openbookwiki.com',
+          password: 'admin123',
+          isAdmin: true,
+          avatar: '/avatars/avatar-openbookwiki.svg',
+          bio: 'Administrateur principal du wiki Open Book Wiki.',
+          tags: 'Administrateur'
+        });
 
-        await this.db.run(
-          'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            'admin',
-            'admin@openbookwiki.com',
-            hashedPassword,
-            true,
-            '/avatars/avatar-openbookwiki.svg',
-            'Administrateur principal du wiki Open Book Wiki.',
-            'Administrateur'
-          ]
-        );
-
-        // Get the admin user ID
-        const newAdmin = await this.db.get('SELECT * FROM users WHERE username = ?', ['admin']);
+        const newAdmin = await this.users.findUserByUsername('admin');
 
         // Create welcome activity for admin
-        await this.db.run(
-          'INSERT INTO activities (user_id, type, title, description, icon) VALUES (?, ?, ?, ?, ?)',
-          [
-            newAdmin.id,
-            'system',
-            'Welcome to Open Book Wiki!',
-            'Your admin account has been created successfully.',
-            'shield'
-          ]
-        );
+        await this.activities.createActivity({
+          userId: newAdmin.id,
+          type: 'system',
+          title: 'Welcome to Open Book Wiki!',
+          description: 'Your admin account has been created successfully.',
+          icon: 'shield',
+          metadata: {}
+        });
 
         console.log('Default admin user created successfully');
         console.log('Login credentials: admin / admin123');
       }
 
       // Create test users if they don't exist
-      const contributorUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['contributeur']);
+      const contributorUser = await this.users.findUserByUsername('contributeur');
       if (!contributorUser) {
-        const hashedPassword = await bcrypt.hash('contrib123', 10);
-
-        await this.db.run(
-          'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            'contributeur',
-            'contributeur@openbookwiki.com',
-            hashedPassword,
-            false,
-            '/avatars/avatar-blue.svg',
-            'Utilisateur contributeur qui peut créer et modifier des articles.',
-            'Contributeur'
-          ]
-        );
+        await this.users.createUser({
+          username: 'contributeur',
+          email: 'contributeur@openbookwiki.com',
+          password: 'contrib123',
+          isAdmin: false,
+          avatar: '/avatars/avatar-blue.svg',
+          bio: 'Utilisateur contributeur qui peut créer et modifier des articles.',
+          tags: 'Contributeur'
+        });
 
         console.log('Test contributor user created successfully');
         console.log('Login credentials: contributeur / contrib123');
       }
 
-      const visitorUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['visiteur']);
+      const visitorUser = await this.users.findUserByUsername('visiteur');
       if (!visitorUser) {
-        const hashedPassword = await bcrypt.hash('visit123', 10);
-
-        await this.db.run(
-          'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            'visiteur',
-            'visiteur@openbookwiki.com',
-            hashedPassword,
-            false,
-            '/avatars/avatar-green.svg',
-            'Utilisateur visiteur avec accès en lecture seule.',
-            'Visiteur'
-          ]
-        );
+        await this.users.createUser({
+          username: 'visiteur',
+          email: 'visiteur@openbookwiki.com',
+          password: 'visit123',
+          isAdmin: false,
+          avatar: '/avatars/avatar-green.svg',
+          bio: 'Utilisateur visiteur avec accès en lecture seule.',
+          tags: 'Visiteur'
+        });
 
         console.log('Test visitor user created successfully');
         console.log('Login credentials: visiteur / visit123');
@@ -255,7 +259,7 @@ class DatabaseManager {
 
       if (pageCount.count === 0) {
         // Create default pages
-        const adminUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['admin']);
+        const adminUser = await this.users.findUserByUsername('admin');
 
         const defaultPages = [
           {
@@ -331,8 +335,8 @@ Voici quelques exemples de syntaxe Markdown que vous pouvez utiliser :
 ---
 
 *Bon wiki ! 🚀*`,
-            author_id: adminUser.id,
-            is_protected: false
+            authorId: adminUser.id,
+            isProtected: false
           },
           {
             title: 'Démarrage',
@@ -405,28 +409,27 @@ Certaines pages peuvent être protégées contre la modification par des utilisa
 ---
 
 Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
-            author_id: adminUser.id,
-            is_protected: false
+            authorId: adminUser.id,
+            isProtected: false
           }
         ];
 
         for (const page of defaultPages) {
-          await this.db.run(
-            'INSERT INTO wiki_pages (title, content, author_id, is_protected) VALUES (?, ?, ?, ?)',
-            [page.title, page.content, page.author_id, page.is_protected]
-          );
+          await this.wikiPages.createWikiPage({
+            title: page.title,
+            content: page.content,
+            authorId: page.authorId,
+            isProtected: page.isProtected
+          });
 
-          // Add activity log for page creation
-          await this.db.run(
-            'INSERT INTO activities (user_id, type, title, description, icon) VALUES (?, ?, ?, ?, ?)',
-            [
-              page.author_id,
-              'create',
-              'Page "' + page.title + '" créée',
-              'Création de la page par défaut "' + page.title + '"',
-              'book-open'
-            ]
-          );
+          await this.activities.createActivity({
+            userId: page.authorId,
+            type: 'create',
+            title: 'Page "' + page.title + '" créée',
+            description: 'Création de la page par défaut "' + page.title + '"',
+            icon: 'book-open',
+            metadata: {}
+          });
         }
 
         console.log('Default wiki pages created successfully');
@@ -444,10 +447,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
         ];
 
         for (const tag of defaultTags) {
-          await this.db.run(
-            'INSERT INTO tags (name, color) VALUES (?, ?)',
-            [tag.name, tag.color]
-          );
+          await this.tags.createTag(tag.name, tag.color);
         }
 
         console.log('Default tags created successfully');
@@ -588,221 +588,6 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
         });
       });
     }
-  }
-
-  // User management methods
-  async createUser(userData) {
-    const { username, email, password, isAdmin = false, avatar = '/avatars/avatar-openbookwiki.svg' } = userData;
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await this.db.run(
-      'INSERT INTO users (username, email, password_hash, is_admin, avatar) VALUES (?, ?, ?, ?, ?)',
-      [username, email, hashedPassword, isAdmin, avatar]
-    );
-
-    return result.lastID;
-  }
-
-  async findUserByUsername(username) {
-    return await this.db.get('SELECT * FROM users WHERE username = ?', [username]);
-  }
-
-  async findUserByEmail(email) {
-    return await this.db.get('SELECT * FROM users WHERE email = ?', [email]);
-  }
-
-  async findUserById(id) {
-    return await this.db.get('SELECT * FROM users WHERE id = ?', [id]);
-  }
-
-  async updateLastLogin(userId) {
-    await this.db.run(
-      'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
-      [userId]
-    );
-  }
-
-  async getAllUsers() {
-    return await this.db.all(`
-      SELECT id, username, email, is_admin, avatar, bio, tags, created_at, last_login 
-      FROM users 
-      ORDER BY created_at DESC
-    `);
-  }
-
-  async getUserById(userId) {
-    return await this.db.get(`
-      SELECT id, username, email, is_admin, avatar, bio, tags, created_at, last_login 
-      FROM users 
-      WHERE id = ?
-    `, [userId]);
-  }
-
-  async updateUserProfile(userId, updates) {
-    const allowedFields = ['username', 'email', 'avatar', 'bio', 'tags'];
-    const fields = [];
-    const values = [];
-
-    // Construire la requête dynamiquement avec uniquement les champs autorisés
-    allowedFields.forEach(field => {
-      if (updates[field] !== undefined) {
-        fields.push(`${field} = ?`);
-        values.push(updates[field]);
-      }
-    });
-
-    if (fields.length === 0) {
-      throw new Error('Aucun champ valide à mettre à jour');
-    }
-
-    values.push(userId);
-    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
-
-    await this.db.run(query, values);
-    return await this.findUserById(userId);
-  }
-
-  // Activity management methods
-  async createActivity(activityData) {
-    const { userId, type, title, description, icon, metadata } = activityData;
-    const result = await this.db.run(
-      'INSERT INTO activities (user_id, type, title, description, icon, metadata) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, type, title, description, icon, JSON.stringify(metadata || {})]
-    );
-
-    return result.lastID;
-  }
-
-  async getActivitiesByUser(userId, limit = 50, offset = 0) {
-    return await this.db.all(
-      'SELECT * FROM activities WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [userId, limit, offset]
-    );
-  }
-
-  async getTodayActivitiesByUser(userId) {
-    return await this.db.all(
-      'SELECT * FROM activities WHERE user_id = ? AND DATE(created_at) = DATE("now") ORDER BY created_at DESC',
-      [userId]
-    );
-  }
-
-  async searchActivities(userId, searchTerm, limit = 50) {
-    const term = `%${searchTerm}%`;
-    return await this.db.all(
-      'SELECT * FROM activities WHERE user_id = ? AND (title LIKE ? OR description LIKE ?) ORDER BY created_at DESC LIMIT ?',
-      [userId, term, term, limit]
-    );
-  }
-
-  async getAllActivities(limit = 100, offset = 0) {
-    return await this.db.all(`
-      SELECT a.*, u.username 
-      FROM activities a 
-      JOIN users u ON a.user_id = u.id 
-      ORDER BY a.created_at DESC 
-      LIMIT ? OFFSET ?
-    `, [limit, offset]);
-  }
-
-  // Wiki pages management methods
-  async createWikiPage(pageData) {
-    const { title, content, authorId, isProtected = false } = pageData;
-    const result = await this.db.run(
-      'INSERT INTO wiki_pages (title, content, author_id, is_protected) VALUES (?, ?, ?, ?)',
-      [title, content, authorId, isProtected]
-    );
-
-    return result.lastID;
-  }
-
-  async findWikiPageByTitle(title) {
-    return await this.db.get('SELECT * FROM wiki_pages WHERE title = ?', [title]);
-  }
-
-  async getAllWikiPages() {
-    return await this.db.all(`
-      SELECT w.*, u.username as author_username 
-      FROM wiki_pages w 
-      JOIN users u ON w.author_id = u.id 
-      ORDER BY w.updated_at DESC
-    `);
-  }
-
-  async updateWikiPage(id, content) {
-    await this.db.run(
-      'UPDATE wiki_pages SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [content, id]
-    );
-  }
-
-  async renameWikiPage(id, newTitle) {
-    await this.db.run(
-      'UPDATE wiki_pages SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [newTitle, id]
-    );
-  }
-
-  async findWikiPageById(id) {
-    return await this.db.get(`
-      SELECT w.*, u.username as author_username 
-      FROM wiki_pages w 
-      JOIN users u ON w.author_id = u.id 
-      WHERE w.id = ?
-    `, [id]);
-  }
-
-  // Tags management methods
-  async getAllTags() {
-    return await this.db.all(`
-      SELECT * FROM tags 
-      ORDER BY name ASC
-    `);
-  }
-
-  async createTag(name, color) {
-    const result = await this.db.run(
-      'INSERT INTO tags (name, color) VALUES (?, ?)',
-      [name, color]
-    );
-    return result.lastID;
-  }
-
-  async updateTag(id, name, color) {
-    await this.db.run(
-      'UPDATE tags SET name = ?, color = ? WHERE id = ?',
-      [name, color, id]
-    );
-    return await this.db.get('SELECT * FROM tags WHERE id = ?', [id]);
-  }
-
-  async deleteTag(id) {
-    await this.db.run('DELETE FROM tags WHERE id = ?', [id]);
-  }
-
-  async getTagById(id) {
-    return await this.db.get('SELECT * FROM tags WHERE id = ?', [id]);
-  }
-
-  async getUserPermissions(userId) {
-    return await this.db.all(`
-      SELECT DISTINCT p.name
-      FROM permissions p
-      JOIN tag_permissions tp ON p.id = tp.permission_id
-      JOIN tags t ON tp.tag_id = t.id
-      JOIN users u ON u.tags LIKE '%' || t.name || '%'
-      WHERE u.id = ?
-    `, [userId]);
-  }
-
-  async getGuestPermissions() {
-    return await this.db.all(`
-      SELECT DISTINCT p.name
-      FROM permissions p
-      JOIN tag_permissions tp ON p.id = tp.permission_id
-      JOIN tags t ON tp.tag_id = t.id
-      WHERE t.name = 'Utilisateur non connecté'
-    `);
   }
 }
 
