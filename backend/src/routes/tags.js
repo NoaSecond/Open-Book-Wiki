@@ -6,7 +6,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 router.get('/public', requireAuth, async (req, res) => {
   try {
     const tags = await req.db.getAllTags();
-    
+
     res.json({
       success: true,
       tags: tags
@@ -25,7 +25,7 @@ router.get('/public', requireAuth, async (req, res) => {
 router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const tags = await req.db.getAllTags();
-    
+
     res.json({
       success: true,
       tags: tags
@@ -44,16 +44,16 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { name, color } = req.body;
-    
+
     if (!name || !color) {
       return res.status(400).json({
         success: false,
         message: 'Le nom et la couleur du tag sont requis'
       });
     }
-    
+
     const tagId = await req.db.createTag(name, color);
-    
+
     // Enregistrer l'activité
     await req.db.createActivity({
       userId: req.user.userId,
@@ -62,7 +62,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
       description: `Création du tag "${name}" par ${req.user.username}`,
       icon: 'tag'
     });
-    
+
     res.json({
       success: true,
       message: 'Tag créé avec succès',
@@ -71,14 +71,14 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
   } catch (error) {
     console.error('Erreur lors de la création du tag:', error);
-    
+
     if (error.message && error.message.includes('UNIQUE constraint failed')) {
       return res.status(400).json({
         success: false,
         message: 'Un tag avec ce nom existe déjà'
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'
@@ -91,14 +91,14 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, color } = req.body;
-    
+
     if (!name || !color) {
       return res.status(400).json({
         success: false,
         message: 'Le nom et la couleur du tag sont requis'
       });
     }
-    
+
     // Vérifier que le tag existe
     const existingTag = await req.db.getTagById(parseInt(id));
     if (!existingTag) {
@@ -107,9 +107,17 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
         message: 'Tag non trouvé'
       });
     }
-    
+
+    // Empêcher la modification du tag système "Utilisateur non connecté"
+    if (existingTag.name === 'Utilisateur non connecté') {
+      return res.status(403).json({
+        success: false,
+        message: 'Le tag "Utilisateur non connecté" est un tag système et ne peut pas être modifié'
+      });
+    }
+
     const updatedTag = await req.db.updateTag(parseInt(id), name, color);
-    
+
     // Enregistrer l'activité
     await req.db.createActivity({
       userId: req.user.userId,
@@ -118,7 +126,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
       description: `Modification du tag "${name}" par ${req.user.username}`,
       icon: 'tag'
     });
-    
+
     res.json({
       success: true,
       message: 'Tag mis à jour avec succès',
@@ -127,14 +135,14 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 
   } catch (error) {
     console.error('Erreur lors de la modification du tag:', error);
-    
+
     if (error.message && error.message.includes('UNIQUE constraint failed')) {
       return res.status(400).json({
         success: false,
         message: 'Un tag avec ce nom existe déjà'
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'
@@ -146,7 +154,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Vérifier que le tag existe
     const existingTag = await req.db.getTagById(parseInt(id));
     if (!existingTag) {
@@ -155,9 +163,17 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
         message: 'Tag non trouvé'
       });
     }
-    
+
+    // Empêcher la suppression du tag système "Utilisateur non connecté"
+    if (existingTag.name === 'Utilisateur non connecté') {
+      return res.status(403).json({
+        success: false,
+        message: 'Le tag "Utilisateur non connecté" est un tag système et ne peut pas être supprimé'
+      });
+    }
+
     await req.db.deleteTag(parseInt(id));
-    
+
     // Enregistrer l'activité
     await req.db.createActivity({
       userId: req.user.userId,
@@ -166,7 +182,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
       description: `Suppression du tag "${existingTag.name}" par ${req.user.username}`,
       icon: 'tag'
     });
-    
+
     res.json({
       success: true,
       message: 'Tag supprimé avec succès'

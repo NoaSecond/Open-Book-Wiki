@@ -4,6 +4,22 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const { requireAuth, requireAdmin, JWT_SECRET } = require('../middleware/auth');
 
+// Get guest permissions (for unauthenticated users)
+router.get('/guest-permissions', async (req, res) => {
+  try {
+    const permissions = await req.db.getGuestPermissions();
+    const permissionNames = permissions.map(p => p.name);
+
+    res.json({
+      success: true,
+      permissions: permissionNames
+    });
+  } catch (error) {
+    console.error('Error fetching guest permissions:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 // Test route
 router.get('/test', (req, res) => {
   res.json({ success: true, message: 'Auth API works!' });
@@ -13,7 +29,7 @@ router.get('/test', (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
+
     if (!username || !password) {
       return res.status(400).json({
         success: false,
@@ -23,7 +39,7 @@ router.post('/login', async (req, res) => {
 
     // Find user in database
     const user = await req.db.findUserByUsername(username);
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -33,7 +49,7 @@ router.post('/login', async (req, res) => {
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-    
+
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -46,14 +62,18 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        username: user.username, 
-        isAdmin: user.is_admin 
+      {
+        userId: user.id,
+        username: user.username,
+        isAdmin: user.is_admin
       },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+
+    // Get user permissions
+    const permissions = await req.db.getUserPermissions(user.id);
+    const permissionNames = permissions.map(p => p.name);
 
     // Prepare user data (without password hash)
     const userData = {
@@ -63,7 +83,8 @@ router.post('/login', async (req, res) => {
       isAdmin: user.is_admin,
       avatar: user.avatar,
       lastLogin: new Date().toISOString(),
-      tags: user.is_admin ? ['Administrateur'] : ['Contributeur']
+      tags: user.is_admin ? ['Administrateur'] : ['Contributeur'],
+      permissions: permissionNames
     };
 
     // Log login activity
@@ -95,7 +116,7 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    
+
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -134,10 +155,10 @@ router.post('/register', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: newUser.id, 
-        username: newUser.username, 
-        isAdmin: newUser.is_admin 
+      {
+        userId: newUser.id,
+        username: newUser.username,
+        isAdmin: newUser.is_admin
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -183,7 +204,7 @@ router.post('/register', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const user = await req.db.findUserById(req.user.userId);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -211,6 +232,10 @@ router.get('/me', requireAuth, async (req, res) => {
       userTags = user.is_admin ? ['Administrateur'] : ['Contributeur'];
     }
 
+    // Get user permissions
+    const permissions = await req.db.getUserPermissions(user.id);
+    const permissionNames = permissions.map(p => p.name);
+
     const userData = {
       id: user.id,
       username: user.username,
@@ -220,6 +245,7 @@ router.get('/me', requireAuth, async (req, res) => {
       bio: user.bio,
       lastLogin: user.last_login,
       tags: userTags,
+      permissions: permissionNames,
       contributions: user.contributions || 0,
       joinDate: user.created_at
     };
@@ -242,7 +268,7 @@ router.get('/me', requireAuth, async (req, res) => {
 router.get('/verify', requireAuth, async (req, res) => {
   try {
     const user = await req.db.findUserById(req.user.userId);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -266,6 +292,10 @@ router.get('/verify', requireAuth, async (req, res) => {
       userTags = [];
     }
 
+    // Get user permissions
+    const permissions = await req.db.getUserPermissions(user.id);
+    const permissionNames = permissions.map(p => p.name);
+
     // Create user object with all properties
     const userData = {
       id: user.id,
@@ -275,6 +305,7 @@ router.get('/verify', requireAuth, async (req, res) => {
       avatar: user.avatar || 'avatar-openbookwiki.svg',
       lastLogin: user.last_login,
       tags: userTags,
+      permissions: permissionNames,
       bio: user.bio || '',
       contributions: user.contributions || 0,
       joinDate: user.created_at
@@ -298,30 +329,34 @@ router.get('/verify', requireAuth, async (req, res) => {
 router.put('/profile', requireAuth, async (req, res) => {
   try {
     const { avatar, username, email } = req.body;
-    
+
     // Data validation
     const updates = {};
     if (avatar) updates.avatar = avatar;
     if (username) updates.username = username;
     if (email) updates.email = email;
-    
+
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Aucune donnée à mettre à jour'
       });
     }
-    
+
     // Update profile
     const updatedUser = await req.db.updateUserProfile(req.user.userId, updates);
-    
+
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
         message: 'Utilisateur non trouvé'
       });
     }
-    
+
+    // Get user permissions
+    const permissions = await req.db.getUserPermissions(updatedUser.id);
+    const permissionNames = permissions.map(p => p.name);
+
     // Prepare user data (without password hash)
     const userData = {
       id: updatedUser.id,
@@ -330,9 +365,10 @@ router.put('/profile', requireAuth, async (req, res) => {
       isAdmin: updatedUser.is_admin,
       avatar: updatedUser.avatar,
       lastLogin: updatedUser.last_login,
-      tags: updatedUser.is_admin ? ['Administrateur'] : ['Contributeur']
+      tags: updatedUser.is_admin ? ['Administrateur'] : ['Contributeur'],
+      permissions: permissionNames
     };
-    
+
     // Log update activity
     await req.db.createActivity({
       userId: updatedUser.id,
@@ -341,7 +377,7 @@ router.put('/profile', requireAuth, async (req, res) => {
       description: `Mise à jour du profil de ${updatedUser.username}`,
       icon: 'user'
     });
-    
+
     res.json({
       success: true,
       message: 'Profil mis à jour avec succès',
@@ -388,7 +424,7 @@ router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   try {
     // This method must be added to DatabaseManager
     const users = await req.db.getAllUsers();
-    
+
     const userData = users.map(user => ({
       id: user.id,
       username: user.username,
@@ -421,7 +457,7 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { username, email, bio, tags, avatar } = req.body;
-    
+
     // Data validation
     const updates = {};
     if (username) updates.username = username;
@@ -429,14 +465,14 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
     if (bio !== undefined) updates.bio = bio;
     if (avatar) updates.avatar = avatar;
     if (tags) updates.tags = Array.isArray(tags) ? tags.join(',') : tags;
-    
+
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Aucune donnée à mettre à jour'
       });
     }
-    
+
     // Check if user exists
     const existingUser = await req.db.getUserById(parseInt(id));
     if (!existingUser) {
@@ -445,17 +481,17 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
         message: 'Utilisateur non trouvé'
       });
     }
-    
+
     // Update profile
     const updatedUser = await req.db.updateUserProfile(parseInt(id), updates);
-    
+
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
         message: 'Erreur lors de la mise à jour'
       });
     }
-    
+
     // Prepare user data
     const userData = {
       id: updatedUser.id,
@@ -468,7 +504,7 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
       lastLogin: updatedUser.last_login,
       created_at: updatedUser.created_at
     };
-    
+
     // Log update activity
     await req.db.createActivity({
       userId: req.user.userId,
@@ -477,7 +513,7 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
       description: `Modification du profil de ${updatedUser.username} par ${req.user.username}`,
       icon: 'user'
     });
-    
+
     res.json({
       success: true,
       message: 'Profil utilisateur mis à jour avec succès',

@@ -22,7 +22,7 @@ export interface CollapsibleSectionsProps {
 }
 
 export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sections, pageId }) => {
-  const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, canContribute, updatePage, refreshWikiData, wikiData } = useWiki();
+  const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, updatePage, refreshWikiData, wikiData, hasPermission } = useWiki();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     sections.length === 1 ? new Set([sections[0].id]) : new Set()
   );
@@ -103,7 +103,13 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
             const section = sectionMap[sectionId];
             const isExpanded = expandedSections.has(section.id);
             return (
-              <SortableSection key={section.id} id={section.id} isDarkMode={isDarkMode} isExpanded={isExpanded}>
+              <SortableSection
+                key={section.id}
+                id={section.id}
+                isDarkMode={isDarkMode}
+                isExpanded={isExpanded}
+                canDrag={hasPermission('reorder_sections')}
+              >
                 <div
                   id={`section-${section.id}`}
                   className={`border rounded-lg overflow-hidden ${isDarkMode ? 'border-slate-600' : 'border-gray-200'}`}
@@ -123,7 +129,7 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{DateUtils.getRelativeTime(section.lastModified)} par {section.author}</div>
-                      {canContribute() && (
+                      {hasPermission('edit_sections') && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

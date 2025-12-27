@@ -21,7 +21,7 @@
 - **Authentification** : JWT + bcrypt
 - **Sécurité** : Helmet, CORS, Rate Limiting
 
-## 🚀 Démarrage
+## Démarrage
 
 1. **Clonez le repository :**
 ```bash
@@ -70,12 +70,12 @@ npm run dev
 - Frontend : `http://localhost:5176`
 - API Backend : `http://localhost:3001`
 
-### 🔐 Connexion par défaut
+### Connexion par défaut
 
 - **Nom d'utilisateur :** `admin`
 - **Mot de passe :** `admin123`
 
-## 🔧 Scripts disponibles
+## Scripts disponibles
 
 ### Frontend
 - `npm run dev` : Lance le serveur de développement frontend
@@ -88,7 +88,7 @@ npm run dev
 ### Backend
 - `npm start` : Lance le serveur backend (depuis le dossier backend/)
 
-## 📁 Structure du projet
+## Structure du projet
 
 ```
 Open-Book-Wiki/
@@ -107,7 +107,7 @@ Open-Book-Wiki/
 └── README.md
 ```
 
-## 🎨 Personnalisation
+## Personnalisation
 
 ### Thème
 L'application utilise un thème sombre par défaut avec Tailwind CSS. Vous pouvez modifier les couleurs dans `tailwind.config.js`.
@@ -115,7 +115,7 @@ L'application utilise un thème sombre par défaut avec Tailwind CSS. Vous pouve
 ### Contenu
 Le contenu du wiki peut être modifié via l'interface d'édition ou en modifiant directement les composants dans le dossier `src/components/`.
 
-## 🤝 Contribution
+## Contribution
 
 1. Fork le projet
 2. Créez votre branche feature (`git checkout -b feature/AmazingFeature`)
@@ -123,7 +123,7 @@ Le contenu du wiki peut être modifié via l'interface d'édition ou en modifian
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
 
-### 🎨 Convention Gitmoji
+### Convention Gitmoji
 
 Ce projet utilise [Gitmoji](https://gitmoji.dev/) pour des messages de commit expressifs.
 Installez l'extension Gitmoji pour faciliter l'utilisation :
@@ -132,6 +132,6 @@ npm install -g gitmoji-cli
 gitmoji -c
 ```
 
-## 📝 Licence
+## Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.

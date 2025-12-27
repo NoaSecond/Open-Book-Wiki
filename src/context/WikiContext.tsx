@@ -15,18 +15,18 @@ interface WikiContextType {
   // État utilisateur
   user: User | null;
   setUser: (user: User | null) => void;
-  
+
   // État des données wiki
   wikiData: WikiData;
   setWikiData: (data: WikiData) => void;
-  
+
   // État de l'interface
   isDarkMode: boolean;
   setIsDarkMode: (isDark: boolean) => void;
   toggleDarkMode: () => void;
   currentPage: string;
   setCurrentPage: (page: string) => void;
-  
+
   // Modales
   isLoginModalOpen: boolean;
   setIsLoginModalOpen: (isOpen: boolean) => void;
@@ -34,11 +34,11 @@ interface WikiContextType {
   setIsEditModalOpen: (isOpen: boolean) => void;
   editingPageTitle: string | null;
   setEditingPageTitle: (title: string | null) => void;
-  
+
   // Panel administrateur
   isAdminPanelOpen: boolean;
   setIsAdminPanelOpen: (isOpen: boolean) => void;
-  
+
   // État de chargement
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -46,7 +46,7 @@ interface WikiContextType {
   setLoadingMessage: (message: string) => void;
   isBackendConnected: boolean;
   setIsBackendConnected: (connected: boolean) => void;
-  
+
   // Fonctions utilitaires
   refreshWikiData: () => Promise<void>;
   retryConnection: () => Promise<void>;
@@ -54,10 +54,11 @@ interface WikiContextType {
   updateUser: (userData: Partial<User>) => Promise<void>;
   isAdmin: () => boolean;
   canContribute: () => boolean;
-  
+  hasPermission: (permission: string) => boolean;
+
   // Fonction pour enrichir une page avec des sections temporaires
   enrichPageWithSections: (page: WikiPage) => WikiPage;
-  
+
   // Fonctions de gestion des pages
   addPage: (title: string) => Promise<string | null>;
   updatePage: (pageId: string, content: string) => Promise<void>;
@@ -66,10 +67,10 @@ interface WikiContextType {
   reorderPages: (pageIds: string[]) => Promise<void>;
   getFirstNavigationPage: () => string | null;
   renameSectionTitle: (pageId: string, sectionId: string, newTitle: string) => Promise<void>;
-  
+
   // Fonctions de gestion des sections (pour compatibilité)
   addSection: (title: string) => Promise<string | null>;
-  
+
   // États de recherche
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -102,6 +103,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
 
   // États
   const [user, setUser] = useState<User | null>(null);
+  const [guestPermissions, setGuestPermissions] = useState<string[]>([]);
   const [wikiData, setWikiData] = useState<WikiData>({});
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<string>('Accueil');
@@ -120,26 +122,26 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     if (!term || term.length < 2) {
       return [];
     }
-    
+
     const results: WikiPage[] = [];
     const searchTermLower = term.toLowerCase();
-    
+
     for (const [, page] of Object.entries(wikiData)) {
       // Rechercher dans le titre
       if (page.title.toLowerCase().includes(searchTermLower)) {
         results.push(page);
         continue;
       }
-      
+
       // Rechercher dans le contenu
       if (page.content.toLowerCase().includes(searchTermLower)) {
         results.push(page);
         continue;
       }
-      
+
       // Rechercher dans les sections si elles existent
       if (page.sections) {
-        const sectionMatch = page.sections.some(section => 
+        const sectionMatch = page.sections.some(section =>
           section.title.toLowerCase().includes(searchTermLower) ||
           section.content.toLowerCase().includes(searchTermLower)
         );
@@ -148,7 +150,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         }
       }
     }
-    
+
     return results;
   }, [wikiData]);
 
@@ -168,19 +170,19 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     if (page.sections) {
       return page;
     }
-    
+
     // Parser le contenu pour extraire les sections
     const content = page.content || '';
     const sections = [];
-    
+
     // Regex pour trouver les sections délimitées
     const sectionRegex = /<!-- SECTION:([^:]+):([^-]+) -->([\s\S]*?)<!-- END_SECTION:\1 -->/g;
     let match;
-    
+
     // Extraire toutes les sections délimitées
     while ((match = sectionRegex.exec(content)) !== null) {
       const [, sectionId, sectionTitle, sectionContent] = match;
-      
+
       sections.push({
         id: sectionId,
         title: sectionTitle.trim(),
@@ -189,13 +191,13 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         author: page.author_username
       });
     }
-    
+
     // Si aucune section délimitée n'est trouvée, créer une section par défaut
     if (sections.length === 0) {
       // Vérifier s'il y a déjà des balises de section main-content dans le contenu
       const mainContentMatch = content.match(/<!-- SECTION:main-content:([^-]+?) -->/);
       const defaultTitle = mainContentMatch ? mainContentMatch[1].trim() : 'Contenu principal';
-      
+
       const defaultSection = {
         id: 'main-content',
         title: defaultTitle,
@@ -220,7 +222,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         }
       }
     }
-    
+
     return {
       ...page,
       sections: sections
@@ -231,15 +233,15 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
   const refreshWikiData = useCallback(async () => {
     try {
       logger.info('🔄 Actualisation des données wiki...');
-      
+
       // Appel avec timeout pour éviter un blocage
       const pages = await Promise.race([
         wikiService.getAllPages(),
-        new Promise<null>((_, reject) => 
+        new Promise<null>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout getAllPages')), 3000)
         )
       ]);
-      
+
       if (pages) {
         const wikiDataMap: WikiData = {};
         pages.forEach(page => {
@@ -267,7 +269,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
       setIsLoading(true);
       setLoadingMessage('Tentative de reconnexion...');
       logger.info('🔄 Tentative de reconnexion au backend...');
-      
+
       try {
         // Test de connectivité backend simple (même logique que l'initialisation)
         await Promise.race([
@@ -278,41 +280,52 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
               'Authorization': `Bearer ${localStorage.getItem('wiki_token') || 'test'}`
             }
           }),
-          new Promise<Response>((_, reject) => 
+          new Promise<Response>((_, reject) =>
             setTimeout(() => reject(new Error('Timeout backend')), 3000)
           )
         ]);
-        
+
         // Si on arrive ici, le backend répond, vérifier l'authentification
         logger.info('✅ Backend disponible, vérification authentification...');
         const currentUser = await authService.checkAuth();
-        
+
         // Backend à nouveau disponible
         setIsBackendConnected(true);
         setLoadingMessage('Reconnecté ! Chargement des données...');
-        
+
         if (currentUser) {
           setUser(currentUser);
           logger.info('👤 Utilisateur reconnecté:', currentUser.username);
         }
-        
+
         // Recharger les données wiki
         await refreshWikiData();
-        
+
         // Charger les préférences
         const savedDarkMode = localStorage.getItem('wiki_dark_mode');
         if (savedDarkMode !== null) {
           setIsDarkMode(savedDarkMode === 'true');
         }
-        
+
         const savedCurrentPage = localStorage.getItem('wiki_current_page');
         if (savedCurrentPage) {
           setCurrentPage(savedCurrentPage);
         }
-        
+
+        // Fetch guest permissions
+        try {
+          const response = await fetch(configService.getApiUrl('/auth/guest-permissions'));
+          const data = await response.json();
+          if (data.success) {
+            setGuestPermissions(data.permissions);
+          }
+        } catch (error: any) {
+          logger.error('Erreur lors de la récupération des permissions invité:', error);
+        }
+
         setIsLoading(false);
         logger.success('✅ Reconnexion réussie');
-        
+
       } catch (backendError) {
         // Backend toujours indisponible
         logger.warn('⚠️ Backend toujours indisponible:', backendError instanceof Error ? backendError.message : String(backendError));
@@ -321,7 +334,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         // On reste en mode chargement, on ne fait PAS setIsLoading(false)
         return;
       }
-      
+
     } catch {
       logger.warn('⚠️ Échec de la reconnexion');
       setIsBackendConnected(false);
@@ -348,17 +361,17 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
       if (!user) {
         throw new Error('Aucun utilisateur connecté');
       }
-      
+
       // Mise à jour locale immédiate pour une meilleure UX
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      
+
       // Envoyer la mise à jour au serveur
       const token = localStorage.getItem('wiki_token');
       if (!token) {
         throw new Error('Token d\'authentification manquant');
       }
-      
+
       const response = await fetch(configService.getApiUrl('/auth/profile'), {
         method: 'PUT',
         headers: {
@@ -367,19 +380,19 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         },
         body: JSON.stringify(userData)
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok || !data.success) {
         // En cas d'erreur serveur, remettre l'ancien état
         setUser(user);
         throw new Error(data.message || 'Erreur lors de la mise à jour');
       }
-      
+
       // Mettre à jour avec les données du serveur
       setUser(data.user);
       logger.info('✅ Profil utilisateur mis à jour avec succès');
-      
+
     } catch (error) {
       logger.error('❌ Erreur lors de la mise à jour du profil', error instanceof Error ? error.message : String(error));
       // Remettre l'ancien état en cas d'erreur
@@ -398,7 +411,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         // Charger les données wiki avec timeout
         await Promise.race([
           refreshWikiData(),
-          new Promise<void>((_, reject) => 
+          new Promise<void>((_, reject) =>
             setTimeout(() => reject(new Error('Timeout wiki')), 3000)
           )
         ]);
@@ -406,19 +419,30 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         logger.info('ℹ️ Chargement des données par défaut');
         // Les données par défaut sont déjà gérées dans refreshWikiData
       }
-      
+
       // Charger les préférences utilisateur depuis localStorage
       setLoadingMessage('Chargement des préférences...');
       const savedDarkMode = localStorage.getItem('wiki_dark_mode');
       if (savedDarkMode !== null) {
         setIsDarkMode(savedDarkMode === 'true');
       }
-      
+
       const savedCurrentPage = localStorage.getItem('wiki_current_page');
       if (savedCurrentPage) {
         setCurrentPage(savedCurrentPage);
       }
-      
+
+      // Fetch guest permissions
+      try {
+        const response = await fetch(configService.getApiUrl('/auth/guest-permissions'));
+        const data = await response.json();
+        if (data.success) {
+          setGuestPermissions(data.permissions);
+        }
+      } catch (error: any) {
+        logger.error('Erreur lors de la récupération des permissions invité:', error);
+      }
+
       // Fin de l'initialisation réussie
       setIsLoading(false);
       logger.success('✅ Application initialisée');
@@ -428,11 +452,11 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
       try {
         logger.info('🚀 Initialisation de l\'application...');
         setLoadingMessage('Chargement du guide complet...');
-        
+
         // Tentative de connexion au backend
         setLoadingMessage('Connexion à la base de données...');
         logger.info('🔍 Tentative de connexion au backend...');
-        
+
         try {
           // Test de connectivité backend simple
           await Promise.race([
@@ -443,42 +467,42 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
                 'Authorization': `Bearer ${localStorage.getItem('wiki_token') || 'test'}`
               }
             }),
-            new Promise<Response>((_, reject) => 
+            new Promise<Response>((_, reject) =>
               setTimeout(() => reject(new Error('Timeout backend')), 3000)
             )
           ]);
-          
+
           // Si on arrive ici, le backend répond (même si auth échoue)
           logger.info('✅ Backend disponible, vérification authentification...');
-          
+
           // Maintenant vérifier l'authentification proprement
           const currentUser = await authService.checkAuth();
-          
+
           setIsBackendConnected(true);
           setLoadingMessage('Chargement des données utilisateur...');
-          
+
           if (currentUser) {
             setUser(currentUser);
             logger.info('👤 Utilisateur connecté:', currentUser.username);
           }
-          
+
           // Continuer l'initialisation seulement si le backend est connecté
           logger.info('📋 Continuation de l\'initialisation...');
           await continueInitialization();
-          
+
         } catch (backendError) {
           logger.warn('❌ Échec de connexion au backend:', backendError instanceof Error ? backendError.message : String(backendError));
           logger.info('ℹ️ Backend indisponible - mode hors ligne');
           setIsBackendConnected(false);
           setLoadingMessage('Connexion à la base de données...');
-          
+
           // En mode hors ligne, on reste en chargement indéfiniment
           // L'utilisateur pourra relancer manuellement ou attendre
           // On ne fait PAS setIsLoading(false) ici
           logger.info('🔄 Attente de reconnexion...');
           return;
         }
-        
+
       } catch (error) {
         logger.error('❌ Erreur lors de l\'initialisation', error instanceof Error ? error.message : String(error));
         // En cas d'erreur générale, on reste aussi en chargement
@@ -511,6 +535,19 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     return user !== null;
   };
 
+  const hasPermission = (permission: string): boolean => {
+    // Les admins ont toutes les permissions
+    if (isAdmin()) return true;
+
+    // Si l'utilisateur est connecté, vérifier ses permissions
+    if (user) {
+      return user.permissions?.includes(permission) || false;
+    }
+
+    // Si l'utilisateur n'est pas connecté, vérifier les permissions invité
+    return guestPermissions.includes(permission);
+  };
+
   const toggleDarkMode = (): void => {
     setIsDarkMode(!isDarkMode);
   };
@@ -534,11 +571,11 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
   const updatePage = async (pageId: string, content: string): Promise<void> => {
     try {
       logger.debug('🔧 updatePage appelée', { pageId, contentLength: content.length, contentPreview: content.substring(0, 100) });
-      
+
       // Vérifier si c'est une mise à jour de section (format: "pageTitle:sectionId")
       if (pageId.includes(':')) {
         const [pageTitle, sectionId] = pageId.split(':');
-        
+
         // Récupérer les données les plus fraîches depuis le backend au lieu du cache
         logger.debug('🔧 Récupération des données fraîches pour la section', { pageTitle, sectionId });
         const configService = getConfigService();
@@ -547,39 +584,39 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
         });
-        
+
         if (!response.ok) {
           throw new Error(`Erreur lors de la récupération des pages: ${response.status}`);
         }
-        
+
         const freshPages = await response.json();
         const page = freshPages.find((p: WikiPage) => p.id === pageTitle);
-        
+
         if (!page) {
           throw new Error(`Page "${pageTitle}" non trouvée`);
         }
-        
-        logger.debug('🔧 Mise à jour de section avec données fraîches', { 
-          pageTitle, 
-          sectionId, 
+
+        logger.debug('🔧 Mise à jour de section avec données fraîches', {
+          pageTitle,
+          sectionId,
           pageContentLength: page.content.length,
           contentHasSectionTags: page.content.includes(`<!-- SECTION:${sectionId}:`)
         });
-        
+
         // Remplacer le contenu de la section spécifique
         const sectionRegex = new RegExp(
           `(<!-- SECTION:${sectionId}:[^-]+ -->)[\\s\\S]*?(<!-- END_SECTION:${sectionId} -->)`,
           'g'
         );
-        
+
         const updatedContent = page.content.replace(sectionRegex, `$1\n${content}\n$2`);
-        
-        logger.debug('🔧 Contenu de section remplacé', { 
-          originalLength: page.content.length, 
+
+        logger.debug('🔧 Contenu de section remplacé', {
+          originalLength: page.content.length,
           updatedLength: updatedContent.length,
           wasModified: updatedContent !== page.content
         });
-        
+
         await wikiService.updatePage(pageTitle, updatedContent);
         logger.success(`✅ Section mise à jour`);
       } else {
@@ -588,7 +625,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
         await wikiService.updatePage(pageId, content);
         logger.success(`✅ Page mise à jour`);
       }
-      
+
       await refreshWikiData(); // Recharger les données
     } catch (error) {
       logger.error('❌ Erreur lors de la mise à jour', error instanceof Error ? error.message : String(error));
@@ -642,7 +679,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
       // Vérifier si les balises de section existent déjà
       const sectionPattern = `<!-- SECTION:${sectionId}:`;
       const hasSectionTags = page.content.includes(sectionPattern);
-      
+
       let updatedContent = page.content;
 
       if (!hasSectionTags) {
@@ -655,27 +692,27 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
           `(<!-- SECTION:${sectionId}:)([^-]+?)(-->)`,
           'g'
         );
-        
+
         updatedContent = page.content.replace(sectionRegex, `$1${newTitle}$3`);
         logger.debug('🔧 Titre modifié dans balises existantes', { sectionId, newTitle });
       }
-      
+
       // Vérifier si le contenu a été modifié
       if (updatedContent === page.content) {
         logger.warn(`⚠️ Aucune modification détectée pour la section "${sectionId}" dans la page "${pageId}"`);
         return;
       }
-      
-      logger.debug('🔧 Contenu modifié, sauvegarde en cours', { 
+
+      logger.debug('🔧 Contenu modifié, sauvegarde en cours', {
         originalLength: page.content.length,
         updatedLength: updatedContent.length,
         hasSectionTags
       });
-      
+
       // Mettre à jour la page avec le nouveau contenu
       await wikiService.updatePage(pageId, updatedContent);
       await refreshWikiData(); // Recharger les données
-      
+
       logger.success(`✅ Titre de section modifié en "${newTitle}"`);
     } catch (error) {
       logger.error('❌ Erreur lors du renommage de section', error instanceof Error ? error.message : String(error));
@@ -686,24 +723,24 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     try {
       // Générer un ID unique pour la section
       const sectionId = `section-${Date.now()}`;
-      
+
       // Obtenir la page actuelle
       const currentPageTitle = currentPage;
       const page = wikiData[currentPageTitle];
-      
+
       if (!page) {
         logger.error('❌ Page courante non trouvée');
         return null;
       }
-      
+
       // Ajouter la nouvelle section au contenu existant
       const newSectionContent = `\n\n<!-- SECTION:${sectionId}:${title} -->\n# ${title}\n\nContenu de la nouvelle section...\n<!-- END_SECTION:${sectionId} -->\n`;
       const updatedContent = page.content + newSectionContent;
-      
+
       // Mettre à jour la page avec le nouveau contenu
       await wikiService.updatePage(currentPageTitle, updatedContent);
       await refreshWikiData(); // Recharger les données
-      
+
       logger.success(`✅ Section "${title}" ajoutée`);
       return sectionId;
     } catch (error) {
@@ -744,17 +781,17 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     // État utilisateur
     user,
     setUser,
-    
+
     // État des données wiki
     wikiData,
     setWikiData,
-    
+
     // État de l'interface
     isDarkMode,
     setIsDarkMode,
     currentPage,
     setCurrentPage,
-    
+
     // Modales
     isLoginModalOpen,
     setIsLoginModalOpen,
@@ -762,11 +799,11 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     setIsEditModalOpen,
     editingPageTitle,
     setEditingPageTitle,
-    
+
     // Panel administrateur
     isAdminPanelOpen,
     setIsAdminPanelOpen,
-    
+
     // État de chargement
     isLoading,
     setIsLoading,
@@ -774,7 +811,7 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     setLoadingMessage,
     isBackendConnected,
     setIsBackendConnected,
-    
+
     // Fonctions utilitaires
     refreshWikiData,
     retryConnection,
@@ -782,8 +819,9 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     updateUser,
     isAdmin,
     canContribute,
+    hasPermission,
     toggleDarkMode,
-    
+
     // Fonctions de gestion des pages
     addPage,
     updatePage,
@@ -793,10 +831,10 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     getFirstNavigationPage,
     renameSectionTitle,
     addSection,
-    
+
     // Fonctions utilitaires pour les sections
     enrichPageWithSections,
-    
+
     // États de recherche
     searchTerm,
     setSearchTerm,

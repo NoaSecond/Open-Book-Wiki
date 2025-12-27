@@ -19,11 +19,11 @@ class DatabaseManager {
           console.log('Connected to SQLite database');
           // Sauvegarder la méthode originale
           const originalRun = this.db.run.bind(this.db);
-          
+
           // Promisify the database methods avec support pour lastID
-          this.db.run = function(sql, params = []) {
+          this.db.run = function (sql, params = []) {
             return new Promise((resolve, reject) => {
-              originalRun(sql, params, function(err) {
+              originalRun(sql, params, function (err) {
                 if (err) {
                   reject(err);
                 } else {
@@ -32,7 +32,7 @@ class DatabaseManager {
               });
             });
           };
-          
+
           this.db.get = promisify(this.db.get.bind(this.db));
           this.db.all = promisify(this.db.all.bind(this.db));
           resolve();
@@ -132,13 +132,13 @@ class DatabaseManager {
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_tag_permissions_permission_id ON tag_permissions (permission_id)');
 
       console.log('Database tables initialized successfully');
-      
+
       // Migrate existing tables if needed
       await this.migrateDatabase();
-      
+
       // Seed default data
       await this.seedDefaultData();
-      
+
     } catch (error) {
       console.error('Error initializing database tables:', error);
       throw error;
@@ -150,12 +150,12 @@ class DatabaseManager {
       // Check if bio and tags columns exist
       const tableInfo = await this.db.all("PRAGMA table_info(users)");
       const columns = tableInfo.map(col => col.name);
-      
+
       if (!columns.includes('bio')) {
         await this.db.run('ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ""');
         console.log('Added bio column to users table');
       }
-      
+
       if (!columns.includes('tags')) {
         await this.db.run('ALTER TABLE users ADD COLUMN tags TEXT DEFAULT ""');
         console.log('Added tags column to users table');
@@ -170,18 +170,18 @@ class DatabaseManager {
     try {
       // Check if admin user exists
       const adminUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['admin']);
-      
+
       if (!adminUser) {
         // Create default admin user
         const hashedPassword = await bcrypt.hash('admin123', 10);
-        
+
         await this.db.run(
           'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
           [
-            'admin', 
-            'admin@openbookwiki.com', 
-            hashedPassword, 
-            true, 
+            'admin',
+            'admin@openbookwiki.com',
+            hashedPassword,
+            true,
             '/avatars/avatar-openbookwiki.svg',
             'Administrateur principal du wiki Open Book Wiki.',
             'Administrateur'
@@ -211,14 +211,14 @@ class DatabaseManager {
       const contributorUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['contributeur']);
       if (!contributorUser) {
         const hashedPassword = await bcrypt.hash('contrib123', 10);
-        
+
         await this.db.run(
           'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
           [
-            'contributeur', 
-            'contributeur@openbookwiki.com', 
-            hashedPassword, 
-            false, 
+            'contributeur',
+            'contributeur@openbookwiki.com',
+            hashedPassword,
+            false,
             '/avatars/avatar-blue.svg',
             'Utilisateur contributeur qui peut créer et modifier des articles.',
             'Contributeur'
@@ -232,14 +232,14 @@ class DatabaseManager {
       const visitorUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['visiteur']);
       if (!visitorUser) {
         const hashedPassword = await bcrypt.hash('visit123', 10);
-        
+
         await this.db.run(
           'INSERT INTO users (username, email, password_hash, is_admin, avatar, bio, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
           [
-            'visiteur', 
-            'visiteur@openbookwiki.com', 
-            hashedPassword, 
-            false, 
+            'visiteur',
+            'visiteur@openbookwiki.com',
+            hashedPassword,
+            false,
             '/avatars/avatar-green.svg',
             'Utilisateur visiteur avec accès en lecture seule.',
             'Visiteur'
@@ -249,14 +249,14 @@ class DatabaseManager {
         console.log('Test visitor user created successfully');
         console.log('Login credentials: visiteur / visit123');
       }
-      
+
       // Check if default pages exist
       const pageCount = await this.db.get('SELECT COUNT(*) as count FROM wiki_pages');
-      
+
       if (pageCount.count === 0) {
         // Create default pages
         const adminUser = await this.db.get('SELECT * FROM users WHERE username = ?', ['admin']);
-        
+
         const defaultPages = [
           {
             title: 'Accueil',
@@ -409,13 +409,13 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
             is_protected: false
           }
         ];
-        
+
         for (const page of defaultPages) {
           await this.db.run(
             'INSERT INTO wiki_pages (title, content, author_id, is_protected) VALUES (?, ?, ?, ?)',
             [page.title, page.content, page.author_id, page.is_protected]
           );
-          
+
           // Add activity log for page creation
           await this.db.run(
             'INSERT INTO activities (user_id, type, title, description, icon) VALUES (?, ?, ?, ?, ?)',
@@ -428,33 +428,34 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
             ]
           );
         }
-        
+
         console.log('Default wiki pages created successfully');
       }
-      
+
       // Create default tags if they don't exist
       const tagCount = await this.db.get('SELECT COUNT(*) as count FROM tags');
-      
+
       if (tagCount.count === 0) {
         const defaultTags = [
           { name: 'Administrateur', color: '#DC2626' }, // Rouge
           { name: 'Contributeur', color: '#2563EB' },   // Bleu
-          { name: 'Visiteur', color: '#6B7280' }        // Gris
+          { name: 'Visiteur', color: '#6B7280' },       // Gris
+          { name: 'Utilisateur non connecté', color: '#94A3B8' } // Ardoise
         ];
-        
+
         for (const tag of defaultTags) {
           await this.db.run(
             'INSERT INTO tags (name, color) VALUES (?, ?)',
             [tag.name, tag.color]
           );
         }
-        
+
         console.log('Default tags created successfully');
       }
 
       // Create default permissions if they don't exist
       const permissionCount = await this.db.get('SELECT COUNT(*) as count FROM permissions');
-      
+
       if (permissionCount.count === 0) {
         const defaultPermissions = [
           // Admin permissions
@@ -483,30 +484,30 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
           { name: 'change_avatar', description: 'Changer son avatar', category: 'user' },
           { name: 'view_activity', description: 'Voir l\'activité', category: 'user' }
         ];
-        
+
         for (const permission of defaultPermissions) {
           await this.db.run(
             'INSERT INTO permissions (name, description, category) VALUES (?, ?, ?)',
             [permission.name, permission.description, permission.category]
           );
         }
-        
+
         console.log('Default permissions created successfully');
       }
 
       // Create default tag permissions if they don't exist
       const tagPermissionCount = await this.db.get('SELECT COUNT(*) as count FROM tag_permissions');
-      
+
       if (tagPermissionCount.count === 0) {
         // Get tag and permission IDs
         const adminTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Administrateur']);
         const contributorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Contributeur']);
         const visitorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Visiteur']);
-        
+
         const allPermissions = await this.db.all('SELECT id, name FROM permissions');
         const permissionMap = {};
         allPermissions.forEach(p => permissionMap[p.name] = p.id);
-        
+
         // Admin permissions (all permissions)
         if (adminTag) {
           for (const permission of allPermissions) {
@@ -516,13 +517,13 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
             );
           }
         }
-        
+
         // Contributor permissions (user permissions + edit pages)
         if (contributorTag) {
           const contributorPermissions = [
             'edit_pages', 'edit_own_profile', 'change_avatar', 'view_activity'
           ];
-          
+
           for (const permName of contributorPermissions) {
             if (permissionMap[permName]) {
               await this.db.run(
@@ -532,13 +533,13 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
             }
           }
         }
-        
+
         // Visitor permissions (user permissions only)
         if (visitorTag) {
           const visitorPermissions = [
             'edit_own_profile', 'change_avatar', 'view_activity'
           ];
-          
+
           for (const permName of visitorPermissions) {
             if (permissionMap[permName]) {
               await this.db.run(
@@ -548,7 +549,24 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
             }
           }
         }
-        
+
+        // Guest permissions (unauthenticated users)
+        const guestTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Utilisateur non connecté']);
+        if (guestTag) {
+          const guestPermissions = [
+            'view_activity'
+          ];
+
+          for (const permName of guestPermissions) {
+            if (permissionMap[permName]) {
+              await this.db.run(
+                'INSERT INTO tag_permissions (tag_id, permission_id) VALUES (?, ?)',
+                [guestTag.id, permissionMap[permName]]
+              );
+            }
+          }
+        }
+
         console.log('Default tag permissions created successfully');
       }
     } catch (error) {
@@ -576,12 +594,12 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
   async createUser(userData) {
     const { username, email, password, isAdmin = false, avatar = '/avatars/avatar-openbookwiki.svg' } = userData;
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     const result = await this.db.run(
       'INSERT INTO users (username, email, password_hash, is_admin, avatar) VALUES (?, ?, ?, ?, ?)',
       [username, email, hashedPassword, isAdmin, avatar]
     );
-    
+
     return result.lastID;
   }
 
@@ -624,7 +642,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
     const allowedFields = ['username', 'email', 'avatar', 'bio', 'tags'];
     const fields = [];
     const values = [];
-    
+
     // Construire la requête dynamiquement avec uniquement les champs autorisés
     allowedFields.forEach(field => {
       if (updates[field] !== undefined) {
@@ -632,14 +650,14 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
         values.push(updates[field]);
       }
     });
-    
+
     if (fields.length === 0) {
       throw new Error('Aucun champ valide à mettre à jour');
     }
-    
+
     values.push(userId);
     const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
-    
+
     await this.db.run(query, values);
     return await this.findUserById(userId);
   }
@@ -651,7 +669,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
       'INSERT INTO activities (user_id, type, title, description, icon, metadata) VALUES (?, ?, ?, ?, ?, ?)',
       [userId, type, title, description, icon, JSON.stringify(metadata || {})]
     );
-    
+
     return result.lastID;
   }
 
@@ -694,7 +712,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
       'INSERT INTO wiki_pages (title, content, author_id, is_protected) VALUES (?, ?, ?, ?)',
       [title, content, authorId, isProtected]
     );
-    
+
     return result.lastID;
   }
 
@@ -764,6 +782,27 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
 
   async getTagById(id) {
     return await this.db.get('SELECT * FROM tags WHERE id = ?', [id]);
+  }
+
+  async getUserPermissions(userId) {
+    return await this.db.all(`
+      SELECT DISTINCT p.name
+      FROM permissions p
+      JOIN tag_permissions tp ON p.id = tp.permission_id
+      JOIN tags t ON tp.tag_id = t.id
+      JOIN users u ON u.tags LIKE '%' || t.name || '%'
+      WHERE u.id = ?
+    `, [userId]);
+  }
+
+  async getGuestPermissions() {
+    return await this.db.all(`
+      SELECT DISTINCT p.name
+      FROM permissions p
+      JOIN tag_permissions tp ON p.id = tp.permission_id
+      JOIN tags t ON tp.tag_id = t.id
+      WHERE t.name = 'Utilisateur non connecté'
+    `);
   }
 }
 

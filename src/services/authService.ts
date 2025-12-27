@@ -14,6 +14,7 @@ export interface User {
   bio?: string;
   contributions?: number;
   joinDate?: string;
+  permissions?: string[];
 }
 
 interface LoginResponse {
@@ -62,7 +63,7 @@ class AuthService {
       'currentUser',
       'activityLogs'
     ];
-    
+
     oldKeys.forEach(key => {
       localStorage.removeItem(key);
     });
@@ -127,7 +128,7 @@ class AuthService {
 
       if (data.success && data.token && data.user) {
         this.setToken(data.token);
-        
+
         // Récupérer les données complètes de l'utilisateur via /me
         const completeUser = await this.verifyToken();
         if (completeUser) {
