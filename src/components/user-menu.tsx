@@ -10,7 +10,7 @@ export const UserMenu: React.FC = () => {
   const handleLogout = async () => {
     await logout();
     setIsOpen(false);
-    setCurrentPage('Accueil');
+    setCurrentPage('Home');
   };
 
   const handleProfile = () => {
@@ -38,8 +38,8 @@ export const UserMenu: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDarkMode
-            ? 'bg-slate-700 hover:bg-slate-600 text-white'
-            : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+          ? 'bg-slate-700 hover:bg-slate-600 text-white'
+          : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
           }`}
       >
         <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
@@ -64,8 +64,8 @@ export const UserMenu: React.FC = () => {
             onClick={() => setIsOpen(false)}
           />
           <div className={`absolute right-0 mt-2 w-64 rounded-lg shadow-lg border z-20 mini-scrollbar ${isDarkMode
-              ? 'bg-slate-800 border-slate-700'
-              : 'bg-white border-gray-200'
+            ? 'bg-slate-800 border-slate-700'
+            : 'bg-white border-gray-200'
             }`}>
             <div className={`p-4 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'
               }`}>
@@ -112,47 +112,47 @@ export const UserMenu: React.FC = () => {
               <button
                 onClick={handleProfile}
                 className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${isDarkMode
-                    ? 'hover:bg-slate-700 text-white'
-                    : 'hover:bg-gray-100 text-gray-900'
+                  ? 'hover:bg-slate-700 text-white'
+                  : 'hover:bg-gray-100 text-gray-900'
                   }`}
               >
                 <Settings className="w-4 h-4" />
-                <span>Profil</span>
+                <span>Profile</span>
               </button>
 
               <button
                 onClick={handleToggleTheme}
                 className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${isDarkMode
-                    ? 'hover:bg-slate-700 text-white'
-                    : 'hover:bg-gray-100 text-gray-900'
+                  ? 'hover:bg-slate-700 text-white'
+                  : 'hover:bg-gray-100 text-gray-900'
                   }`}
               >
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                <span>{isDarkMode ? 'Mode clair' : 'Mode sombre'}</span>
+                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
               </button>
 
               {isAdmin() && (
                 <button
                   onClick={handleAdminPanel}
                   className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${isDarkMode
-                      ? 'hover:bg-slate-700 text-white'
-                      : 'hover:bg-gray-100 text-gray-900'
+                    ? 'hover:bg-slate-700 text-white'
+                    : 'hover:bg-gray-100 text-gray-900'
                     }`}
                 >
                   <Grid3X3 className="w-4 h-4" />
-                  <span>Panel Admin</span>
+                  <span>Admin Panel</span>
                 </button>
               )}
 
               <button
                 onClick={handleLogout}
                 className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${isDarkMode
-                    ? 'hover:bg-slate-700 text-red-400'
-                    : 'hover:bg-gray-100 text-red-600'
+                  ? 'hover:bg-slate-700 text-red-400'
+                  : 'hover:bg-gray-100 text-red-600'
                   }`}
               >
                 <LogOut className="w-4 h-4" />
-                <span>Se déconnecter</span>
+                <span>Logout</span>
               </button>
             </div>
           </div>
