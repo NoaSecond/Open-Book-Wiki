@@ -1,4 +1,4 @@
-// Système de log avancé avec couleurs et emojis
+// Advanced logging system with colors and emojis
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -15,7 +15,7 @@ interface LogConfig {
   groupCollapsed: boolean;
 }
 
-// Type pour les données de log
+// Type for log data
 type LogData = string | number | boolean | object | Error | null | undefined;
 
 class Logger {
@@ -66,7 +66,7 @@ class Logger {
       this.config = { ...this.config, ...config };
     }
     
-    // Détecter l'environnement
+    // Detect environment
     if (process.env.NODE_ENV === 'production') {
       this.config.level = LogLevel.ERROR;
     }
@@ -117,7 +117,7 @@ class Logger {
     }
   }
 
-  // Méthodes principales
+  // Main methods
   debug(message: string, data?: LogData, component = '', emoji?: string): void {
     this.log(LogLevel.DEBUG, component, message, data, emoji);
   }
@@ -138,7 +138,7 @@ class Logger {
     this.log(LogLevel.SUCCESS, component, message, data, emoji);
   }
 
-  // Méthodes spécialisées avec emojis prédéfinis
+  // Specialized methods with predefined emojis
   auth(message: string, data?: LogData, component = 'Auth'): void {
     this.info(message, data, component, this.emojis.auth);
   }
@@ -171,7 +171,7 @@ class Logger {
     this.warn(message, data, component, this.emojis.security);
   }
 
-  // Méthodes d'actions avec emojis
+  // Action methods with emojis
   create(message: string, data?: LogData, component = ''): void {
     this.success(message, data, component, this.emojis.create);
   }
@@ -192,7 +192,7 @@ class Logger {
     this.debug(message, data, component, this.emojis.search);
   }
 
-  // Groupes de logs
+  // Log groups
   group(title: string, emoji?: string): void {
     const formattedTitle = emoji ? `${emoji} ${title}` : `📋 ${title}`;
     console.group(`%c${formattedTitle}`, this.styles.component);
@@ -207,7 +207,7 @@ class Logger {
     console.groupEnd();
   }
 
-  // Mesure de performance
+  // Performance measurement
   time(label: string): void {
     console.time(`⚡ ${label}`);
   }
@@ -216,7 +216,7 @@ class Logger {
     console.timeEnd(`⚡ ${label}`);
   }
 
-  // Table de données
+  // Data table
   table(data: LogData, label?: string): void {
     if (label) {
       this.info(`Tableau: ${label}`, undefined, 'Data', '📊');
@@ -224,7 +224,7 @@ class Logger {
     console.table(data);
   }
 
-  // Trace de la pile d'appels
+  // Call stack trace
   trace(message?: string): void {
     if (message) {
       this.debug(message, undefined, 'Trace', '🔍');
@@ -232,7 +232,7 @@ class Logger {
     console.trace();
   }
 
-  // Configuration du logger
+  // Logger configuration
   setLevel(level: LogLevel): void {
     this.config.level = level;
     this.info(`Niveau de log défini à: ${LogLevel[level]}`, { level }, 'Logger', '⚙️');
@@ -240,10 +240,10 @@ class Logger {
 
   setConfig(config: Partial<LogConfig>): void {
     this.config = { ...this.config, ...config };
-    this.info('Configuration du logger mise à jour', { config: this.config }, 'Logger', '⚙️');
+    this.info('Logger configuration updated', { config: this.config }, 'Logger', '⚙️');
   }
 
-  // Bannière de démarrage
+  // Start banner
   banner(appName: string, version: string, env: string): void {
     const styles = [
       'color: #3B82F6; font-size: 20px; font-weight: bold;',
@@ -253,18 +253,18 @@ class Logger {
     
     console.log('%c🌟 ' + appName, styles[0]);
     console.log('%c📦 Version: ' + version, styles[1]);
-    console.log('%c🌍 Environnement: ' + env, styles[2]);
+    console.log('%c🌍 Environment: ' + env, styles[2]);
     console.log('%c' + '='.repeat(50), 'color: #E5E7EB;');
   }
 }
 
-// Instance globale du logger
+// Global logger instance
 export const logger = new Logger();
 
-// Export par défaut
+// Default export
 export default logger;
 
-// Exposer le logger globalement en développement
+// Expose logger globally in development
 if (process.env.NODE_ENV === 'development') {
   (window as typeof window & { logger: typeof logger; LogLevel: typeof LogLevel }).logger = logger;
   (window as typeof window & { logger: typeof logger; LogLevel: typeof LogLevel }).LogLevel = LogLevel;

@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import authService from './services/authService';
+import authService from './services/auth-service';
 
 // Exposer authService globalement pour le debug (uniquement en développement)
 if (import.meta.env.DEV) {

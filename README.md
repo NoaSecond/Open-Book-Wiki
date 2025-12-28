@@ -8,48 +8,82 @@
 
 ## 🛠️ Technologies utilisées
 
-- **Frontend** : React 18 + TypeScript
+### Frontend
+- **Framework** : React 18 + TypeScript
 - **Styling** : Tailwind CSS
 - **Build Tool** : Vite
 - **Icons** : Lucide React
 - **Linting** : ESLint
 
-## 📦 Installation
+### Backend
+- **Runtime** : Node.js + Express
+- **Base de données** : SQLite
+- **Authentification** : JWT + bcrypt
+- **Sécurité** : Helmet, CORS, Rate Limiting
 
-1. Clonez le repository :
+## Démarrage
+
+1. **Clonez le repository :**
 ```bash
 git clone https://github.com/NoaSecond/Open-Book-Wiki
 cd Open-Book-Wiki
 ```
 
-2. Installez les dépendances :
+2. **Installez les dépendances :**
 ```bash
+# Frontend
 npm install
+
+# Backend
+cd backend
+npm install
+cd ..
 ```
 
-3. Lancez le serveur de développement :
+3. **Créez le dossier pour la base de données :**
+```bash
+mkdir backend/data
+```
+
+4. **Démarrez l'application :**
+
+Dans un premier terminal (Backend) :
+```bash
+cd backend
+npm start
+```
+
+Dans un second terminal (Frontend) :
 ```bash
 npm run dev
 ```
 
-4. Ouvrez votre navigateur et accédez à `http://localhost:5173`
+5. **Accédez à l'application :**
+- Frontend : `http://localhost:5176`
+- API Backend : `http://localhost:3001`
 
-## 🔧 Scripts disponibles
+### Connexion par défaut
 
-- `npm run dev` : Lance le serveur de développement
+- **Nom d'utilisateur :** `admin`
+- **Mot de passe :** `admin123`
+
+## Scripts disponibles
+
+### Frontend
+- `npm run dev` : Lance le serveur de développement frontend
 - `npm run build` : Construit l'application pour la production
 - `npm run preview` : Prévisualise la version de production
 - `npm run lint` : Vérifie le code avec ESLint
+- `npm run backend` : Lance uniquement le backend
+- `npm run start` : Alias pour `npm run dev`
 
-## 🎨 Personnalisation
-
-### Thème
-L'application utilise un thème sombre par défaut avec Tailwind CSS. Vous pouvez modifier les couleurs dans `tailwind.config.js`.
+### Backend
+- `npm start` : Lance le serveur backend (depuis le dossier backend/)
 
 ### Contenu
 Le contenu du wiki peut être modifié via l'interface d'édition ou en modifiant directement les composants dans le dossier `src/components/`.
 
-## 🤝 Contribution
+## Contribution
 
 1. Fork le projet
 2. Créez votre branche feature (`git checkout -b feature/AmazingFeature`)
@@ -57,7 +91,7 @@ Le contenu du wiki peut être modifié via l'interface d'édition ou en modifian
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
 
-### 🎨 Convention Gitmoji
+### Convention Gitmoji
 
 Ce projet utilise [Gitmoji](https://gitmoji.dev/) pour des messages de commit expressifs.
 Installez l'extension Gitmoji pour faciliter l'utilisation :
@@ -66,6 +100,6 @@ npm install -g gitmoji-cli
 gitmoji -c
 ```
 
-## 📝 Licence
+## Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
