@@ -13,6 +13,46 @@ const AppContent: React.FC = () => {
   const configService = getConfigService();
   const siteName = configService.getSiteName();
 
+  const hexToRgb = (hex: string) => {
+    if (!hex || hex[0] !== '#') return '0 0 0';
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+    return `${r} ${g} ${b}`;
+  };
+
+  useEffect(() => {
+    // Sync dark mode class with HTML tag
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Apply dynamic theme variables
+    const theme = configService.getThemeColors(isDarkMode ? 'dark' : 'light');
+    const root = document.documentElement;
+
+    if (theme) {
+      root.style.setProperty('--primary-color', hexToRgb(theme.primaryColor));
+      root.style.setProperty('--secondary-color', hexToRgb(theme.secondaryColor));
+      root.style.setProperty('--bg-color', hexToRgb(theme.backgroundColor));
+      root.style.setProperty('--surface-color', hexToRgb(theme.surfaceColor));
+      root.style.setProperty('--border-color', hexToRgb(theme.borderColor));
+      root.style.setProperty('--text-color', hexToRgb(theme.textColor));
+      root.style.setProperty('--text-muted-color', hexToRgb(theme.textMutedColor));
+      root.style.setProperty('--sidebar-color', hexToRgb(theme.sidebarColor));
+      root.style.setProperty('--header-color', hexToRgb(theme.headerColor));
+      root.style.setProperty('--accent-color', hexToRgb(theme.accentColor));
+
+      // Compute a hover color
+      root.style.setProperty('--primary-hover', hexToRgb(theme.primaryColor));
+
+      // Fallback for html/body
+      root.style.backgroundColor = theme.backgroundColor;
+      document.body.style.backgroundColor = theme.backgroundColor;
+    }
+  }, [isDarkMode, configService]);
   useEffect(() => {
     logger.info('🚀 Application started', siteName);
     const pageCount = Object.keys(wikiData).length;
@@ -82,10 +122,7 @@ const AppContent: React.FC = () => {
   }, [isLoading, isBackendConnected]);
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode
-      ? 'dark bg-slate-900 text-slate-100'
-      : 'light bg-gray-50 text-gray-900'
-      }`}>
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 bg-custom-bg text-custom-text`}>
       <Header />
       <div className="flex flex-1 min-h-0">
         <Sidebar />

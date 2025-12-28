@@ -14,7 +14,6 @@ export const Sidebar: React.FC = () => {
     currentPage,
     setCurrentPage,
     user,
-    isDarkMode,
     hasPermission,
     wikiData
   } = useWiki();
@@ -54,10 +53,7 @@ export const Sidebar: React.FC = () => {
   ], []);
 
   return (
-    <aside className={`w-64 h-full flex flex-col border-r transition-colors duration-300 ${isDarkMode
-      ? 'bg-slate-800 border-slate-700'
-      : 'bg-white border-gray-200'
-      }`}>
+    <aside className={`w-64 h-full flex flex-col border-r transition-colors duration-300 bg-custom-sidebar border-custom-border`}>
 
       <SidebarHeader onAddCategory={handleAddCategoryClick} />
 
@@ -74,7 +70,6 @@ export const Sidebar: React.FC = () => {
           onRename={handleRenamePage}
           onDelete={handleDeletePage}
           user={user}
-          isDarkMode={isDarkMode}
         />
 
         {/* Current page sections */}
@@ -86,10 +81,8 @@ export const Sidebar: React.FC = () => {
           } as WikiSection];
 
           return sections.length > 0 ? (
-            <div className={`mb-6 p-3 rounded-lg transition-colors duration-300 ${isDarkMode ? 'bg-slate-700/50' : 'bg-gray-100/50'
-              }`}>
-              <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+            <div className={`mb-6 p-3 rounded-lg transition-colors duration-300 bg-custom-surface/50`}>
+              <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 text-custom-text`}>
                 Sections de la page
               </h3>
               <ul className="space-y-1">
@@ -102,10 +95,7 @@ export const Sidebar: React.FC = () => {
                           element.scrollIntoView({ behavior: 'smooth' });
                         }
                       }}
-                      className={`w-full text-left flex items-center space-x-2 px-2 py-1 rounded text-xs transition-colors ${isDarkMode
-                        ? 'text-slate-300 hover:bg-slate-600 hover:text-white'
-                        : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                        }`}
+                      className={`w-full text-left flex items-center space-x-2 px-2 py-1 rounded text-xs transition-colors text-custom-muted hover:bg-custom-surface hover:text-custom-text`}
                     >
                       <ChevronRight className="w-3 h-3 flex-shrink-0" />
                       <span className="truncate">{section.title}</span>
@@ -119,16 +109,11 @@ export const Sidebar: React.FC = () => {
 
         <ActivityList recentActivities={recentActivities} />
 
-        <div className={`mt-4 p-4 bg-gradient-to-br rounded-lg border transition-colors duration-300 ${isDarkMode
-          ? 'from-cyan-600/20 to-violet-600/20 border-cyan-500/30'
-          : 'from-cyan-100/80 to-violet-100/80 border-cyan-200/50'
-          }`}>
-          <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 ${isDarkMode ? 'text-cyan-300' : 'text-cyan-700'
-            }`}>
+        <div className={`mt-4 mb-6 p-4 bg-primary/20 rounded-lg border border-primary/30 transition-colors duration-300`}>
+          <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 text-primary`}>
             Contribuer
           </h3>
-          <p className={`text-xs transition-colors duration-300 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-            }`}>
+          <p className={`text-xs transition-colors duration-300 text-custom-text/80`}>
             Aidez à améliorer ce wiki en ajoutant du contenu et en corrigeant les erreurs.
           </p>
         </div>

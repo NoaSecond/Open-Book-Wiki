@@ -33,19 +33,17 @@ interface NavigationListProps {
     onRename: (id: string, newTitle: string) => void;
     onDelete: (id: string, title: string) => void;
     user: User | null;
-    isDarkMode: boolean;
 }
 
 // Component for each draggable item
 const SortableItem: React.FC<{
     item: SidebarNavigationItem;
     isActive: boolean;
-    isDarkMode: boolean;
     canEdit: boolean;
     onNavigate: (id: string) => void;
     onRename: (id: string, title: string) => void;
     onDelete: (id: string, title: string) => void;
-}> = ({ item, isActive, isDarkMode, canEdit, onNavigate, onRename, onDelete }) => {
+}> = ({ item, isActive, canEdit, onNavigate, onRename, onDelete }) => {
     const {
         attributes,
         listeners,
@@ -82,12 +80,10 @@ const SortableItem: React.FC<{
     if (isBeingEdited) {
         return (
             <li ref={setNodeRef} style={style} className="relative">
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
-                    }`}>
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border border-custom-border bg-custom-surface`}>
                     <SvgIcon
                         name={item.iconName}
-                        className={`w-5 h-5 flex-shrink-0 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                            }`}
+                        className={`w-5 h-5 flex-shrink-0 text-custom-muted`}
                     />
                     <input
                         type="text"
@@ -97,10 +93,7 @@ const SortableItem: React.FC<{
                             if (e.key === 'Enter') handleSave();
                             if (e.key === 'Escape') handleCancel();
                         }}
-                        className={`flex-1 px-2 py-1 rounded border transition-colors ${isDarkMode
-                            ? 'bg-slate-600 border-slate-500 text-white placeholder-slate-300'
-                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                            }`}
+                        className={`flex-1 px-2 py-1 rounded border transition-colors bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
                         autoFocus
                     />
                     <div className="flex space-x-1">
@@ -126,15 +119,13 @@ const SortableItem: React.FC<{
                 <button
                     onClick={() => onNavigate(item.id)}
                     className={`flex-1 flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
-                        ? 'bg-cyan-600 text-white'
-                        : isDarkMode
-                            ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-custom-muted hover:bg-custom-surface hover:text-custom-text'
                         }`}
                 >
                     <SvgIcon
                         name={item.iconName}
-                        className={`w-5 h-5 ${isActive ? 'text-white' : isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}
+                        className={`w-5 h-5 ${isActive ? 'text-white' : 'text-custom-muted'}`}
                     />
                     <span className="truncate">{item.label}</span>
                 </button>
@@ -143,26 +134,17 @@ const SortableItem: React.FC<{
                     <div className="relative">
                         <button
                             onClick={() => setShowMenu(!showMenu)}
-                            className={`p-1 rounded transition-colors ${isDarkMode
-                                ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                }`}
+                            className={`p-1 rounded transition-colors text-custom-muted hover:text-custom-text hover:bg-custom-surface`}
                         >
                             <MoreHorizontal className="w-4 h-4" />
                         </button>
                         {showMenu && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                                <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 ${isDarkMode
-                                    ? 'bg-slate-800 border-slate-700'
-                                    : 'bg-white border-gray-200'
-                                    }`}>
+                                <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 bg-custom-surface border-custom-border`}>
                                     <button
                                         onClick={() => setIsBeingEdited(true)}
-                                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${isDarkMode
-                                            ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                                            }`}
+                                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
                                     >
                                         <Edit3 className="w-4 h-4" />
                                         <span>Renommer</span>
@@ -191,12 +173,11 @@ const SortableItem: React.FC<{
 const StaticItem: React.FC<{
     item: SidebarNavigationItem;
     isActive: boolean;
-    isDarkMode: boolean;
     canEdit: boolean;
     onNavigate: (id: string) => void;
     onRename: (id: string, title: string) => void;
     onDelete: (id: string, title: string) => void;
-}> = ({ item, isActive, isDarkMode, canEdit, onNavigate, onRename, onDelete }) => {
+}> = ({ item, isActive, canEdit, onNavigate, onRename, onDelete }) => {
     const [isBeingEdited, setIsBeingEdited] = useState(false);
     const [editingTitle, setEditingTitle] = useState(item.label);
     const [showMenu, setShowMenu] = useState(false);
@@ -218,12 +199,10 @@ const StaticItem: React.FC<{
     if (isBeingEdited) {
         return (
             <li className="relative">
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-50'
-                    }`}>
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border border-custom-border bg-custom-surface`}>
                     <SvgIcon
                         name={item.iconName}
-                        className={`w-5 h-5 flex-shrink-0 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                            }`}
+                        className={`w-5 h-5 flex-shrink-0 text-custom-muted`}
                     />
                     <input
                         type="text"
@@ -233,10 +212,7 @@ const StaticItem: React.FC<{
                             if (e.key === 'Enter') handleSave();
                             if (e.key === 'Escape') handleCancel();
                         }}
-                        className={`flex-1 px-2 py-1 rounded border transition-colors ${isDarkMode
-                            ? 'bg-slate-600 border-slate-500 text-white placeholder-slate-300'
-                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                            }`}
+                        className={`flex-1 px-2 py-1 rounded border transition-colors bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
                         autoFocus
                     />
                     <div className="flex space-x-1">
@@ -258,15 +234,13 @@ const StaticItem: React.FC<{
                 <button
                     onClick={() => onNavigate(item.id)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
-                        ? 'bg-cyan-600 text-white'
-                        : isDarkMode
-                            ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-custom-muted hover:bg-custom-surface hover:text-custom-text'
                         }`}
                 >
                     <SvgIcon
                         name={item.iconName}
-                        className={`w-5 h-5 ${isActive ? 'text-white' : isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}
+                        className={`w-5 h-5 ${isActive ? 'text-white' : 'text-custom-muted'}`}
                     />
                     <span className="truncate">{item.label}</span>
                 </button>
@@ -275,26 +249,17 @@ const StaticItem: React.FC<{
                     <div className="relative">
                         <button
                             onClick={() => setShowMenu(!showMenu)}
-                            className={`p-1 rounded transition-colors ${isDarkMode
-                                ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                }`}
+                            className={`p-1 rounded transition-colors text-custom-muted hover:text-custom-text hover:bg-custom-surface`}
                         >
                             <MoreHorizontal className="w-4 h-4" />
                         </button>
                         {showMenu && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                                <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 ${isDarkMode
-                                    ? 'bg-slate-800 border-slate-700'
-                                    : 'bg-white border-gray-200'
-                                    }`}>
+                                <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 bg-custom-surface border-custom-border`}>
                                     <button
                                         onClick={() => setIsBeingEdited(true)}
-                                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${isDarkMode
-                                            ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                                            }`}
+                                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
                                     >
                                         <Edit3 className="w-4 h-4" />
                                         <span>Renommer</span>
@@ -329,8 +294,7 @@ const NavigationList: React.FC<NavigationListProps> = ({
     onReorder,
     onRename,
     onDelete,
-    user,
-    isDarkMode
+    user
 }) => {
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -354,10 +318,8 @@ const NavigationList: React.FC<NavigationListProps> = ({
             <button
                 onClick={() => onNavigate('profile')}
                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${currentPage === 'profile'
-                    ? 'bg-cyan-600 text-white'
-                    : isDarkMode
-                        ? 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-custom-muted hover:bg-custom-surface hover:text-custom-text'
                     }`}
             >
                 <UserIcon className="w-5 h-5" />
@@ -376,7 +338,6 @@ const NavigationList: React.FC<NavigationListProps> = ({
                                 key={item.id}
                                 item={item}
                                 isActive={currentPage === item.id}
-                                isDarkMode={isDarkMode}
                                 canEdit={canEdit}
                                 onNavigate={onNavigate}
                                 onRename={onRename}
@@ -397,7 +358,6 @@ const NavigationList: React.FC<NavigationListProps> = ({
                     key={item.id}
                     item={item}
                     isActive={currentPage === item.id}
-                    isDarkMode={isDarkMode}
                     canEdit={canEdit}
                     onNavigate={onNavigate}
                     onRename={onRename}

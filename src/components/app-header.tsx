@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, LogIn, Edit3, Check, X, Sun, Moon } from 'lucide-react';
+import { Search, LogIn, Edit3, Sun, Moon } from 'lucide-react';
 import { useWiki } from '../context/wiki-context';
 import { UserMenu } from './user-menu';
 import { LoginModal } from './login-modal';
@@ -14,38 +14,25 @@ export const Header: React.FC = () => {
     isDarkMode,
     toggleDarkMode,
     setCurrentPage,
-    getFirstNavigationPage
+    getFirstNavigationPage,
+    openAdminTab
   } = useWiki();
 
   const configService = getConfigService();
   const siteName = configService.getSiteName();
   const siteDescription = configService.getSiteDescription();
+  const logoUrl = configService.getLogoUrl();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editTitle, setEditTitle] = useState(siteName);
 
-  const handleSaveTitle = () => {
-    if (editTitle.trim()) {
-      configService.setSiteName(editTitle.trim());
-      setIsEditingTitle(false);
-      logger.debug('✏️ Nom du wiki modifié:', editTitle.trim());
-      // Forcer un refresh pour mettre à jour l'affichage
-      window.location.reload();
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditTitle(siteName);
-    setIsEditingTitle(false);
+  const handleEditClick = () => {
+    openAdminTab('customization');
+    logger.debug('🎨 Opening customization tab');
   };
 
   return (
     <>
-      <header className={`shadow-lg border-b transition-colors duration-300 ${isDarkMode
-        ? 'bg-slate-800 border-slate-700'
-        : 'bg-white border-gray-200'
-        }`}>
+      <header className={`shadow-lg border-b transition-colors duration-300 bg-custom-header border-custom-border`}>
         <div className="max-w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -66,80 +53,37 @@ export const Header: React.FC = () => {
                 >
                   <div className="w-10 h-10 flex items-center justify-center">
                     <img
-                      src="/Icon.svg"
+                      src={logoUrl || "/Icon.svg"}
                       alt={`${siteName} Icon`}
                       className="w-10 h-10 object-contain"
                     />
                   </div>
                   <div>
-                    <div className="flex items-center space-x-2">
-                      {isEditingTitle ? (
-                        <input
-                          type="text"
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className={`text-2xl font-bold bg-transparent border-b-2 border-cyan-500 focus:outline-none transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'
-                            }`}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveTitle();
-                            if (e.key === 'Escape') handleCancelEdit();
-                          }}
-                          autoFocus
-                        />
-                      ) : (
-                        <h1 className={`text-2xl font-bold transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                          {siteName || 'Open Book Wiki'}
-                        </h1>
-                      )}
-                    </div>
-                    <p className={`text-sm transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
-                      }`}>
+                    <h1 className={`text-2xl font-bold transition-colors duration-300 text-custom-text`}>
+                      {siteName || 'Open Book Wiki'}
+                    </h1>
+                    <p className={`text-sm transition-colors duration-300 text-custom-muted`}>
                       {siteDescription || 'Wiki open source'}
                     </p>
                   </div>
                 </button>
 
                 {user?.isAdmin && (
-                  <div className="flex items-center space-x-1">
-                    {isEditingTitle ? (
-                      <>
-                        <button
-                          onClick={handleSaveTitle}
-                          className={`p-1 rounded hover:bg-opacity-80 transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-green-400' : 'hover:bg-gray-200 text-green-600'
-                            }`}
-                          title="Sauvegarder"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className={`p-1 rounded hover:bg-opacity-80 transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-red-400' : 'hover:bg-gray-200 text-red-600'
-                            }`}
-                          title="Annuler"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setIsEditingTitle(true)}
-                        className={`p-1 rounded hover:bg-opacity-80 transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
-                          }`}
-                        title="Modifier le nom du wiki"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    onClick={handleEditClick}
+                    className={`p-1 rounded hover:bg-opacity-80 transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                      }`}
+                    title="Customize wiki"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'
-                  }`} />
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 transition-colors duration-300 text-custom-text/40`} />
                 <input
                   type="text"
                   placeholder="Rechercher dans le wiki..."
@@ -150,10 +94,7 @@ export const Header: React.FC = () => {
                       logger.debug('🔍 Recherche', e.target.value);
                     }
                   }}
-                  className={`pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-64 transition-colors duration-300 ${isDarkMode
-                    ? 'bg-slate-700 text-white border-slate-600'
-                    : 'bg-gray-50 text-gray-900 border-gray-300'
-                    }`}
+                  className={`pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-64 transition-colors duration-300 bg-custom-bg text-custom-text border-custom-border`}
                 />
               </div>
 
@@ -166,7 +107,7 @@ export const Header: React.FC = () => {
                       setShowLoginModal(true);
                       logger.auth('🔐 Ouverture du modal de connexion');
                     }}
-                    className="flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+                    className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
                   >
                     <LogIn className="w-4 h-4" />
                     <span>Se connecter</span>
@@ -176,10 +117,7 @@ export const Header: React.FC = () => {
                       toggleDarkMode();
                       logger.debug('🎨 Basculement de thème:', !isDarkMode ? 'sombre' : 'clair');
                     }}
-                    className={`p-2 rounded-lg transition-colors ${isDarkMode
-                      ? 'bg-slate-700 hover:bg-slate-600 text-yellow-400'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                      }`}
+                    className={`p-2 rounded-lg transition-colors bg-custom-surface hover:bg-custom-surface/80 text-primary`}
                     title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
                   >
                     {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

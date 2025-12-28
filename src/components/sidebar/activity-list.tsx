@@ -8,49 +8,43 @@ interface ActivityListProps {
 }
 
 const ActivityList: React.FC<ActivityListProps> = ({ recentActivities }) => {
-    const { isDarkMode, hasPermission } = useWiki();
+    const { hasPermission } = useWiki();
 
     if (!hasPermission('view_activity')) {
         return null;
     }
 
     return (
-        <div className={`mt-8 p-4 rounded-lg transition-colors duration-300 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'
-            }`}>
-            <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+        <div className={`mt-8 p-4 rounded-lg transition-colors duration-300 bg-custom-surface border border-custom-border shadow-sm`}>
+            <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 text-custom-text`}>
                 Dernières modifications
             </h3>
             <div className="space-y-2">
                 {recentActivities.map((log: ActivityLog) => (
-                    <div key={log.id} className={`text-xs transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
-                        }`}>
+                    <div key={log.id} className={`text-xs transition-colors duration-300 text-custom-muted`}>
                         <div className="flex items-center space-x-1">
                             <span className="text-sm">{activityService.getActionIcon(log.action)}</span>
-                            <span className={`transition-colors duration-300 ${isDarkMode ? 'text-slate-300' : 'text-gray-800'
-                                }`}>
+                            <span className={`transition-colors duration-300 text-custom-text font-medium`}>
                                 {activityService.formatAction(log.action)}
                             </span>
                         </div>
-                        <div className="flex items-center space-x-1 mt-1">
+                        <div className="flex items-center space-x-1 mt-1 font-medium italic">
                             <User className="w-3 h-3" />
                             <span>{log.username}</span>
                         </div>
                         {log.target && (
-                            <div className={`truncate transition-colors duration-300 ${isDarkMode ? 'text-slate-300' : 'text-gray-800'
-                                }`}>
+                            <div className={`truncate transition-colors duration-300 text-custom-text`}>
                                 {log.target}
                             </div>
                         )}
-                        <div className="flex items-center space-x-1 mt-1">
+                        <div className="flex items-center space-x-1 mt-1 text-[10px] opacity-70">
                             <Clock className="w-3 h-3" />
                             <span>{new Date(log.timestamp).toLocaleDateString('fr-FR')}</span>
                         </div>
                     </div>
                 ))}
                 {recentActivities.length === 0 && (
-                    <div className={`text-xs transition-colors duration-300 ${isDarkMode ? 'text-slate-500' : 'text-gray-500'
-                        }`}>
+                    <div className={`text-xs transition-colors duration-300 text-custom-muted italic`}>
                         Aucune modification récente
                     </div>
                 )}

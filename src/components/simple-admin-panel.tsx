@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Activity as ActivityIcon, Users, Database, Tag, Shield } from 'lucide-react';
+import { X, Activity as ActivityIcon, Users, Database, Tag, Shield, Settings } from 'lucide-react';
 import { useWiki } from '../context/wiki-context';
 import type { Tag as TagType, Permission, User, WikiPage, Activity } from '../types';
 import activityService, { ActivityLog } from '../services/activity-service';
@@ -14,6 +14,7 @@ import { AdminActivityTab } from './admin/admin-activity-tab';
 import { AdminDatabaseTab } from './admin/admin-database-tab';
 import { AdminTagsTab } from './admin/admin-tags-tab';
 import { AdminPermissionsTab } from './admin/admin-permissions-tab';
+import { AdminCustomizationTab } from './admin/admin-customization-tab';
 
 
 
@@ -21,10 +22,13 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   isOpenFromMenu = false,
   onClose
 }) => {
-  const { isDarkMode, isAdmin, user, setUser } = useWiki();
+  const { isDarkMode, isAdmin, user, setUser, adminActiveTab, setAdminActiveTab } = useWiki();
   const configService = getConfigService();
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
-  const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'database' | 'tags' | 'permissions'>('activity');
+
+  // Use adminActiveTab from context instead of local state for consistency
+  const activeTab = adminActiveTab as 'users' | 'activity' | 'database' | 'tags' | 'permissions' | 'customization';
+  const setActiveTab = (tab: string) => setAdminActiveTab(tab);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   // Grouper les logs par jour (YYYY-MM-DD)
   const groupedActivityLogs = useMemo(() => {
@@ -474,12 +478,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`w-11/12 max-w-6xl h-5/6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
-        } rounded-lg shadow-xl flex flex-col overflow-hidden`}>
+      <div className={`w-11/12 max-w-6xl h-5/6 bg-custom-bg rounded-lg shadow-xl flex flex-col overflow-hidden`}>
 
         {/* Header */}
-        <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'
-          }`}>
+        <div className={`flex items-center justify-between p-4 border-b border-custom-border`}>
           <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
             Admin Panel
@@ -494,25 +496,21 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         </div>
 
         {/* Tabs */}
-        <div className={`flex border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'
-          } `}>
+        <div className={`flex border-b border-custom-border`}>
           {[
             { id: 'users', label: 'Users', icon: Users },
             { id: 'activity', label: 'Activity', icon: ActivityIcon },
             { id: 'database', label: 'Database', icon: Database },
             { id: 'tags', label: 'Tags', icon: Tag },
-            { id: 'permissions', label: 'Permissions', icon: Shield }
+            { id: 'permissions', label: 'Permissions', icon: Shield },
+            { id: 'customization', label: 'Customization', icon: Settings }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'users' | 'activity' | 'database' | 'tags' | 'permissions')}
               className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
-                ? isDarkMode
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-800'
-                  : 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                : isDarkMode
-                  ? 'text-gray-400 hover:text-gray-300'
-                  : 'text-gray-600 hover:text-gray-800'
+                ? 'text-primary border-b-2 border-primary bg-primary/10'
+                : 'text-custom-muted hover:text-custom-text hover:bg-custom-surface/50'
                 } `}
             >
               <tab.icon className="w-4 h-4" />
@@ -584,6 +582,10 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
               setHasUnsavedPermissionChanges={setHasUnsavedPermissionChanges}
               isDarkMode={isDarkMode}
             />
+          )}
+
+          {activeTab === 'customization' && (
+            <AdminCustomizationTab isDarkMode={isDarkMode} />
           )}
         </div>
       </div>

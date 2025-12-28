@@ -22,7 +22,7 @@ interface EditingUserData {
 }
 
 export const MembersPage: React.FC = () => {
-  const { isAdmin, isDarkMode } = useWiki();
+  const { isAdmin } = useWiki();
   const [editingUserData, setEditingUserData] = useState<EditingUserData | null>(null);
   const [allUsers, setAllUsers] = useState<DisplayUser[]>([]);
 
@@ -45,15 +45,12 @@ export const MembersPage: React.FC = () => {
 
   if (!isAdmin()) {
     return (
-      <main className={`flex-1 p-6 content-scrollbar ${isDarkMode ? 'bg-gray-900' : 'bg-white'
-        }`}>
+      <main className={`flex-1 p-6 content-scrollbar bg-custom-bg`}>
         <div className="text-center">
-          <h1 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'
-            }`}>
+          <h1 className={`text-2xl font-bold mb-4 text-custom-text`}>
             Accès refusé
           </h1>
-          <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'
-            }`}>
+          <p className={`text-custom-muted`}>
             Vous devez être administrateur pour accéder à cette page.
           </p>
         </div>
@@ -141,11 +138,9 @@ export const MembersPage: React.FC = () => {
   };
 
   return (
-    <main className={`flex-1 p-6 content-scrollbar ${isDarkMode ? 'bg-gray-900' : 'bg-white'
-      }`}>
+    <main className={`flex-1 p-6 content-scrollbar bg-custom-bg`}>
       <div className="max-w-6xl mx-auto">
-        <h1 className={`text-3xl font-bold mb-8 ${isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+        <h1 className={`text-3xl font-bold mb-8 text-custom-text`}>
           Gestion des membres
         </h1>
 
@@ -153,10 +148,7 @@ export const MembersPage: React.FC = () => {
           {allUsers.map((user: DisplayUser) => (
             <div
               key={user.id}
-              className={`p-6 rounded-lg border transition-all duration-200 ${isDarkMode
-                ? 'bg-slate-800 border-slate-700 hover:bg-slate-750'
-                : 'bg-white border-gray-200 hover:shadow-md'
-                }`}
+              className={`p-6 rounded-lg border transition-all duration-200 border-custom-border bg-custom-surface hover:shadow-md`}
             >
               <div className="flex items-start justify-between">
                 {/* Informations utilisateur */}
@@ -176,13 +168,11 @@ export const MembersPage: React.FC = () => {
 
                   {/* Nom et email */}
                   <div>
-                    <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
+                    <h3 className={`text-xl font-semibold text-custom-text`}>
                       {user.username}
                     </h3>
                     {user.email && (
-                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
-                        }`}>
+                      <p className={`text-sm text-custom-muted`}>
                         {user.email}
                       </p>
                     )}
@@ -207,10 +197,7 @@ export const MembersPage: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleEditProfile(user)}
-                      className={`p-2 rounded-md transition-colors ${isDarkMode
-                        ? 'hover:bg-slate-700 text-slate-300'
-                        : 'hover:bg-gray-200 text-gray-600'
-                        }`}
+                      className={`p-2 rounded-md transition-colors text-custom-muted hover:bg-custom-surface hover:text-custom-text`}
                       title="Modifier le profil"
                     >
                       <Edit3 className="w-4 h-4" />
@@ -222,10 +209,7 @@ export const MembersPage: React.FC = () => {
                           handleDeleteUser(user.id);
                         }
                       }}
-                      className={`p-2 rounded-md transition-colors ${isDarkMode
-                        ? 'hover:bg-red-700 text-red-400'
-                        : 'hover:bg-red-100 text-red-600'
-                        }`}
+                      className={`p-2 rounded-md transition-colors text-red-400 hover:bg-red-500 hover:text-white`}
                       title="Supprimer le compte"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -235,8 +219,7 @@ export const MembersPage: React.FC = () => {
               </div>
 
               {/* Informations supplémentaires */}
-              <div className={`mt-4 flex items-center space-x-6 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
-                }`}>
+              <div className={`mt-4 flex items-center space-x-6 text-sm text-custom-muted`}>
                 <div className="flex items-center space-x-1">
                   <Calendar className="w-4 h-4" />
                   <span>Membre depuis le {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}</span>
@@ -248,10 +231,8 @@ export const MembersPage: React.FC = () => {
               </div>
 
               {user.bio && (
-                <div className={`mt-3 p-3 rounded-lg ${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'
-                  }`}>
-                  <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-700'
-                    }`}>
+                <div className={`mt-3 p-3 rounded-lg bg-custom-surface/50 border border-custom-border/50`}>
+                  <p className={`text-sm text-custom-muted`}>
                     {user.bio}
                   </p>
                 </div>
@@ -263,19 +244,16 @@ export const MembersPage: React.FC = () => {
 
       {/* Modal d'édition du profil */}
       {editingUserData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`p-6 rounded-lg shadow-xl w-96 max-w-90vw max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'
-            }`}>
-            <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`p-6 rounded-lg shadow-xl w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto bg-custom-surface border border-custom-border`}>
+            <h2 className={`text-xl font-bold mb-4 text-custom-text`}>
               Modifier le profil de {editingUserData.username}
             </h2>
 
             <div className="space-y-4">
               {/* Nom d'utilisateur */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
+                <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
                   Nom d'utilisateur
                 </label>
                 <input
@@ -284,17 +262,13 @@ export const MembersPage: React.FC = () => {
                   onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, username: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
+                <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
                   Email
                 </label>
                 <input
@@ -303,17 +277,13 @@ export const MembersPage: React.FC = () => {
                   onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, email: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
                 />
               </div>
 
               {/* Avatar URL */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
+                <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
                   URL de l'avatar
                 </label>
                 <input
@@ -322,18 +292,14 @@ export const MembersPage: React.FC = () => {
                   onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, avatar: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
                   placeholder="https://example.com/avatar.jpg"
                 />
               </div>
 
               {/* Nouveau mot de passe */}
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
+                <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
                   Nouveau mot de passe (optionnel)
                 </label>
                 <input
@@ -342,18 +308,14 @@ export const MembersPage: React.FC = () => {
                   onChange={(e) => setEditingUserData(prev =>
                     prev ? { ...prev, password: e.target.value } : null
                   )}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
                   placeholder="Laisser vide pour conserver l'actuel"
                 />
               </div>
 
               {/* Tags */}
               <div>
-                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
+                <label className={`block text-sm font-medium mb-2 text-custom-muted`}>
                   Rôles
                 </label>
                 <div className="space-y-2">
@@ -374,7 +336,7 @@ export const MembersPage: React.FC = () => {
                             return { ...prev, tags: newTags };
                           });
                         }}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-primary bg-custom-bg border-custom-border rounded focus:ring-primary"
                       />
                       <span className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium text-white ${getTagColor(tag)}`}>
                         {getTagIcon(tag)}
@@ -389,16 +351,13 @@ export const MembersPage: React.FC = () => {
             <div className="flex gap-3 justify-end mt-6">
               <button
                 onClick={() => setEditingUserData(null)}
-                className={`px-4 py-2 rounded-lg transition-colors ${isDarkMode
-                  ? 'bg-gray-600 text-white hover:bg-gray-700'
-                  : 'bg-gray-500 text-white hover:bg-gray-600'
-                  }`}
+                className={`px-4 py-2 rounded-lg transition-colors bg-custom-bg text-custom-text hover:bg-custom-surface border border-custom-border`}
               >
                 Annuler
               </button>
               <button
                 onClick={handleSaveProfile}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
               >
                 Sauvegarder
               </button>

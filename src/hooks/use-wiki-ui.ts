@@ -11,7 +11,13 @@ export const useWikiUI = () => {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
     const [isAdminPanelOpen, setIsAdminPanelOpen] = useState<boolean>(false);
+    const [adminActiveTab, setAdminActiveTab] = useState<string>('activity');
     const [editingPageTitle, setEditingPageTitle] = useState<string | null>(null);
+
+    const openAdminTab = (tab: string) => {
+        setAdminActiveTab(tab);
+        setIsAdminPanelOpen(true);
+    };
 
     // Global Loading State
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -51,6 +57,9 @@ export const useWikiUI = () => {
         setIsEditModalOpen,
         isAdminPanelOpen,
         setIsAdminPanelOpen,
+        adminActiveTab,
+        setAdminActiveTab,
+        openAdminTab,
         editingPageTitle,
         setEditingPageTitle,
         isLoading,

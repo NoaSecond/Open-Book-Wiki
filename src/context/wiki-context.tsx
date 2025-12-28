@@ -52,6 +52,9 @@ interface WikiContextType {
   setIsEditModalOpen: (isOpen: boolean) => void;
   isAdminPanelOpen: boolean;
   setIsAdminPanelOpen: (isOpen: boolean) => void;
+  adminActiveTab: string;
+  setAdminActiveTab: (tab: string) => void;
+  openAdminTab: (tab: string) => void;
   editingPageTitle: string | null;
   setEditingPageTitle: (title: string | null) => void;
   isLoading: boolean;

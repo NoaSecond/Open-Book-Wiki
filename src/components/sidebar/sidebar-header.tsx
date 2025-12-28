@@ -21,10 +21,7 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({ onAddCategory }) => {
                 <div className="mb-4">
                     <button
                         onClick={onAddCategory}
-                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg border-2 border-dashed transition-colors ${isDarkMode
-                            ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500'
-                            : 'border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
-                            }`}
+                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg border-2 border-dashed transition-colors border-custom-border text-custom-muted hover:bg-primary/5 hover:border-primary/50 hover:text-primary`}
                     >
                         <Plus className="w-5 h-5" />
                         <span>Ajouter une catégorie</span>

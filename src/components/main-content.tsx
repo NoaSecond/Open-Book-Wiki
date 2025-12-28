@@ -8,7 +8,7 @@ import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 
 export const MainContent: React.FC = () => {
-  const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, searchResults, isDarkMode, addSection, canContribute, enrichPageWithSections } = useWiki();
+  const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, searchResults, addSection, canContribute, enrichPageWithSections } = useWiki();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
@@ -35,12 +35,10 @@ export const MainContent: React.FC = () => {
     return (
       <main className="flex-1 p-6">
         <div className="text-center py-12">
-          <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'
-            }`}>
+          <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 text-custom-text`}>
             Page non trouvée
           </h2>
-          <p className={`transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'
-            }`}>
+          <p className={`transition-colors duration-300 text-custom-muted`}>
             La page demandée n'existe pas.
           </p>
         </div>
@@ -77,23 +75,23 @@ export const MainContent: React.FC = () => {
   const currentPageWithSections = currentPageData ? enrichPageWithSections(currentPageData) : null;
 
   return (
-    <main className={`flex-1 content-scrollbar overflow-y-auto ${isDarkMode ? 'bg-slate-900' : 'bg-gray-50'}`}>
+    <main className={`flex-1 content-scrollbar overflow-y-auto bg-custom-bg text-custom-text`}>
       <div className="max-w-4xl mx-auto p-6">
         {/* Page Header */}
-        <div className={`mb-6 pb-4 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+        <div className={`mb-6 pb-4 border-b border-custom-border`}>
           <div className="flex items-center justify-between mb-4">
-            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentPageData.title}</h1>
+            <h1 className={`text-3xl font-bold text-custom-text`}>{currentPageData.title}</h1>
             {canContribute() && (
               <button
                 onClick={handleAddSection}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span>Ajouter une section</span>
               </button>
             )}
           </div>
-          <div className={`flex items-center space-x-6 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+          <div className={`flex items-center space-x-6 text-sm text-custom-muted`}>
             <div className="flex items-center space-x-1">
               <Calendar className="w-4 h-4" />
               <span>Modifié {DateUtils.getRelativeTime(currentPageData.updated_at || DateUtils.getCurrentTimestamp())}</span>
@@ -107,8 +105,8 @@ export const MainContent: React.FC = () => {
 
         {/* Search Results Indicator */}
         {searchTerm && (
-          <div className={`mb-4 p-3 ${isDarkMode ? 'bg-cyan-600/20 border-cyan-500/30' : 'bg-cyan-100 border-cyan-300'} border rounded-lg`}>
-            <p className={`text-sm ${isDarkMode ? 'text-cyan-300' : 'text-cyan-700'}`}>
+          <div className={`mb-4 p-3 bg-primary/10 border-primary/30 border rounded-lg`}>
+            <p className={`text-sm text-primary`}>
               Résultats de recherche pour "{searchTerm}" ({searchResults.length} résultat{searchResults.length > 1 ? 's' : ''})
             </p>
           </div>
@@ -122,16 +120,16 @@ export const MainContent: React.FC = () => {
               searchResults.map((page) => {
                 const enrichedPage = enrichPageWithSections(page);
                 return (
-                  <div key={page.title} className={`p-4 border rounded-lg ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-white'}`}>
-                    <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div key={page.title} className={`p-4 border rounded-lg border-custom-border bg-custom-surface/50`}>
+                    <h3 className={`text-lg font-semibold mb-2 text-custom-text`}>
                       <button
                         onClick={() => setCurrentPage(page.title)}
-                        className="hover:text-cyan-600 transition-colors"
+                        className="hover:text-primary transition-colors"
                       >
                         {page.title}
                       </button>
                     </h3>
-                    <div className={`text-sm mb-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                    <div className={`text-sm mb-2 text-custom-muted`}>
                       Par {page.author_username} • Modifié {DateUtils.getRelativeTime(page.updated_at || DateUtils.getCurrentTimestamp())}
                     </div>
                     {enrichedPage.sections && enrichedPage.sections.length > 0 && (
@@ -144,7 +142,7 @@ export const MainContent: React.FC = () => {
                 );
               })
             ) : (
-              <div className={`text-center py-8 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+              <div className={`text-center py-8 text-custom-text/60`}>
                 Aucun résultat trouvé pour "{searchTerm}"
               </div>
             )}
@@ -159,9 +157,9 @@ export const MainContent: React.FC = () => {
 
         {/* Modal pour ajouter une section */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-96 max-w-90vw">
-              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-custom-surface p-6 rounded-lg shadow-xl w-96 max-w-[90vw] border border-custom-border">
+              <h2 className="text-xl font-bold mb-4 text-custom-text">
                 Ajouter une nouvelle section
               </h2>
               <input
@@ -169,7 +167,7 @@ export const MainContent: React.FC = () => {
                 value={newSectionTitle}
                 onChange={(e) => setNewSectionTitle(e.target.value)}
                 placeholder="Titre de la section..."
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full p-3 border border-custom-border rounded-lg mb-4 bg-custom-bg text-custom-text focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
