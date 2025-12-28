@@ -67,10 +67,41 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+const requirePermission = (permissionName) => {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    try {
+      // If admin, they have all permissions
+      if (req.user.isAdmin) {
+        return next();
+      }
+
+      const permissions = await req.db.tags.getUserPermissions(req.user.userId);
+      const hasPermission = permissions.some(p => p.name === permissionName);
+
+      if (!hasPermission) {
+        return res.status(403).json({
+          success: false,
+          message: `Permission '${permissionName}' required`
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('Error checking permission:', error);
+      res.status(500).json({ success: false, message: 'Internal server error while checking permissions' });
+    }
+  };
+};
+
 module.exports = {
   requireAuth,
   optionalAuth,
   generateToken,
   requireAdmin,
+  requirePermission,
   JWT_SECRET
 };

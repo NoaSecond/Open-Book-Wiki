@@ -3,7 +3,7 @@ import { ChevronDown, LogOut, Settings, Grid3X3, Sun, Moon } from 'lucide-react'
 import { useWiki } from '../context/wiki-context';
 
 export const UserMenu: React.FC = () => {
-  const { user, logout, isDarkMode, setCurrentPage, isAdmin, setIsAdminPanelOpen, toggleDarkMode } = useWiki();
+  const { user, logout, isDarkMode, setCurrentPage, isAdmin, setIsAdminPanelOpen, toggleDarkMode, hasPermission } = useWiki();
   const [isOpen, setIsOpen] = useState(false);
   const [availableTags] = useState<Array<{ name: string, color: string }>>([]);
 
@@ -131,7 +131,7 @@ export const UserMenu: React.FC = () => {
                 <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
               </button>
 
-              {isAdmin() && (
+              {(isAdmin() || hasPermission('admin_panel_access')) && (
                 <button
                   onClick={handleAdminPanel}
                   className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${isDarkMode

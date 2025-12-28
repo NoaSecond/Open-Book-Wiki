@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Users, Activity as ActivityIcon, Edit3 } from 'lucide-react';
+import { Search, X, Users, Activity as ActivityIcon, Edit3, UserPlus } from 'lucide-react';
 import { User } from '../../types';
 
 interface AdminUsersTabProps {
@@ -13,6 +13,8 @@ interface AdminUsersTabProps {
     setUserSortOrder: (order: 'asc' | 'desc') => void;
     sortedUsers: User[];
     handleEditUser: (user: User) => void;
+    onCreateUser: () => void;
+    hasUserManagementPermission: boolean;
     isDarkMode: boolean;
     getTagColor: (tagName: string) => string;
     getTagPermissionCount: (tagName: string) => number;
@@ -30,6 +32,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     setUserSortOrder,
     sortedUsers,
     handleEditUser,
+    onCreateUser,
+    hasUserManagementPermission,
     isDarkMode,
     getTagColor,
     getTagPermissionCount,
@@ -38,12 +42,26 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     return (
         <div>
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <div className="flex-1">
-                    <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'
                         }`}>
                         Users ({filteredUsers.length}/{allUsersCount})
                     </h2>
 
+                    {hasUserManagementPermission && (
+                        <button
+                            onClick={onCreateUser}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors text-sm font-medium shadow-sm active:scale-95"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            <span>Create User</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex-1">
                     {/* Search Bar */}
                     <div className="relative">
                         <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'

@@ -15,6 +15,7 @@ import { AdminDatabaseTab } from './admin/admin-database-tab';
 import { AdminTagsTab } from './admin/admin-tags-tab';
 import { AdminPermissionsTab } from './admin/admin-permissions-tab';
 import { AdminCustomizationTab } from './admin/admin-customization-tab';
+import { UserCreationModal } from './admin/user-creation-modal';
 
 
 
@@ -22,9 +23,13 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   isOpenFromMenu = false,
   onClose
 }) => {
-  const { isDarkMode, isAdmin, user, setUser, adminActiveTab, setAdminActiveTab } = useWiki();
+  const { isDarkMode, isAdmin, user, setUser, adminActiveTab, setAdminActiveTab, hasPermission } = useWiki();
   const configService = getConfigService();
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
+
+  // Permissions checks
+  const canManageUsers = hasPermission('user_management');
+  const canAccessAdmin = hasPermission('admin_panel_access') || isAdmin();
 
   // Use adminActiveTab from context instead of local state for consistency
   const activeTab = adminActiveTab as 'users' | 'activity' | 'database' | 'tags' | 'permissions' | 'customization';
@@ -49,6 +54,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   // States for user profile modal
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
 
   // States for Tags tab
   const [tags, setTags] = useState<TagType[]>([]);
@@ -287,6 +293,25 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
     }
   };
 
+  const handleCreateUserAdmin = async (userData: any) => {
+    try {
+      const result = await authService.createUserAdmin(userData);
+      if (result.success) {
+        logger.success('Utilisateur créé avec succès');
+        // Recharger la liste
+        const users = await authService.getAllUsers();
+        setAllUsers(users);
+        setDbStats(prev => ({ ...prev, users: users }));
+        setIsCreateUserModalOpen(false);
+      } else {
+        throw new Error(result.message || 'Erreur lors de la création');
+      }
+    } catch (error) {
+      logger.error('Erreur création utilisateur', error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+  };
+
   // Fonction pour obtenir la couleur d'un tag depuis la base de données
   const getTagColor = (tagName: string) => {
     const tag = tags.find(t => t.name === tagName);
@@ -463,7 +488,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   };
 
   // Vérifier que l'utilisateur est admin (après tous les hooks)
-  if (!isAdmin()) {
+  if (!canAccessAdmin) {
     return null;
   }
 
@@ -533,6 +558,8 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
               setUserSortOrder={setUserSortOrder}
               sortedUsers={sortedUsers}
               handleEditUser={handleEditUser}
+              onCreateUser={() => setIsCreateUserModalOpen(true)}
+              hasUserManagementPermission={canManageUsers}
               isDarkMode={isDarkMode}
               getTagColor={getTagColor}
               getTagPermissionCount={getTagPermissionCount}
@@ -604,6 +631,14 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           availableTags={tags}
         />
       )}
+
+      {/* Modal de création utilisateur */}
+      <UserCreationModal
+        isOpen={isCreateUserModalOpen}
+        onClose={() => setIsCreateUserModalOpen(false)}
+        onSave={handleCreateUserAdmin}
+        availableTags={tags}
+      />
     </div>
   );
 };

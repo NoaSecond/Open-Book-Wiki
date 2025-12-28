@@ -280,6 +280,34 @@ class AuthService {
       return false;
     }
   }
+
+  async createUserAdmin(userData: {
+    username: string;
+    email: string;
+    password?: string;
+    isAdmin: boolean;
+    tags: string[];
+  }): Promise<{ success: boolean; message: string; user?: User }> {
+    try {
+      // Si pas de mot de passe, on en génère un par défaut
+      const finalPassword = userData.password || 'Temporary123!';
+
+      const response = await fetch(`${this.getBaseUrl()}/users`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          ...userData,
+          password: finalPassword
+        })
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      logger.error('Erreur lors de la création de l\'utilisateur par admin', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return { success: false, message: 'Erreur de connexion au serveur' };
+    }
+  }
 }
 
 const authService = new AuthService();

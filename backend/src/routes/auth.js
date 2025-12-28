@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
-const { requireAuth, requireAdmin, JWT_SECRET } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePermission, JWT_SECRET } = require('../middleware/auth');
 
 // Get guest permissions (for unauthenticated users)
 router.get('/guest-permissions', async (req, res) => {
@@ -420,7 +420,7 @@ router.post('/logout', requireAuth, async (req, res) => {
 });
 
 // Admin route: list all users
-router.get('/users', requireAuth, requireAdmin, async (req, res) => {
+router.get('/users', requireAuth, requirePermission('user_management'), async (req, res) => {
   try {
     const users = await req.db.users.getAllUsers();
 
@@ -451,8 +451,80 @@ router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// Admin route: create a new user
+router.post('/users', requireAuth, requirePermission('user_management'), async (req, res) => {
+  try {
+    const { username, email, password, isAdmin, tags, bio, avatar } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username, email and password are required'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await req.db.users.findUserByUsername(username);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'This username is already taken'
+      });
+    }
+
+    const existingEmail = await req.db.users.findUserByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already in use'
+      });
+    }
+
+    const userId = await req.db.users.createUser({
+      username,
+      email,
+      password,
+      isAdmin: !!isAdmin,
+      avatar: avatar || 'avatar-openbookwiki.svg',
+      bio: bio || '',
+      tags: Array.isArray(tags) ? tags.join(',') : (tags || '')
+    });
+
+    const newUser = await req.db.users.findUserById(userId);
+
+    // Log activity
+    await req.db.activities.createActivity({
+      userId: req.user.userId,
+      type: 'admin',
+      title: 'User created',
+      description: `User ${username} created by ${req.user.username}`,
+      icon: 'user-plus'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        isAdmin: newUser.is_admin,
+        avatar: newUser.avatar,
+        tags: newUser.tags ? newUser.tags.split(',') : []
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating user by admin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Admin route: update specific user
-router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
+router.put('/users/:id', requireAuth, requirePermission('user_management'), async (req, res) => {
   try {
     const { id } = req.params;
     const { username, email, bio, tags, avatar } = req.body;
@@ -530,7 +602,7 @@ router.put('/users/:id', requireAuth, requireAdmin, async (req, res) => {
 
 
 // Admin route: delete user
-router.delete('/users/:id', requireAuth, requireAdmin, async (req, res) => {
+router.delete('/users/:id', requireAuth, requirePermission('user_management'), async (req, res) => {
   try {
     const { id } = req.params;
 
