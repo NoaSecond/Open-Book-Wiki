@@ -31,9 +31,32 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   const canManageUsers = hasPermission('user_management');
   const canAccessAdmin = hasPermission('admin_panel_access') || isAdmin();
 
+  // Define tabs with their required permissions
+  const allTabs = [
+    { id: 'users', label: 'Users', icon: Users, permission: 'user_management' },
+    { id: 'activity', label: 'Activity', icon: ActivityIcon, permission: 'view_activity_admin' },
+    { id: 'database', label: 'Database', icon: Database, permission: 'database_management' },
+    { id: 'tags', label: 'Tags', icon: Tag, permission: 'tag_management' },
+    { id: 'permissions', label: 'Permissions', icon: Shield, permission: 'permission_management' },
+    { id: 'customization', label: 'Customization', icon: Settings, permission: 'admin_panel_access' }
+  ];
+
+  // Filter available tabs
+  const availableTabs = useMemo(() => {
+    if (isAdmin()) return allTabs;
+    return allTabs.filter(tab => hasPermission(tab.permission));
+  }, [isAdmin, hasPermission]);
+
   // Use adminActiveTab from context instead of local state for consistency
   const activeTab = adminActiveTab as 'users' | 'activity' | 'database' | 'tags' | 'permissions' | 'customization';
   const setActiveTab = (tab: string) => setAdminActiveTab(tab);
+
+  // Ensure active tab is valid
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.find(t => t.id === activeTab)) {
+      setAdminActiveTab(availableTabs[0].id);
+    }
+  }, [availableTabs, activeTab, setAdminActiveTab]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   // Grouper les logs par jour (YYYY-MM-DD)
   const groupedActivityLogs = useMemo(() => {
@@ -522,14 +545,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
 
         {/* Tabs */}
         <div className={`flex border-b border-custom-border`}>
-          {[
-            { id: 'users', label: 'Users', icon: Users },
-            { id: 'activity', label: 'Activity', icon: ActivityIcon },
-            { id: 'database', label: 'Database', icon: Database },
-            { id: 'tags', label: 'Tags', icon: Tag },
-            { id: 'permissions', label: 'Permissions', icon: Shield },
-            { id: 'customization', label: 'Customization', icon: Settings }
-          ].map(tab => (
+          {availableTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'users' | 'activity' | 'database' | 'tags' | 'permissions')}

@@ -1,5 +1,5 @@
 const express = require('express');
-const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin, optionalAuth, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -12,22 +12,11 @@ router.get('/', optionalAuth, async (req, res) => {
     const db = req.db;
     const userId = req.user ? req.user.userId : null;
 
-    // If user is connected, their activities + public? Or just theirs?
-    // For now, getActivitiesByUser filtered by user_id.
-    // We need a method to get public activities if not connected.
-    // BUT, the frontend uses this for "Recent Activity".
-    // If guest, we probably want to see global activities (or nothing).
-    // Let's modify to use getAllActivities if guest or getAllActivities (non-admin filtered?)
-    // To simplify: if userId, getActivitiesByUser. Else getAllActivities limited?
-
     let activities;
     if (userId) {
       activities = await db.activities.getActivitiesByUser(userId, parseInt(limit), offset);
     } else {
-      // Public activities for guests (maybe limit to non-sensitive types)
-      // Use getAllActivities but filter or create a getPublicActivities method
-      // For now, reusing getActivitiesByUser with null ID won't work.
-      // We will use getAllActivities (which does a JOIN users).
+      // Public activities for guests
       activities = (await db.activities.getAllActivities(parseInt(limit), offset)).filter(a => a.type !== 'admin');
     }
 
@@ -168,7 +157,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Admin route: get all activities from all users
-router.get('/admin/all', requireAuth, requireAdmin, async (req, res) => {
+router.get('/admin/all', requireAuth, requirePermission('view_activity_admin'), async (req, res) => {
   try {
     const { page = 1, limit = 100 } = req.query;
     const offset = (page - 1) * limit;

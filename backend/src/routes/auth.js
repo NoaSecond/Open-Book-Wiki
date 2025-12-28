@@ -326,15 +326,28 @@ router.get('/verify', requireAuth, async (req, res) => {
 });
 
 // User profile update route
-router.put('/profile', requireAuth, async (req, res) => {
+router.put('/profile', requireAuth, requirePermission('edit_own_profile'), async (req, res) => {
   try {
     const { avatar, username, email } = req.body;
 
     // Data validation
     const updates = {};
-    if (avatar) updates.avatar = avatar;
     if (username) updates.username = username;
     if (email) updates.email = email;
+
+    // Check for change_avatar permission if avatar is being updated
+    if (avatar) {
+      const permissions = await req.db.tags.getUserPermissions(req.user.userId);
+      const hasAvatarPermission = permissions.some(p => p.name === 'change_avatar');
+
+      if (!req.user.isAdmin && !hasAvatarPermission) {
+        return res.status(403).json({
+          success: false,
+          message: "Permission 'change_avatar' required"
+        });
+      }
+      updates.avatar = avatar;
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
@@ -365,8 +378,11 @@ router.put('/profile', requireAuth, async (req, res) => {
       isAdmin: updatedUser.is_admin,
       avatar: updatedUser.avatar,
       lastLogin: updatedUser.last_login,
-      tags: updatedUser.is_admin ? ['Administrator'] : ['Contributor'],
-      permissions: permissionNames
+      tags: updatedUser.tags ? updatedUser.tags.split(',').filter(tag => tag.trim()) : [],
+      permissions: permissionNames,
+      bio: updatedUser.bio || '',
+      contributions: updatedUser.contributions || 0,
+      joinDate: updatedUser.created_at
     };
 
     // Log update activity

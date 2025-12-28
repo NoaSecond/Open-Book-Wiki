@@ -80,30 +80,6 @@ npm run dev
 ### Backend
 - `npm start` : Lance le serveur backend (depuis le dossier backend/)
 
-## Structure du projet
-
-```
-Open-Book-Wiki/
-├── public/                 # Assets statiques
-├── src/                   # Code source frontend
-│   ├── components/        # Composants React
-│   ├── context/          # Contextes React
-│   ├── services/         # Services API
-│   └── utils/            # Utilitaires
-├── backend/              # Code source backend
-│   ├── src/
-│   │   ├── config/       # Configuration (DB, etc.)
-│   │   ├── routes/       # Routes API
-│   │   └── middleware/   # Middlewares Express
-│   └── data/            # Base de données SQLite
-└── README.md
-```
-
-## Personnalisation
-
-### Thème
-L'application utilise un thème sombre par défaut avec Tailwind CSS. Vous pouvez modifier les couleurs dans `tailwind.config.js`.
-
 ### Contenu
 Le contenu du wiki peut être modifié via l'interface d'édition ou en modifiant directement les composants dans le dossier `src/components/`.
 

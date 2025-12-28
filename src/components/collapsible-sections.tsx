@@ -108,7 +108,7 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
                 id={section.id}
                 isDarkMode={isDarkMode}
                 isExpanded={isExpanded}
-                canDrag={hasPermission('reorder_sections')}
+                canDrag={hasPermission('edit_pages')}
               >
                 <div
                   id={`section-${section.id}`}
@@ -129,7 +129,7 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{DateUtils.getRelativeTime(section.lastModified || DateUtils.getCurrentTimestamp())} par {section.author || 'Inconnu'}</div>
-                      {hasPermission('edit_sections') && (
+                      {hasPermission('edit_pages') && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

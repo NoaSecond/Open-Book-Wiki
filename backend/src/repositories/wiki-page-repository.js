@@ -47,6 +47,13 @@ class WikiPageRepository extends BaseRepository {
     `, [id]);
     }
 
+    async updateWikiPageProtection(id, isProtected) {
+        await this.db.run(
+            'UPDATE wiki_pages SET is_protected = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [isProtected, id]
+        );
+    }
+
     async deleteWikiPage(id) {
         await this.db.run('DELETE FROM wiki_pages WHERE id = ?', [id]);
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Plus } from 'lucide-react';
+import { Calendar, User, Plus, Lock, Unlock } from 'lucide-react';
 import { useWiki } from '../context/wiki-context';
 import { ProfilePage } from './profile-page';
 import { MembersPage } from './members-page';
@@ -7,9 +7,10 @@ import { CollapsibleSections } from './collapsible-sections';
 import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 import { WikiPage } from '../types';
+import authService from '../services/auth-service';
 
 export const MainContent: React.FC = () => {
-  const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, searchResults, addSection, canContribute, enrichPageWithSections } = useWiki();
+  const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, searchResults, addSection, hasPermission, enrichPageWithSections, refreshWikiData } = useWiki();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
@@ -76,6 +77,26 @@ export const MainContent: React.FC = () => {
     setNewSectionTitle('');
   };
 
+  const handleToggleProtection = async () => {
+    if (!currentPageData) return;
+    try {
+      const newStatus = !currentPageData.is_protected;
+      const response = await authService.fetchWithAuth(`/wiki/${currentPageData.id}/protect`, {
+        method: 'PUT',
+        body: JSON.stringify({ isProtected: newStatus })
+      });
+
+      if (response.success) {
+        logger.success(`Protection ${newStatus ? 'activée' : 'désactivée'} pour la page`);
+        await refreshWikiData();
+      } else {
+        logger.error('Erreur lors du changement de protection', response.message);
+      }
+    } catch (error) {
+      logger.error('Erreur lors du changement de protection', error instanceof Error ? error.message : String(error));
+    }
+  };
+
   // Enrichir la page actuelle avec des sections
   const currentPageWithSections = currentPageData ? enrichPageWithSections(currentPageData) : null;
 
@@ -86,7 +107,30 @@ export const MainContent: React.FC = () => {
         <div className={`mb-6 pb-4 border-b border-custom-border`}>
           <div className="flex items-center justify-between mb-4">
             <h1 className={`text-3xl font-bold text-custom-text`}>{currentPageData.title}</h1>
-            {canContribute() && (
+            {hasPermission('protect_pages') && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleToggleProtection}
+                  title={currentPageData.is_protected ? "Déprotéger la page" : "Protéger la page"}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${currentPageData.is_protected
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200'
+                    }`}
+                >
+                  {currentPageData.is_protected ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                </button>
+                {hasPermission('edit_pages') && (
+                  <button
+                    onClick={handleAddSection}
+                    className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Ajouter une section</span>
+                  </button>
+                )}
+              </div>
+            )}
+            {!hasPermission('protect_pages') && hasPermission('edit_pages') && (
               <button
                 onClick={handleAddSection}
                 className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
@@ -155,6 +199,7 @@ export const MainContent: React.FC = () => {
         ) : currentPageWithSections ? (
           /* Afficher le contenu normal de la page */
           <CollapsibleSections
+            key={currentPage}
             sections={currentPageWithSections.sections || []}
             pageId={currentPage}
           />

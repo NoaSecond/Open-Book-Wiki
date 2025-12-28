@@ -308,6 +308,23 @@ class AuthService {
       return { success: false, message: 'Erreur de connexion au serveur' };
     }
   }
+  async fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<any> {
+    try {
+      const url = this.configService.getApiUrl(endpoint);
+      const headers = { ...this.getHeaders(), ...(options.headers as any || {}) };
+
+      const response = await fetch(url, {
+        ...options,
+        headers
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      logger.error('Erreur lors de la requête authentifiée', { error: error instanceof Error ? error.message : 'Unknown error', endpoint });
+      throw error;
+    }
+  }
 }
 
 const authService = new AuthService();

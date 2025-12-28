@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePermission } = require('../middleware/auth');
+
+const SYSTEM_TAGS = ['Administrateur', 'Contributeur', 'Visiteur', 'Utilisateur non connecté', 'Unauthenticated User'];
 
 // Public route: list all tags (accessible to all authenticated users)
 router.get('/public', requireAuth, async (req, res) => {
@@ -22,7 +24,7 @@ router.get('/public', requireAuth, async (req, res) => {
 });
 
 // Admin route: list all tags
-router.get('/', requireAuth, requireAdmin, async (req, res) => {
+router.get('/', requireAuth, requirePermission('tag_management'), async (req, res) => {
   try {
     const tags = await req.db.tags.getAllTags();
 
@@ -41,7 +43,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Admin route: create a new tag
-router.post('/', requireAuth, requireAdmin, async (req, res) => {
+router.post('/', requireAuth, requirePermission('tag_management'), async (req, res) => {
   try {
     const { name, color } = req.body;
 
@@ -87,7 +89,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Admin route: update a tag
-router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('tag_management'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, color } = req.body;
@@ -108,12 +110,14 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    // Prevent modification of the "Unauthenticated User" system tag
-    if (existingTag.name === 'Unauthenticated User' || existingTag.name === 'Utilisateur non connecté') {
-      return res.status(403).json({
-        success: false,
-        message: 'The "Unauthenticated User" tag is a system tag and cannot be modified'
-      });
+    // Prevent modification of system tags
+    if (SYSTEM_TAGS.includes(existingTag.name)) {
+      if (existingTag.name !== name) {
+        return res.status(403).json({
+          success: false,
+          message: `The "${existingTag.name}" tag is a system tag and cannot be renamed`
+        });
+      }
     }
 
     const updatedTag = await req.db.tags.updateTag(parseInt(id), name, color);
@@ -151,7 +155,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Admin route: delete a tag
-router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('tag_management'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -164,11 +168,11 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    // Prevent deletion of the "Unauthenticated User" system tag
-    if (existingTag.name === 'Unauthenticated User' || existingTag.name === 'Utilisateur non connecté') {
+    // Prevent deletion of system tags
+    if (SYSTEM_TAGS.includes(existingTag.name)) {
       return res.status(403).json({
         success: false,
-        message: 'The "Unauthenticated User" tag is a system tag and cannot be deleted'
+        message: `The "${existingTag.name}" tag is a system tag and cannot be deleted`
       });
     }
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -61,7 +61,7 @@ router.get('/:title', async (req, res) => {
 });
 
 // Create a new wiki page
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, requirePermission('create_pages'), async (req, res) => {
   try {
     const { title, content, isProtected = false } = req.body;
 
@@ -118,7 +118,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Update a wiki page
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('edit_pages'), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10) || req.params.id;
     const { content } = req.body;
@@ -143,6 +143,19 @@ router.put('/:id', requireAuth, async (req, res) => {
         success: false,
         message: 'Page not found'
       });
+    }
+
+    // Check protection
+    if (page.is_protected) {
+      const permissions = await db.tags.getUserPermissions(req.user.userId);
+      const hasProtectPermission = permissions.some(p => p.name === 'protect_pages');
+
+      if (!req.user.isAdmin && !hasProtectPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'This page is protected. You need "protect_pages" permission to edit it.'
+        });
+      }
     }
 
     await db.wikiPages.updateWikiPage(page.id, content);
@@ -175,7 +188,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // Rename a wiki page
-router.put('/:id/rename', requireAuth, async (req, res) => {
+router.put('/:id/rename', requireAuth, requirePermission('edit_pages'), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10) || req.params.id;
     const { title } = req.body;
@@ -200,6 +213,19 @@ router.put('/:id/rename', requireAuth, async (req, res) => {
         success: false,
         message: 'Page not found'
       });
+    }
+
+    // Check protection
+    if (page.is_protected) {
+      const permissions = await db.tags.getUserPermissions(req.user.userId);
+      const hasProtectPermission = permissions.some(p => p.name === 'protect_pages');
+
+      if (!req.user.isAdmin && !hasProtectPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'This page is protected. You need "protect_pages" permission to rename it.'
+        });
+      }
     }
 
     // Check if a page with the new title already exists
@@ -240,8 +266,63 @@ router.put('/:id/rename', requireAuth, async (req, res) => {
   }
 });
 
+// Protect/Unprotect a wiki page
+router.put('/:id/protect', requireAuth, requirePermission('protect_pages'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10) || req.params.id;
+    const { isProtected } = req.body;
+
+    if (isProtected === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'isProtected status required'
+      });
+    }
+
+    const db = req.db;
+
+    // Check that the page exists
+    let page = await db.wikiPages.findWikiPageById(id);
+    if (!page) {
+      page = await db.wikiPages.findWikiPageByTitle(id);
+    }
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found'
+      });
+    }
+
+    await db.wikiPages.updateWikiPageProtection(page.id, isProtected);
+
+    // Activity log
+    await db.activities.createActivity({
+      userId: req.user.userId,
+      type: 'wiki',
+      title: isProtected ? 'Page protected' : 'Page unprotected',
+      description: `${isProtected ? 'Protected' : 'Unprotected'} page "${page.title}"`,
+      icon: isProtected ? 'lock' : 'unlock',
+      metadata: { pageTitle: page.title, pageId: page.id }
+    });
+
+    res.json({
+      success: true,
+      message: `Page ${isProtected ? 'protected' : 'unprotected'} successfully`,
+      isProtected
+    });
+
+  } catch (error) {
+    console.error('Error protecting page:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Delete a wiki page
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('delete_pages'), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10) || req.params.id;
     const db = req.db;
@@ -257,6 +338,19 @@ router.delete('/:id', requireAuth, async (req, res) => {
         success: false,
         message: 'Page not found'
       });
+    }
+
+    // Check protection
+    if (page.is_protected) {
+      const permissions = await db.tags.getUserPermissions(req.user.userId);
+      const hasProtectPermission = permissions.some(p => p.name === 'protect_pages');
+
+      if (!req.user.isAdmin && !hasProtectPermission) {
+        return res.status(403).json({
+          success: false,
+          message: 'This page is protected. You need "protect_pages" permission to delete it.'
+        });
+      }
     }
 
     await db.wikiPages.deleteWikiPage(page.id);

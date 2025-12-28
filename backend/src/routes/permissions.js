@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requirePermission } = require('../middleware/auth');
 
 // Get all permissions
 router.get('/', requireAuth, async (req, res) => {
@@ -48,7 +48,7 @@ router.get('/tags', requireAuth, async (req, res) => {
 });
 
 // Update tag permissions
-router.put('/tags/:tagId', requireAuth, requireAdmin, async (req, res) => {
+router.put('/tags/:tagId', requireAuth, requirePermission('permission_management'), async (req, res) => {
   try {
     const { tagId } = req.params;
     const { permissionIds } = req.body;
@@ -78,7 +78,7 @@ router.put('/tags/:tagId', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Create new permission
-router.post('/', requireAuth, requireAdmin, async (req, res) => {
+router.post('/', requireAuth, requirePermission('permission_management'), async (req, res) => {
   try {
     const { name, description, category } = req.body;
 
@@ -106,7 +106,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Update permission
-router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
+router.put('/:id', requireAuth, requirePermission('permission_management'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, category } = req.body;
@@ -140,7 +140,7 @@ router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // Delete permission
-router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('permission_management'), async (req, res) => {
   try {
     const { id } = req.params;
 
