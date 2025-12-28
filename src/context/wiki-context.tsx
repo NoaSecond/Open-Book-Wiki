@@ -29,7 +29,7 @@ interface WikiContextType {
   refreshWikiData: () => Promise<void>;
   dataLoading: boolean;
   dataError: string | null;
-  addPage: (title: string) => Promise<string | null>;
+  addPage: (title: string, content?: string) => Promise<string | null>;
   updatePage: (pageId: string, content: string) => Promise<void>;
   deletePage: (pageId: string) => Promise<void>;
   renamePage: (pageId: string, newTitle: string) => Promise<void>;
@@ -133,13 +133,12 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
   }, [data.wikiData]);
 
   const renameSectionTitle = useCallback(async (pageId: string, sectionId: string, newTitle: string) => {
-    logger.warn('renameSectionTitle not fully implemented in refactor', { pageId, sectionId, newTitle });
-  }, []);
+    await data.renameSectionTitle(pageId, sectionId, newTitle);
+  }, [data.renameSectionTitle]);
 
   const addSection = useCallback(async (title: string) => {
-    logger.warn('addSection not fully implemented in refactor', { title });
-    return null;
-  }, []);
+    return await data.addSection(ui.currentPage, title);
+  }, [data.addSection, ui.currentPage]);
 
   const retryConnection = async () => {
     await auth.checkAuth();

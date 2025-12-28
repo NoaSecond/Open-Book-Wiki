@@ -6,6 +6,7 @@ import { MembersPage } from './members-page';
 import { CollapsibleSections } from './collapsible-sections';
 import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
+import { WikiPage } from '../types';
 
 export const MainContent: React.FC = () => {
   const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, searchResults, addSection, canContribute, enrichPageWithSections } = useWiki();
@@ -29,7 +30,11 @@ export const MainContent: React.FC = () => {
     return <MembersPage />;
   }
 
-  const currentPageData = wikiData[currentPage];
+  // Chercher la page (soit par ID, soit par Titre pour la compatibilité/init)
+  let currentPageData: WikiPage | undefined = wikiData[currentPage];
+  if (!currentPageData && currentPage) {
+    currentPageData = Object.values(wikiData).find(p => p.title === currentPage);
+  }
 
   if (!currentPageData) {
     return (

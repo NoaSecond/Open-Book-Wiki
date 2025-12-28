@@ -19,7 +19,7 @@ class WikiPageRepository extends BaseRepository {
         return await this.db.all(`
       SELECT w.*, u.username as author_username 
       FROM wiki_pages w 
-      JOIN users u ON w.author_id = u.id 
+      LEFT JOIN users u ON w.author_id = u.id 
       ORDER BY w.updated_at DESC
     `);
     }
@@ -42,9 +42,13 @@ class WikiPageRepository extends BaseRepository {
         return await this.db.get(`
       SELECT w.*, u.username as author_username 
       FROM wiki_pages w 
-      JOIN users u ON w.author_id = u.id 
+      LEFT JOIN users u ON w.author_id = u.id 
       WHERE w.id = ?
     `, [id]);
+    }
+
+    async deleteWikiPage(id) {
+        await this.db.run('DELETE FROM wiki_pages WHERE id = ?', [id]);
     }
 }
 

@@ -8,6 +8,7 @@ export const useSidebarLogic = () => {
     const {
         wikiData,
         addPage,
+        updatePage,
         renamePage,
         deletePage,
         reorderPages,
@@ -21,6 +22,11 @@ export const useSidebarLogic = () => {
 
     // Modal & Edit states
     const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+    const [deletionState, setDeletionState] = useState<{ isOpen: boolean; id: string; title: string }>({
+        isOpen: false,
+        id: '',
+        title: ''
+    });
 
 
     // Logic for loading activities
@@ -52,14 +58,14 @@ export const useSidebarLogic = () => {
     const createNavigationItems = useCallback((): SidebarNavigationItem[] => {
         const items: SidebarNavigationItem[] = [];
 
-        for (const [pageId, pageData] of Object.entries(wikiData)) {
-            let iconName = 'book-open';
-            if (pageData.title === 'Accueil') {
+        for (const pageData of Object.values(wikiData)) {
+            let iconName = pageData.icon || 'book-open';
+            if (pageData.title === 'Accueil' && !pageData.icon) {
                 iconName = 'home';
             }
 
             items.push({
-                id: pageId,
+                id: pageData.id.toString(), // Store numeric ID as string for consistency
                 label: pageData.title,
                 title: pageData.title,
                 iconName: iconName
@@ -107,13 +113,30 @@ export const useSidebarLogic = () => {
     const handleCreateCategory = async (name: string, availableIcons: any[], iconIndex: number) => {
         if (name.trim()) {
             const selectedIcon = availableIcons[iconIndex];
-            const newPageId = await addPage(name.trim());
+            const initialContent = `<!-- ICON:${selectedIcon.name} -->\n# ${name.trim()}\n\nContenu de la page...`;
+            const newPageId = await addPage(name.trim(), initialContent);
             if (newPageId) {
-                setCurrentPage(name.trim());
+                setCurrentPage(newPageId);
             }
             console.log(`Catégorie créée: ${name.trim()} avec icône: ${selectedIcon.name}`);
             setShowAddCategoryModal(false);
         }
+    };
+
+    const handleUpdateIcon = async (pageId: string, iconName: string) => {
+        const page = Object.values(wikiData).find(p => p.id.toString() === pageId || p.title === pageId);
+        if (!page) return;
+
+        let content = page.content || '';
+        const iconMarker = `<!-- ICON:${iconName} -->`;
+
+        if (content.includes('<!-- ICON:')) {
+            content = content.replace(/<!-- ICON:[^-]+ -->/, iconMarker);
+        } else {
+            content = iconMarker + '\n' + content;
+        }
+
+        await updatePage(page.id.toString(), content);
     };
 
     const handleAddCategoryClick = () => setShowAddCategoryModal(true);
@@ -123,9 +146,22 @@ export const useSidebarLogic = () => {
     };
 
     const handleDeletePage = (id: string, title: string) => {
-        if (window.confirm(`Êtes-vous sûr de vouloir supprimer la page "${title}" ? Cette action est irréversible.`)) {
-            deletePage(id);
+        setDeletionState({
+            isOpen: true,
+            id,
+            title
+        });
+    };
+
+    const handleConfirmDelete = async () => {
+        if (deletionState.id) {
+            await deletePage(deletionState.id);
+            setDeletionState({ isOpen: false, id: '', title: '' });
         }
+    };
+
+    const handleCancelDelete = () => {
+        setDeletionState({ isOpen: false, id: '', title: '' });
     };
 
     return {
@@ -136,9 +172,14 @@ export const useSidebarLogic = () => {
         // Modal State
         showAddCategoryModal,
         setShowAddCategoryModal,
+        // Deletion state
+        deletionState,
+        handleConfirmDelete,
+        handleCancelDelete,
         // Handlers
         handleAddCategoryClick,
         handleCreateCategory,
+        handleUpdateIcon,
         // Item handlers
         handleRenamePage,
         handleDeletePage

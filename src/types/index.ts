@@ -62,6 +62,7 @@ export interface WikiPage {
   isPrivate?: boolean; // Legacy property
   sections?: WikiSection[];
   version?: number; // Legacy property
+  icon?: string;
 }
 
 export interface Activity {

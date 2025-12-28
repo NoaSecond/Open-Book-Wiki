@@ -67,7 +67,7 @@ class WikiService {
     try {
       logger.debug('Récupération de la page', { pageId });
 
-      const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
+      const response = await fetch(`${this.getBaseUrl()}/${encodeURIComponent(pageId)}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
@@ -129,7 +129,7 @@ class WikiService {
     try {
       logger.debug('Mise à jour de la page', { pageId });
 
-      const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
+      const response = await fetch(`${this.getBaseUrl()}/${encodeURIComponent(pageId)}`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
@@ -159,7 +159,7 @@ class WikiService {
     try {
       logger.debug('Suppression de la page', { pageId });
 
-      const response = await fetch(`${this.getBaseUrl()}/${pageId}`, {
+      const response = await fetch(`${this.getBaseUrl()}/${encodeURIComponent(pageId)}`, {
         method: 'DELETE',
         headers: this.getAuthHeaders()
       });
@@ -186,7 +186,7 @@ class WikiService {
     try {
       logger.debug('Renommage de la page', { pageId, newTitle });
 
-      const response = await fetch(`${this.getBaseUrl()}/${pageId}/rename`, {
+      const response = await fetch(`${this.getBaseUrl()}/${encodeURIComponent(pageId)}/rename`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({

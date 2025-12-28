@@ -23,13 +23,21 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get a wiki page by title
+// Get a wiki page by title or ID
 router.get('/:title', async (req, res) => {
   try {
     const { title } = req.params;
     const db = req.db;
 
-    const page = await db.wikiPages.findWikiPageByTitle(title);
+    // Try ID first if it looks like a number, then Title
+    let page = null;
+    if (/^\d+$/.test(title)) {
+      page = await db.wikiPages.findWikiPageById(parseInt(title, 10));
+    }
+
+    if (!page) {
+      page = await db.wikiPages.findWikiPageByTitle(title);
+    }
 
     if (!page) {
       return res.status(404).json({
@@ -112,7 +120,7 @@ router.post('/', requireAuth, async (req, res) => {
 // Update a wiki page
 router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10) || req.params.id;
     const { content } = req.body;
 
     if (!content) {
@@ -124,8 +132,12 @@ router.put('/:id', requireAuth, async (req, res) => {
 
     const db = req.db;
 
-    // Check that the page exists
-    const page = await db.wikiPages.findWikiPageByTitle(id); // Using title as ID for now
+    // Check that the page exists (try ID first, then Title for legacy)
+    let page = await db.wikiPages.findWikiPageById(id);
+    if (!page) {
+      page = await db.wikiPages.findWikiPageByTitle(id);
+    }
+
     if (!page) {
       return res.status(404).json({
         success: false,
@@ -165,7 +177,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 // Rename a wiki page
 router.put('/:id/rename', requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10) || req.params.id;
     const { title } = req.body;
 
     if (!title) {
@@ -177,8 +189,12 @@ router.put('/:id/rename', requireAuth, async (req, res) => {
 
     const db = req.db;
 
-    // Check that the page exists
-    const page = await db.wikiPages.findWikiPageByTitle(id); // Using title as ID for now
+    // Check that the page exists (try ID first, then Title for legacy)
+    let page = await db.wikiPages.findWikiPageById(id);
+    if (!page) {
+      page = await db.wikiPages.findWikiPageByTitle(id);
+    }
+
     if (!page) {
       return res.status(404).json({
         success: false,
@@ -217,6 +233,51 @@ router.put('/:id/rename', requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Error renaming page:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Delete a wiki page
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10) || req.params.id;
+    const db = req.db;
+
+    // Check that the page exists (try ID first, then Title)
+    let page = await db.wikiPages.findWikiPageById(id);
+    if (!page) {
+      page = await db.wikiPages.findWikiPageByTitle(id);
+    }
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found'
+      });
+    }
+
+    await db.wikiPages.deleteWikiPage(page.id);
+
+    // Create a page deletion activity
+    await db.activities.createActivity({
+      userId: req.user.userId,
+      type: 'wiki',
+      title: 'Page deleted',
+      description: `Deleted page "${page.title}"`,
+      icon: 'trash-2',
+      metadata: { pageTitle: page.title, pageId: page.id }
+    });
+
+    res.json({
+      success: true,
+      message: 'Page deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting page:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

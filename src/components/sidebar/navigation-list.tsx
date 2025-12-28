@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -16,7 +16,8 @@ import {
     X,
     MoreHorizontal,
     Edit3,
-    Trash2
+    Trash2,
+    Palette
 } from 'lucide-react';
 
 import DragHandle from '../drag-handle';
@@ -32,6 +33,8 @@ interface NavigationListProps {
     onReorder: (newOrder: string[]) => void;
     onRename: (id: string, newTitle: string) => void;
     onDelete: (id: string, title: string) => void;
+    onIconChange?: (id: string, iconName: string) => void;
+    availableIcons?: Array<{ name: string; label: string }>;
     user: User | null;
 }
 
@@ -43,7 +46,9 @@ const SortableItem: React.FC<{
     onNavigate: (id: string) => void;
     onRename: (id: string, title: string) => void;
     onDelete: (id: string, title: string) => void;
-}> = ({ item, isActive, canEdit, onNavigate, onRename, onDelete }) => {
+    onIconChange?: (id: string, iconName: string) => void;
+    availableIcons?: Array<{ name: string; label: string }>;
+}> = ({ item, isActive, canEdit, onNavigate, onRename, onDelete, onIconChange, availableIcons }) => {
     const {
         attributes,
         listeners,
@@ -56,6 +61,8 @@ const SortableItem: React.FC<{
     const [isBeingEdited, setIsBeingEdited] = useState(false);
     const [editingTitle, setEditingTitle] = useState(item.label);
     const [showMenu, setShowMenu] = useState(false);
+    const [showIconPicker, setShowIconPicker] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -64,11 +71,11 @@ const SortableItem: React.FC<{
     };
 
     const handleSave = () => {
-        if (editingTitle.trim()) {
+        if (editingTitle.trim() && editingTitle.trim() !== item.label) {
             onRename(item.id, editingTitle.trim());
-            setIsBeingEdited(false);
-            setShowMenu(false);
         }
+        setIsBeingEdited(false);
+        setShowMenu(false);
     };
 
     const handleCancel = () => {
@@ -77,15 +84,22 @@ const SortableItem: React.FC<{
         setShowMenu(false);
     };
 
+    useEffect(() => {
+        if (isBeingEdited && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isBeingEdited]);
+
     if (isBeingEdited) {
         return (
-            <li ref={setNodeRef} style={style} className="relative">
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border border-custom-border bg-custom-surface`}>
+            <li ref={setNodeRef} style={style} className="relative z-50">
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border border-custom-border bg-custom-surface shadow-md`}>
                     <SvgIcon
                         name={item.iconName}
                         className={`w-5 h-5 flex-shrink-0 text-custom-muted`}
                     />
                     <input
+                        ref={inputRef}
                         type="text"
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
@@ -93,15 +107,12 @@ const SortableItem: React.FC<{
                             if (e.key === 'Enter') handleSave();
                             if (e.key === 'Escape') handleCancel();
                         }}
-                        className={`flex-1 px-2 py-1 rounded border transition-colors bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
-                        autoFocus
+                        onBlur={handleSave}
+                        className={`flex-1 min-w-0 px-2 py-1 rounded border transition-colors bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted text-sm`}
                     />
-                    <div className="flex space-x-1">
-                        <button onClick={handleSave} className="text-green-500 hover:text-green-400">
+                    <div className="flex space-x-1 flex-shrink-0">
+                        <button onMouseDown={(e) => { e.preventDefault(); handleSave(); }} className="text-green-500 hover:text-green-400 p-1">
                             <Check className="w-4 h-4" />
-                        </button>
-                        <button onClick={handleCancel} className="text-red-500 hover:text-red-400">
-                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -118,16 +129,16 @@ const SortableItem: React.FC<{
 
                 <button
                     onClick={() => onNavigate(item.id)}
-                    className={`flex-1 flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                    className={`flex-1 min-w-0 flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
                         ? 'bg-primary text-white shadow-sm'
                         : 'text-custom-muted hover:bg-custom-surface hover:text-custom-text'
                         }`}
                 >
                     <SvgIcon
                         name={item.iconName}
-                        className={`w-5 h-5 ${isActive ? 'text-white' : 'text-custom-muted'}`}
+                        className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-custom-muted'}`}
                     />
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate text-sm">{item.label}</span>
                 </button>
 
                 {canEdit && (
@@ -140,25 +151,63 @@ const SortableItem: React.FC<{
                         </button>
                         {showMenu && (
                             <>
-                                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                                <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 bg-custom-surface border-custom-border`}>
-                                    <button
-                                        onClick={() => setIsBeingEdited(true)}
-                                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
-                                    >
-                                        <Edit3 className="w-4 h-4" />
-                                        <span>Renommer</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            onDelete(item.id, item.label);
-                                            setShowMenu(false);
-                                        }}
-                                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-600 hover:text-white"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span>Supprimer</span>
-                                    </button>
+                                <div className="fixed inset-0 z-10" onClick={() => { setShowMenu(false); setShowIconPicker(false); }} />
+                                <div className={`absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg border z-20 bg-custom-surface border-custom-border overflow-hidden`}>
+                                    {!showIconPicker ? (
+                                        <>
+                                            <button
+                                                onClick={() => setIsBeingEdited(true)}
+                                                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                                <span>Renommer</span>
+                                            </button>
+                                            {onIconChange && availableIcons && (
+                                                <button
+                                                    onClick={() => setShowIconPicker(true)}
+                                                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
+                                                >
+                                                    <Palette className="w-4 h-4" />
+                                                    <span>Changer l'icône</span>
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    onDelete(item.id, item.label);
+                                                    setShowMenu(false);
+                                                }}
+                                                className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-500 hover:text-white"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                <span>Supprimer</span>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="p-2">
+                                            <div className="flex items-center justify-between mb-2 px-1">
+                                                <span className="text-xs font-semibold text-custom-text">Icônes</span>
+                                                <button onClick={() => setShowIconPicker(false)} className="text-custom-muted hover:text-custom-text">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-1 max-h-40 overflow-y-auto content-scrollbar p-1">
+                                                {availableIcons?.map((icon) => (
+                                                    <button
+                                                        key={icon.name}
+                                                        onClick={() => {
+                                                            onIconChange?.(item.id, icon.name);
+                                                            setShowMenu(false);
+                                                            setShowIconPicker(false);
+                                                        }}
+                                                        className={`p-1.5 rounded hover:bg-custom-bg transition-colors flex items-center justify-center ${item.iconName === icon.name ? 'bg-primary/20 text-primary' : 'text-custom-muted'}`}
+                                                        title={icon.label}
+                                                    >
+                                                        <SvgIcon name={icon.name} className="w-4 h-4" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -177,17 +226,21 @@ const StaticItem: React.FC<{
     onNavigate: (id: string) => void;
     onRename: (id: string, title: string) => void;
     onDelete: (id: string, title: string) => void;
-}> = ({ item, isActive, canEdit, onNavigate, onRename, onDelete }) => {
+    onIconChange?: (id: string, iconName: string) => void;
+    availableIcons?: Array<{ name: string; label: string }>;
+}> = ({ item, isActive, canEdit, onNavigate, onRename, onDelete, onIconChange, availableIcons }) => {
     const [isBeingEdited, setIsBeingEdited] = useState(false);
     const [editingTitle, setEditingTitle] = useState(item.label);
     const [showMenu, setShowMenu] = useState(false);
+    const [showIconPicker, setShowIconPicker] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const handleSave = () => {
-        if (editingTitle.trim()) {
+        if (editingTitle.trim() && editingTitle.trim() !== item.label) {
             onRename(item.id, editingTitle.trim());
-            setIsBeingEdited(false);
-            setShowMenu(false);
         }
+        setIsBeingEdited(false);
+        setShowMenu(false);
     };
 
     const handleCancel = () => {
@@ -196,15 +249,22 @@ const StaticItem: React.FC<{
         setShowMenu(false);
     };
 
+    useEffect(() => {
+        if (isBeingEdited && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isBeingEdited]);
+
     if (isBeingEdited) {
         return (
-            <li className="relative">
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border border-custom-border bg-custom-surface`}>
+            <li className="relative z-50">
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border border-custom-border bg-custom-surface shadow-md`}>
                     <SvgIcon
                         name={item.iconName}
                         className={`w-5 h-5 flex-shrink-0 text-custom-muted`}
                     />
                     <input
+                        ref={inputRef}
                         type="text"
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
@@ -212,15 +272,12 @@ const StaticItem: React.FC<{
                             if (e.key === 'Enter') handleSave();
                             if (e.key === 'Escape') handleCancel();
                         }}
-                        className={`flex-1 px-2 py-1 rounded border transition-colors bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
-                        autoFocus
+                        onBlur={handleSave}
+                        className={`flex-1 min-w-0 px-2 py-1 rounded border transition-colors bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted text-sm`}
                     />
-                    <div className="flex space-x-1">
-                        <button onClick={handleSave} className="text-green-500 hover:text-green-400">
+                    <div className="flex space-x-1 flex-shrink-0">
+                        <button onMouseDown={(e) => { e.preventDefault(); handleSave(); }} className="text-green-500 hover:text-green-400 p-1">
                             <Check className="w-4 h-4" />
-                        </button>
-                        <button onClick={handleCancel} className="text-red-500 hover:text-red-400">
-                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -233,16 +290,16 @@ const StaticItem: React.FC<{
             <div className="flex items-center group">
                 <button
                     onClick={() => onNavigate(item.id)}
-                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                    className={`flex-1 min-w-0 flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
                         ? 'bg-primary text-white shadow-sm'
                         : 'text-custom-muted hover:bg-custom-surface hover:text-custom-text'
                         }`}
                 >
                     <SvgIcon
                         name={item.iconName}
-                        className={`w-5 h-5 ${isActive ? 'text-white' : 'text-custom-muted'}`}
+                        className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-custom-muted'}`}
                     />
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate text-sm">{item.label}</span>
                 </button>
 
                 {canEdit && (
@@ -255,25 +312,63 @@ const StaticItem: React.FC<{
                         </button>
                         {showMenu && (
                             <>
-                                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                                <div className={`absolute right-0 top-full mt-1 w-40 rounded-md shadow-lg border z-20 bg-custom-surface border-custom-border`}>
-                                    <button
-                                        onClick={() => setIsBeingEdited(true)}
-                                        className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
-                                    >
-                                        <Edit3 className="w-4 h-4" />
-                                        <span>Renommer</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            onDelete(item.id, item.label);
-                                            setShowMenu(false);
-                                        }}
-                                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-600 hover:text-white"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span>Supprimer</span>
-                                    </button>
+                                <div className="fixed inset-0 z-10" onClick={() => { setShowMenu(false); setShowIconPicker(false); }} />
+                                <div className={`absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg border z-20 bg-custom-surface border-custom-border overflow-hidden`}>
+                                    {!showIconPicker ? (
+                                        <>
+                                            <button
+                                                onClick={() => setIsBeingEdited(true)}
+                                                className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                                <span>Renommer</span>
+                                            </button>
+                                            {onIconChange && availableIcons && (
+                                                <button
+                                                    onClick={() => setShowIconPicker(true)}
+                                                    className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
+                                                >
+                                                    <Palette className="w-4 h-4" />
+                                                    <span>Changer l'icône</span>
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    onDelete(item.id, item.label);
+                                                    setShowMenu(false);
+                                                }}
+                                                className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-500 hover:text-white"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                <span>Supprimer</span>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="p-2">
+                                            <div className="flex items-center justify-between mb-2 px-1">
+                                                <span className="text-xs font-semibold text-custom-text">Icônes</span>
+                                                <button onClick={() => setShowIconPicker(false)} className="text-custom-muted hover:text-custom-text">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-1 max-h-40 overflow-y-auto content-scrollbar p-1">
+                                                {availableIcons?.map((icon) => (
+                                                    <button
+                                                        key={icon.name}
+                                                        onClick={() => {
+                                                            onIconChange?.(item.id, icon.name);
+                                                            setShowMenu(false);
+                                                            setShowIconPicker(false);
+                                                        }}
+                                                        className={`p-1.5 rounded hover:bg-custom-bg transition-colors flex items-center justify-center ${item.iconName === icon.name ? 'bg-primary/20 text-primary' : 'text-custom-muted'}`}
+                                                        title={icon.label}
+                                                    >
+                                                        <SvgIcon name={icon.name} className="w-4 h-4" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -294,6 +389,8 @@ const NavigationList: React.FC<NavigationListProps> = ({
     onReorder,
     onRename,
     onDelete,
+    onIconChange,
+    availableIcons,
     user
 }) => {
 
@@ -322,8 +419,8 @@ const NavigationList: React.FC<NavigationListProps> = ({
                     : 'text-custom-muted hover:bg-custom-surface hover:text-custom-text'
                     }`}
             >
-                <UserIcon className="w-5 h-5" />
-                <span>Mon Profil</span>
+                <UserIcon className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate text-sm">Mon Profil</span>
             </button>
         </li>
     );
@@ -342,6 +439,8 @@ const NavigationList: React.FC<NavigationListProps> = ({
                                 onNavigate={onNavigate}
                                 onRename={onRename}
                                 onDelete={onDelete}
+                                onIconChange={onIconChange}
+                                availableIcons={availableIcons}
                             />
                         ))}
                         {user && <ProfilLink />}
@@ -362,6 +461,8 @@ const NavigationList: React.FC<NavigationListProps> = ({
                     onNavigate={onNavigate}
                     onRename={onRename}
                     onDelete={onDelete}
+                    onIconChange={onIconChange}
+                    availableIcons={availableIcons}
                 />
             ))}
             {user && <ProfilLink />}

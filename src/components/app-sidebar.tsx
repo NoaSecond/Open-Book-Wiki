@@ -7,6 +7,7 @@ import SidebarFooter from './sidebar/sidebar-footer';
 import ActivityList from './sidebar/activity-list';
 import NavigationList from './sidebar/navigation-list';
 import AddCategoryModal from './sidebar/add-category-modal';
+import ConfirmModal from './sidebar/confirm-modal';
 import { WikiPage, WikiSection } from '../types';
 
 export const Sidebar: React.FC = () => {
@@ -29,8 +30,13 @@ export const Sidebar: React.FC = () => {
     // Handlers
     handleAddCategoryClick,
     handleCreateCategory,
+    handleDeletePage,
     handleRenamePage,
-    handleDeletePage
+    handleUpdateIcon,
+    // Deletion Modal
+    deletionState,
+    handleConfirmDelete,
+    handleCancelDelete
   } = useSidebarLogic();
 
   const availableIcons = useMemo(() => [
@@ -69,12 +75,14 @@ export const Sidebar: React.FC = () => {
           onReorder={handleReorder}
           onRename={handleRenamePage}
           onDelete={handleDeletePage}
+          onIconChange={handleUpdateIcon}
+          availableIcons={availableIcons}
           user={user}
         />
 
         {/* Current page sections */}
-        {currentPage && wikiData[currentPage] && (() => {
-          const currentPageData = wikiData[currentPage] as unknown as WikiPage & { sections?: WikiSection[] };
+        {currentPage && (wikiData[currentPage] || Object.values(wikiData).find(p => p.title === currentPage)) && (() => {
+          const currentPageData = (wikiData[currentPage] || Object.values(wikiData).find(p => p.title === currentPage)) as WikiPage;
           const sections = currentPageData.sections || [{
             id: 'main-content',
             title: 'Contenu principal'
@@ -128,6 +136,15 @@ export const Sidebar: React.FC = () => {
         onCreate={async (name, iconIndex) => {
           await handleCreateCategory(name, availableIcons, iconIndex);
         }}
+      />
+      <ConfirmModal
+        isOpen={deletionState.isOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Supprimer la catégorie"
+        message={`Êtes-vous sûr de vouloir supprimer la catégorie "${deletionState.title}" ? Cette action est irréversible et supprimera tout son contenu.`}
+        confirmText="Supprimer"
+        type="danger"
       />
     </aside>
   );

@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { WikiPage, WikiSection } from '../types';
 import wikiService from '../services/wiki-service';
-import { getConfigService } from '../services/config-service';
 import logger from '../utils/logger';
 
 export interface WikiData {
@@ -19,11 +18,16 @@ export const useWikiData = (isBackendConnected: boolean) => {
     // --- Helper Functions ---
 
     const enrichPageWithSections = useCallback((page: WikiPage): WikiPage => {
-        if (page.sections) return page;
-
         const content = page.content || '';
+
+        // Extract icon if present
+        const iconMatch = content.match(/<!-- ICON:([^-]+) -->/);
+        const icon = iconMatch ? iconMatch[1].trim() : undefined;
+
+        if (page.sections) return { ...page, icon };
+
         const sections: WikiSection[] = [];
-        const sectionRegex = /<!-- SECTION:([^:]+):([^-]+) -->([\s\S]*?)<!-- END_SECTION:\1 -->/g;
+        const sectionRegex = /<!-- SECTION:([^:]+):([\s\S]*?)\s*-->([\s\S]*?)<!-- END_SECTION:\1 -->/g;
         let match;
 
         while ((match = sectionRegex.exec(content)) !== null) {
@@ -38,7 +42,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
         }
 
         if (sections.length === 0) {
-            const mainContentMatch = content.match(/<!-- SECTION:main-content:([^-]+?) -->/);
+            const mainContentMatch = content.match(/<!-- SECTION:main-content:([\s\S]*?)\s*-->/);
             const defaultTitle = mainContentMatch ? mainContentMatch[1].trim() : 'Contenu principal';
             const defaultSection = {
                 id: 'main-content',
@@ -49,7 +53,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
             };
             sections.push(defaultSection);
         } else {
-            const firstSectionMatch = content.match(/<!-- SECTION:[^:]+:[^-]+ -->/);
+            const firstSectionMatch = content.match(/<!-- SECTION:[^:]+:([\s\S]*?)\s*-->/);
             if (firstSectionMatch && typeof firstSectionMatch.index === 'number' && firstSectionMatch.index > 0) {
                 const mainContent = content.substring(0, firstSectionMatch.index).trim();
                 if (mainContent) {
@@ -64,7 +68,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
             }
         }
 
-        return { ...page, sections };
+        return { ...page, sections, icon };
     }, []);
 
     // --- Actions ---
@@ -92,7 +96,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
                     if (index % 5 === 0) {
                         setLoadingStep(`Analyzing content: ${page.title} (${index + 1}/${pages.length})`);
                     }
-                    wikiDataMap[page.title] = enrichPageWithSections(page);
+                    wikiDataMap[page.id.toString()] = enrichPageWithSections(page);
                 });
                 setWikiData(wikiDataMap);
                 setLoadingStep('Finalizing interface...');
@@ -115,9 +119,10 @@ export const useWikiData = (isBackendConnected: boolean) => {
         }
     }, [isBackendConnected, enrichPageWithSections]);
 
-    const addPage = useCallback(async (title: string): Promise<string | null> => {
+    const addPage = useCallback(async (title: string, content?: string): Promise<string | null> => {
         try {
-            const newPage = await wikiService.createPage(title, '# ' + title + '\n\nContenu de la page...', false);
+            const defaultContent = '# ' + title + '\n\nContenu de la page...';
+            const newPage = await wikiService.createPage(title, content || defaultContent, false);
             if (newPage) {
                 await refreshWikiData();
                 return newPage.id.toString();
@@ -140,26 +145,58 @@ export const useWikiData = (isBackendConnected: boolean) => {
         }
     }, [refreshWikiData]);
 
+    const addSection = useCallback(async (pageId: string, title: string): Promise<string | null> => {
+        try {
+            const page = wikiData[pageId] || Object.values(wikiData).find(p => p.id.toString() === pageId || p.title === pageId);
+            if (!page) {
+                logger.error('❌ Page non trouvée pour l\'ajout de section', pageId);
+                return null;
+            }
+
+            const sectionId = 'sec-' + Math.random().toString(36).substring(2, 9);
+            const sectionMarker = `\n\n<!-- SECTION:${sectionId}:${title} -->\nContenu de la nouvelle section...\n<!-- END_SECTION:${sectionId} -->`;
+
+            const newContent = (page.content || '') + sectionMarker;
+            await wikiService.updatePage(page.id.toString(), newContent);
+            await refreshWikiData();
+
+            return sectionId;
+        } catch (error) {
+            logger.error('❌ Erreur ajout section', error instanceof Error ? error.message : String(error));
+            return null;
+        }
+    }, [wikiData, refreshWikiData]);
+
+    const renameSectionTitle = useCallback(async (pageId: string, sectionId: string, newTitle: string): Promise<void> => {
+        try {
+            const page = await wikiService.getPage(pageId);
+            if (!page) throw new Error('Page not found');
+
+            const sectionRegex = new RegExp(`<!-- SECTION:${sectionId}:(.*?)\\s*-->`, 'g');
+            const updatedContent = page.content.replace(sectionRegex, `<!-- SECTION:${sectionId}:${newTitle} -->`);
+
+            await wikiService.updatePage(page.id.toString(), updatedContent);
+            await refreshWikiData();
+        } catch (error) {
+            logger.error('❌ Erreur renommage section', error instanceof Error ? error.message : String(error));
+        }
+    }, [refreshWikiData]);
+
     const updatePage = useCallback(async (pageId: string, content: string): Promise<void> => {
         try {
             // Logic for section updates vs full page updates
             if (pageId.includes(':')) {
                 const [pageTitle, sectionId] = pageId.split(':');
-                const configService = getConfigService();
-                // Fetch fresh to be safe
-                const response = await fetch(configService.getApiUrl('/wiki'), {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('wiki_token')}` }
-                });
-                if (!response.ok) throw new Error('Fetch error');
-                const freshPages = await response.json();
-                const page = freshPages.find((p: WikiPage) => p.id === pageTitle);
 
+                const page = await wikiService.getPage(pageTitle);
                 if (!page) throw new Error('Page not found');
 
-                const sectionRegex = new RegExp(`(<!-- SECTION:${sectionId}:[^-]+ -->)[\\s\\S]*?(<!-- END_SECTION:${sectionId} -->)`, 'g');
-                const updatedContent = page.content.replace(sectionRegex, `$1\n${content}\n$2`);
+                // Robust regex for section update
+                const sectionRegex = new RegExp(`(<!-- SECTION:${sectionId}:(.*?)\\s*-->)[\\s\\S]*?(<!-- END_SECTION:${sectionId} -->)`, 'g');
+                // We use $1 for the opening tag (group 1) and $3 for the closing tag (group 3)
+                const updatedContent = page.content.replace(sectionRegex, `$1\n${content}\n$3`);
 
-                await wikiService.updatePage(pageTitle, updatedContent);
+                await wikiService.updatePage(page.id.toString(), updatedContent);
             } else {
                 await wikiService.updatePage(pageId, content);
             }
@@ -228,6 +265,8 @@ export const useWikiData = (isBackendConnected: boolean) => {
         updatePage,
         deletePage,
         renamePage,
+        addSection,
+        renameSectionTitle,
         // Search
         searchTerm,
         setSearchTerm,
