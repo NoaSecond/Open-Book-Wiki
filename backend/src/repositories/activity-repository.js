@@ -1,6 +1,17 @@
 const BaseRepository = require('./base-repository');
 
 class ActivityRepository extends BaseRepository {
+    /**
+     * Create a new activity log
+     * @param {Object} activityData 
+     * @param {number} activityData.userId
+     * @param {string} activityData.type
+     * @param {string} activityData.title
+     * @param {string} [activityData.description]
+     * @param {string} [activityData.icon]
+     * @param {Object} [activityData.metadata]
+     * @returns {Promise<number>} Activity ID
+     */
     async createActivity(activityData) {
         const { userId, type, title, description, icon, metadata } = activityData;
         const result = await this.db.run(
@@ -11,6 +22,13 @@ class ActivityRepository extends BaseRepository {
         return result.lastID;
     }
 
+    /**
+     * Get activities for a specific user
+     * @param {number} userId 
+     * @param {number} [limit=50] 
+     * @param {number} [offset=0] 
+     * @returns {Promise<Array<Object>>}
+     */
     async getActivitiesByUser(userId, limit = 50, offset = 0) {
         return await this.db.all(
             'SELECT * FROM activities WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
@@ -18,6 +36,11 @@ class ActivityRepository extends BaseRepository {
         );
     }
 
+    /**
+     * Get today's activities for a user
+     * @param {number} userId 
+     * @returns {Promise<Array<Object>>}
+     */
     async getTodayActivitiesByUser(userId) {
         return await this.db.all(
             'SELECT * FROM activities WHERE user_id = ? AND DATE(created_at) = DATE("now") ORDER BY created_at DESC',
@@ -25,6 +48,13 @@ class ActivityRepository extends BaseRepository {
         );
     }
 
+    /**
+     * Search activities for a user
+     * @param {number} userId 
+     * @param {string} searchTerm 
+     * @param {number} [limit=50] 
+     * @returns {Promise<Array<Object>>}
+     */
     async searchActivities(userId, searchTerm, limit = 50) {
         const term = `%${searchTerm}%`;
         return await this.db.all(
@@ -33,6 +63,12 @@ class ActivityRepository extends BaseRepository {
         );
     }
 
+    /**
+     * Get all activities (admin)
+     * @param {number} [limit=100] 
+     * @param {number} [offset=0] 
+     * @returns {Promise<Array<Object>>}
+     */
     async getAllActivities(limit = 100, offset = 0) {
         return await this.db.all(`
       SELECT a.*, u.username 

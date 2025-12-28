@@ -325,6 +325,10 @@ class AuthService {
       throw error;
     }
   }
+
+  getApiUrl(endpoint: string): string {
+    return this.configService.getApiUrl(endpoint);
+  }
 }
 
 const authService = new AuthService();

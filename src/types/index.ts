@@ -59,6 +59,7 @@ export interface WikiPage {
   author_username?: string;
   tags?: string[];
   is_protected?: boolean;
+  comments_enabled?: boolean;
   isPrivate?: boolean; // Legacy property
   sections?: WikiSection[];
   version?: number; // Legacy property
@@ -144,9 +145,31 @@ export interface WikiConfig {
   };
 }
 
-export interface SidebarNavigationItem {
-  id: string;
-  label: string;
-  title?: string;
-  iconName: string;
+
+export interface WikiHistoryEntry {
+  id: number;
+  changed_at: string;
+  title: string;
+  changed_by_username?: string;
 }
+
+export interface WikiHistoryDetail extends WikiHistoryEntry {
+  page_id: number;
+  content: string;
+  change_reason?: string;
+  changed_by?: number;
+}
+
+export interface Comment {
+  id: number;
+  page_id: number;
+  user_id: number;
+  username: string;
+  avatar?: string;
+  content: string;
+  parent_id?: number | null;
+  created_at: string;
+  updated_at?: string;
+  replies?: Comment[];
+}
+

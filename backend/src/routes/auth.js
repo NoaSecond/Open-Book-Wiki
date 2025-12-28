@@ -147,7 +147,8 @@ router.post('/register', async (req, res) => {
       email,
       password,
       isAdmin: false,
-      avatar: 'avatar-openbookwiki.svg'
+      avatar: 'avatar-openbookwiki.svg',
+      tags: 'Contributeur'
     });
 
     // Get created user

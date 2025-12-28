@@ -60,6 +60,159 @@ router.get('/:title', async (req, res) => {
   }
 });
 
+// Get page history
+/**
+ * @swagger
+ * /wiki/{id}/history:
+ *   get:
+ *     summary: Get the history of a wiki page
+ *     tags: [Wiki]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The page ID
+ *     responses:
+ *       200:
+ *         description: List of history entries
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 history:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       changed_at:
+ *                         type: string
+ *                         format: date-time
+ *                       title:
+ *                         type: string
+ *                       changed_by_username:
+ *                         type: string
+ *       404:
+ *         description: Page not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id/history', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10) || req.params.id;
+    const db = req.db;
+
+    // Resolve page ID
+    let page = await db.wikiPages.findWikiPageById(id);
+    if (!page) {
+      page = await db.wikiPages.findWikiPageByTitle(id);
+    }
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found'
+      });
+    }
+
+    const history = await db.wikiPages.getHistoryForPage(page.id);
+
+    res.json({
+      success: true,
+      history: history
+    });
+
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Get specific history version
+/**
+ * @swagger
+ * /wiki/{id}/history/{historyId}:
+ *   get:
+ *     summary: Get a specific historical version of a page
+ *     tags: [Wiki]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The page ID
+ *       - in: path
+ *         name: historyId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The history entry ID
+ *     responses:
+ *       200:
+ *         description: Detailed history entry with content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 version:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     content:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     changed_at:
+ *                       type: string
+ *                     changed_by_username:
+ *                       type: string
+ *       404:
+ *         description: Version not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id/history/:historyId', async (req, res) => {
+  try {
+    const historyId = req.params.historyId;
+    const db = req.db;
+
+    const version = await db.wikiPages.getHistoryDetail(historyId);
+
+    if (!version) {
+      return res.status(404).json({
+        success: false,
+        message: 'Version not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      version: version
+    });
+
+  } catch (error) {
+    console.error('Error fetching version:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Create a new wiki page
 router.post('/', requireAuth, requirePermission('create_pages'), async (req, res) => {
   try {
@@ -158,7 +311,7 @@ router.put('/:id', requireAuth, requirePermission('edit_pages'), async (req, res
       }
     }
 
-    await db.wikiPages.updateWikiPage(page.id, content);
+    await db.wikiPages.updateWikiPage(page.id, content, req.user.userId);
 
     // Create a page modification activity
     await db.activities.createActivity({
@@ -375,6 +528,100 @@ router.delete('/:id', requireAuth, requirePermission('delete_pages'), async (req
     res.status(500).json({
       success: false,
       message: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /wiki/{id}/comments:
+ *   put:
+ *     summary: Toggle comments on a wiki page
+ *     tags: [Wiki]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The page ID or title
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - commentsEnabled
+ *             properties:
+ *               commentsEnabled:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Comments toggled successfully
+ *       403:
+ *         description: Forbidden - requires protect_pages permission
+ *       404:
+ *         description: Page not found
+ *       500:
+ *         description: Server error
+ */
+router.put('/:id/comments', requireAuth, requirePermission('protect_pages'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commentsEnabled } = req.body;
+
+    if (commentsEnabled === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'commentsEnabled status required'
+      });
+    }
+
+    const db = req.db;
+
+    // Check that the page exists
+    let page = await db.wikiPages.findWikiPageById(id);
+    if (!page) {
+      page = await db.wikiPages.findWikiPageByTitle(id);
+    }
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found'
+      });
+    }
+
+    // Update comments_enabled status
+    await db.db.run(
+      'UPDATE wiki_pages SET comments_enabled = ? WHERE id = ?',
+      [commentsEnabled, page.id]
+    );
+
+    // Activity log
+    await db.activities.createActivity({
+      userId: req.user.userId,
+      type: 'wiki',
+      title: commentsEnabled ? 'Comments enabled' : 'Comments disabled',
+      description: `${commentsEnabled ? 'Enabled' : 'Disabled'} comments on page "${page.title}"`,
+      icon: commentsEnabled ? 'message-circle' : 'message-circle-off',
+      metadata: { pageTitle: page.title, pageId: page.id }
+    });
+
+    res.json({
+      success: true,
+      message: `Comments ${commentsEnabled ? 'enabled' : 'disabled'} successfully`,
+      commentsEnabled
+    });
+
+  } catch (error) {
+    console.error('Error toggling comments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error toggling comments'
     });
   }
 });

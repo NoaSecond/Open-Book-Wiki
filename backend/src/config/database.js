@@ -2,6 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const { promisify } = require('util');
+const logger = require('../utils/logger');
 
 // Repositories
 const UserRepository = require('../repositories/user-repository');
@@ -9,6 +10,7 @@ const WikiPageRepository = require('../repositories/wiki-page-repository');
 const TagRepository = require('../repositories/tag-repository');
 const ActivityRepository = require('../repositories/activity-repository');
 const PermissionRepository = require('../repositories/permission-repository');
+const CommentRepository = require('../repositories/comment-repository');
 
 class DatabaseManager {
   constructor() {
@@ -21,16 +23,17 @@ class DatabaseManager {
     this.tags = null;
     this.activities = null;
     this.permissions = null;
+    this.comments = null;
   }
 
   async connect() {
     return new Promise((resolve, reject) => {
       this.db = new sqlite3.Database(this.dbPath, (err) => {
         if (err) {
-          console.error('Error connecting to database:', err);
+          logger.error('Error connecting to database:', err);
           reject(err);
         } else {
-          console.log('Connected to SQLite database');
+          logger.info('Connected to SQLite database');
           // Sauvegarder la méthode originale
           const originalRun = this.db.run.bind(this.db);
 
@@ -56,6 +59,7 @@ class DatabaseManager {
           this.tags = new TagRepository(this.db);
           this.activities = new ActivityRepository(this.db);
           this.permissions = new PermissionRepository(this.db);
+          this.comments = new CommentRepository(this.db);
 
           resolve();
         }
@@ -106,7 +110,39 @@ class DatabaseManager {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           is_protected BOOLEAN DEFAULT FALSE,
+          comments_enabled BOOLEAN DEFAULT FALSE,
           FOREIGN KEY (author_id) REFERENCES users (id)
+        )
+      `);
+
+      // Create wiki_page_history table
+      await this.db.run(`
+        CREATE TABLE IF NOT EXISTS wiki_page_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          page_id INTEGER NOT NULL,
+          content TEXT NOT NULL,
+          title TEXT NOT NULL,
+          changed_by INTEGER NOT NULL,
+          change_reason TEXT,
+          changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (page_id) REFERENCES wiki_pages (id) ON DELETE CASCADE,
+          FOREIGN KEY (changed_by) REFERENCES users (id)
+        )
+      `);
+
+      // Create comments table
+      await this.db.run(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          page_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          content TEXT NOT NULL,
+          parent_id INTEGER,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (page_id) REFERENCES wiki_pages (id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (parent_id) REFERENCES comments (id) ON DELETE CASCADE
         )
       `);
 
@@ -148,12 +184,15 @@ class DatabaseManager {
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities (user_id)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities (created_at)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_wiki_pages_title ON wiki_pages (title)');
+      await this.db.run('CREATE INDEX IF NOT EXISTS idx_wiki_page_history_page_id ON wiki_page_history (page_id)');
+      await this.db.run('CREATE INDEX IF NOT EXISTS idx_comments_page_id ON comments (page_id)');
+      await this.db.run('CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments (parent_id)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_tags_name ON tags (name)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_permissions_name ON permissions (name)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_tag_permissions_tag_id ON tag_permissions (tag_id)');
       await this.db.run('CREATE INDEX IF NOT EXISTS idx_tag_permissions_permission_id ON tag_permissions (permission_id)');
 
-      console.log('Database tables initialized successfully');
+      logger.info('Database tables initialized successfully');
 
       // Migrate existing tables if needed
       await this.migrateDatabase();
@@ -162,28 +201,37 @@ class DatabaseManager {
       await this.seedDefaultData();
 
     } catch (error) {
-      console.error('Error initializing database tables:', error);
+      logger.error('Error initializing database tables:', error);
       throw error;
     }
   }
 
   async migrateDatabase() {
     try {
-      // Check if bio and tags columns exist
-      const tableInfo = await this.db.all("PRAGMA table_info(users)");
-      const columns = tableInfo.map(col => col.name);
+      // Check if bio and tags columns exist in users table
+      const userTableInfo = await this.db.all("PRAGMA table_info(users)");
+      const userColumns = userTableInfo.map(col => col.name);
 
-      if (!columns.includes('bio')) {
+      if (!userColumns.includes('bio')) {
         await this.db.run('ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ""');
-        console.log('Added bio column to users table');
+        logger.info('Added bio column to users table');
       }
 
-      if (!columns.includes('tags')) {
+      if (!userColumns.includes('tags')) {
         await this.db.run('ALTER TABLE users ADD COLUMN tags TEXT DEFAULT ""');
-        console.log('Added tags column to users table');
+        logger.info('Added tags column to users table');
+      }
+
+      // Check if comments_enabled column exists in wiki_pages table
+      const wikiPagesTableInfo = await this.db.all("PRAGMA table_info(wiki_pages)");
+      const wikiPagesColumns = wikiPagesTableInfo.map(col => col.name);
+
+      if (!wikiPagesColumns.includes('comments_enabled')) {
+        await this.db.run('ALTER TABLE wiki_pages ADD COLUMN comments_enabled BOOLEAN DEFAULT FALSE');
+        logger.info('Added comments_enabled column to wiki_pages table');
       }
     } catch (error) {
-      console.error('Error during database migration:', error);
+      logger.error('Error during database migration:', error);
       // Continue even if migration fails for non-critical columns
     }
   }
@@ -432,7 +480,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
           });
         }
 
-        console.log('Default wiki pages created successfully');
+        logger.info('Default wiki pages created successfully');
       }
 
       // Create default tags if they don't exist
@@ -450,7 +498,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
           await this.tags.createTag(tag.name, tag.color);
         }
 
-        console.log('Default tags created successfully');
+        logger.info('Default tags created successfully');
       }
 
       // Create default permissions if they don't exist
@@ -492,7 +540,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
           );
         }
 
-        console.log('Default permissions created successfully');
+        logger.info('Default permissions created successfully');
       }
 
       // Create default tag permissions if they don't exist
@@ -521,7 +569,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
         // Contributor permissions (user permissions + edit pages)
         if (contributorTag) {
           const contributorPermissions = [
-            'edit_pages', 'edit_own_profile', 'change_avatar', 'view_activity'
+            'create_pages', 'edit_pages', 'edit_own_profile', 'change_avatar', 'view_activity'
           ];
 
           for (const permName of contributorPermissions) {
@@ -580,9 +628,9 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
       return new Promise((resolve) => {
         this.db.close((err) => {
           if (err) {
-            console.error('Error closing database:', err);
+            logger.error('Error closing database:', err);
           } else {
-            console.log('Database connection closed');
+            logger.info('Database connection closed');
           }
           resolve();
         });

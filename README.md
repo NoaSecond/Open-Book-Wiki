@@ -20,6 +20,15 @@
 - **Base de données** : SQLite
 - **Authentification** : JWT + bcrypt
 - **Sécurité** : Helmet, CORS, Rate Limiting
+- **Documentation** : Swagger / OpenAPI
+
+## Documentation API
+
+L'API du backend est entièrement documentée avec Swagger. Vous pouvez explorer les endpoints, les schémas de données et tester les requêtes directement depuis votre navigateur.
+
+- **Accéder à la documentation Swagger** : [`http://localhost:3001/api-docs/`](http://localhost:3001/api-docs/)
+
+> **Note :** Pour tester les routes protégées, vous pouvez utiliser le bouton "Authorize" dans Swagger et entrer le token JWT obtenu via la route `/auth/login`.
 
 ## Démarrage
 

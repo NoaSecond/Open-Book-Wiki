@@ -1,6 +1,10 @@
 const BaseRepository = require('./base-repository');
 
 class TagRepository extends BaseRepository {
+    /**
+     * Get all tags
+     * @returns {Promise<Array<Object>>}
+     */
     async getAllTags() {
         return await this.db.all(`
       SELECT * FROM tags 
@@ -8,6 +12,12 @@ class TagRepository extends BaseRepository {
     `);
     }
 
+    /**
+     * Create a new tag
+     * @param {string} name 
+     * @param {string} color 
+     * @returns {Promise<number>} Tag ID
+     */
     async createTag(name, color) {
         const result = await this.db.run(
             'INSERT INTO tags (name, color) VALUES (?, ?)',
@@ -16,6 +26,13 @@ class TagRepository extends BaseRepository {
         return result.lastID;
     }
 
+    /**
+     * Update a tag
+     * @param {number} id 
+     * @param {string} name 
+     * @param {string} color 
+     * @returns {Promise<Object>} Updated tag
+     */
     async updateTag(id, name, color) {
         await this.db.run(
             'UPDATE tags SET name = ?, color = ? WHERE id = ?',
@@ -24,14 +41,28 @@ class TagRepository extends BaseRepository {
         return await this.db.get('SELECT * FROM tags WHERE id = ?', [id]);
     }
 
+    /**
+     * Delete a tag
+     * @param {number} id 
+     */
     async deleteTag(id) {
         await this.db.run('DELETE FROM tags WHERE id = ?', [id]);
     }
 
+    /**
+     * Get tag by ID
+     * @param {number} id 
+     * @returns {Promise<Object|null>}
+     */
     async getTagById(id) {
         return await this.db.get('SELECT * FROM tags WHERE id = ?', [id]);
     }
 
+    /**
+     * Get permission names for a user based on their tags
+     * @param {number} userId 
+     * @returns {Promise<Array<Object>>} List of permission names
+     */
     async getUserPermissions(userId) {
         return await this.db.all(`
       SELECT DISTINCT p.name
@@ -43,6 +74,10 @@ class TagRepository extends BaseRepository {
     `, [userId]);
     }
 
+    /**
+     * Get permissions for guest users
+     * @returns {Promise<Array<Object>>} List of permission names
+     */
     async getGuestPermissions() {
         return await this.db.all(`
       SELECT DISTINCT p.name
@@ -53,6 +88,10 @@ class TagRepository extends BaseRepository {
     `);
     }
 
+    /**
+     * Get all tags with their permissions
+     * @returns {Promise<Array<Object>>}
+     */
     async getAllTagsWithPermissions() {
         const tagPermissions = await this.db.all(`
             SELECT 
@@ -98,6 +137,11 @@ class TagRepository extends BaseRepository {
         return Object.values(tagPermissionsMap);
     }
 
+    /**
+     * Update permissions for a tag
+     * @param {number} tagId 
+     * @param {Array<number>} permissionIds 
+     */
     async updateTagPermissions(tagId, permissionIds) {
         // This should transactionally update permissions
         // SQLite doesn't have nested transaction support widely used here but we can serialize calls.

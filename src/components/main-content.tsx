@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Plus, Lock, Unlock } from 'lucide-react';
+import { Calendar, User, Plus, Lock, Unlock, Clock, Download, MessageSquare, MessageSquareOff } from 'lucide-react';
 import { useWiki } from '../context/wiki-context';
 import { ProfilePage } from './profile-page';
 import { MembersPage } from './members-page';
 import { CollapsibleSections } from './collapsible-sections';
+import { HistoryModal } from './history-modal';
+import { CommentSection } from './comment-section';
+import { ExportModal } from './export-modal';
 import logger from '../utils/logger';
 import DateUtils from '../utils/dateUtils';
 import { WikiPage } from '../types';
@@ -12,6 +15,8 @@ import authService from '../services/auth-service';
 export const MainContent: React.FC = () => {
   const { currentPage, wikiData, setCurrentPage, setIsEditModalOpen, setEditingPageTitle, searchTerm, searchResults, addSection, hasPermission, enrichPageWithSections, refreshWikiData } = useWiki();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
 
   // Enregistrer la vue de page et récupérer les statistiques
@@ -97,6 +102,26 @@ export const MainContent: React.FC = () => {
     }
   };
 
+  const handleToggleComments = async () => {
+    if (!currentPageData) return;
+    try {
+      const newStatus = !currentPageData.comments_enabled;
+      const response = await authService.fetchWithAuth(`/wiki/${currentPageData.id}/comments`, {
+        method: 'PUT',
+        body: JSON.stringify({ commentsEnabled: newStatus })
+      });
+
+      if (response.success) {
+        logger.success(`Commentaires ${newStatus ? 'activés' : 'désactivés'} pour la page`);
+        await refreshWikiData();
+      } else {
+        logger.error('Erreur lors du changement des commentaires', response.message);
+      }
+    } catch (error) {
+      logger.error('Erreur lors du changement des commentaires', error instanceof Error ? error.message : String(error));
+    }
+  };
+
   // Enrichir la page actuelle avec des sections
   const currentPageWithSections = currentPageData ? enrichPageWithSections(currentPageData) : null;
 
@@ -106,7 +131,27 @@ export const MainContent: React.FC = () => {
         {/* Page Header */}
         <div className={`mb-6 pb-4 border-b border-custom-border`}>
           <div className="flex items-center justify-between mb-4">
-            <h1 className={`text-3xl font-bold text-custom-text`}>{currentPageData.title}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className={`text-3xl font-bold text-custom-text`}>{currentPageData.title}</h1>
+
+              {/* History Button (Visible to all) */}
+              <button
+                onClick={() => setIsHistoryModalOpen(true)}
+                title="Historique des modifications"
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-custom-muted"
+              >
+                <Clock className="w-5 h-5" />
+              </button>
+
+              {/* Export Button (Visible to authenticated users) */}
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                title="Exporter la page"
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-custom-muted"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+            </div>
             {hasPermission('protect_pages') && (
               <div className="flex space-x-2">
                 <button
@@ -118,6 +163,16 @@ export const MainContent: React.FC = () => {
                     }`}
                 >
                   {currentPageData.is_protected ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={handleToggleComments}
+                  title={currentPageData.comments_enabled ? "Désactiver les commentaires" : "Activer les commentaires"}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${currentPageData.comments_enabled
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-200'
+                    }`}
+                >
+                  {currentPageData.comments_enabled ? <MessageSquare className="w-4 h-4" /> : <MessageSquareOff className="w-4 h-4" />}
                 </button>
                 {hasPermission('edit_pages') && (
                   <button
@@ -245,6 +300,29 @@ export const MainContent: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* History Modal */}
+        <HistoryModal
+          isOpen={isHistoryModalOpen}
+          onClose={() => setIsHistoryModalOpen(false)}
+          pageId={currentPageData.id}
+          onRestore={() => {
+            refreshWikiData();
+          }}
+        />
+
+        {/* Export Modal */}
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          pageId={currentPageData.id}
+          pageTitle={currentPageData.title}
+        />
+
+        {/* Comments Section - Only show if enabled */}
+        {currentPageData.id && currentPageData.comments_enabled ? (
+          <CommentSection pageId={currentPageData.id} />
+        ) : null}
       </div>
     </main>
   );
