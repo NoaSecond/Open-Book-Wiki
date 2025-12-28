@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, LogIn, Edit3, Sun, Moon } from 'lucide-react';
+import { Search, LogIn, Edit3, Sun, Moon, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import { UserMenu } from './user-menu';
 import { LoginModal } from './login-modal';
@@ -18,6 +19,7 @@ export const Header: React.FC = () => {
     openAdminTab
   } = useWiki();
 
+  const { t, i18n } = useTranslation();
   const configService = getConfigService();
   const siteName = configService.getSiteName();
   const siteDescription = configService.getSiteDescription();
@@ -28,6 +30,12 @@ export const Header: React.FC = () => {
   const handleEditClick = () => {
     openAdminTab('customization');
     logger.debug('🎨 Opening customization tab');
+  };
+
+  const changeLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'fr' : 'en';
+    i18n.changeLanguage(newLang);
+    logger.debug('🌐 Language changed to:', newLang);
   };
 
   return (
@@ -49,7 +57,7 @@ export const Header: React.FC = () => {
                     }
                   }}
                   className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
-                  title="Retour à la première page"
+                  title={t('navigation.home')}
                 >
                   <div className="w-10 h-10 flex items-center justify-center">
                     <img
@@ -63,7 +71,7 @@ export const Header: React.FC = () => {
                       {siteName || 'Open Book Wiki'}
                     </h1>
                     <p className={`text-sm transition-colors duration-300 text-custom-muted`}>
-                      {siteDescription || 'Wiki open source'}
+                      {siteDescription || 'Open source wiki'}
                     </p>
                   </div>
                 </button>
@@ -73,7 +81,7 @@ export const Header: React.FC = () => {
                     onClick={handleEditClick}
                     className={`p-1 rounded hover:bg-opacity-80 transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
                       }`}
-                    title="Customize wiki"
+                    title={t('header.customize')}
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -86,7 +94,7 @@ export const Header: React.FC = () => {
                 <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 transition-colors duration-300 text-custom-text/40`} />
                 <input
                   type="text"
-                  placeholder="Rechercher dans le wiki..."
+                  placeholder={t('header.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -110,7 +118,15 @@ export const Header: React.FC = () => {
                     className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
                   >
                     <LogIn className="w-4 h-4" />
-                    <span>Se connecter</span>
+                    <span>{t('auth.login')}</span>
+                  </button>
+                  <button
+                    onClick={changeLanguage}
+                    className={`p-2 rounded-lg transition-colors bg-custom-surface hover:bg-custom-surface/80 text-primary flex items-center space-x-1`}
+                    title={t('header.language')}
+                  >
+                    <Languages className="w-4 h-4" />
+                    <span className="text-xs font-semibold">{i18n.language.toUpperCase()}</span>
                   </button>
                   <button
                     onClick={() => {
@@ -118,7 +134,7 @@ export const Header: React.FC = () => {
                       logger.debug('🎨 Basculement de thème:', !isDarkMode ? 'sombre' : 'clair');
                     }}
                     className={`p-2 rounded-lg transition-colors bg-custom-surface hover:bg-custom-surface/80 text-primary`}
-                    title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
+                    title={isDarkMode ? t('header.lightMode') : t('header.darkMode')}
                   >
                     {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   </button>

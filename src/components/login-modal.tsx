@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import authService from '../services/auth-service';
 
@@ -10,6 +11,7 @@ interface LoginModalProps {
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const { setUser, isDarkMode } = useWiki();
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,10 +31,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         setUsername('');
         setPassword('');
       } else {
-        setError(result.message || 'Identifiant ou mot de passe incorrect');
+        setError(result.message || t('auth.invalidCredentials'));
       }
     } catch {
-      setError('Erreur de connexion');
+      setError(t('auth.loginError'));
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +56,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between mb-6">
           <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
-            Connexion
+            {t('auth.login')}
           </h2>
           <button
             onClick={handleClose}
@@ -70,7 +72,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                Identifiant
+                {t('auth.username')}
               </label>
               <div className="relative">
                 <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
@@ -79,7 +81,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Votre identifiant"
+                  placeholder={t('auth.username')}
                   className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${isDarkMode
                     ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400'
                     : 'bg-white text-gray-900 border-gray-300 placeholder-gray-500'
@@ -92,7 +94,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                Mot de passe
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
@@ -101,7 +103,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Votre mot de passe"
+                  placeholder={t('auth.password')}
                   className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${isDarkMode
                     ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400'
                     : 'bg-white text-gray-900 border-gray-300 placeholder-gray-500'
@@ -127,14 +129,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 : 'bg-gray-500 hover:bg-gray-600 text-white'
                 }`}
             >
-              Annuler
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={isLoading || !username || !password}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? 'Connexion...' : 'Se connecter'}
+              {isLoading ? t('common.loading') : t('auth.login')}
             </button>
           </div>
         </form>
