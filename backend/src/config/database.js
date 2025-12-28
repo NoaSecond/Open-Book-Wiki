@@ -377,8 +377,8 @@ Voici quelques exemples de syntaxe Markdown que vous pouvez utiliser :
 ## Support et ressources
 
 - 📖 [Documentation Markdown](https://www.markdownguide.org/)
-- 🐛 [Rapporter un bug](mailto:admin@openbookwiki.com)
-- 💡 [Suggérer une amélioration](mailto:admin@openbookwiki.com)
+- 🐛 [Rapporter un bug](https://github.com/NoaSecond/Open-Book-Wiki/issues/new?labels=bug)
+- 💡 [Suggérer une amélioration](https://github.com/NoaSecond/Open-Book-Wiki/issues/new?labels=enhancement)
 
 ---
 

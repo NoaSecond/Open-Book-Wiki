@@ -12,6 +12,12 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sea
   const renderContent = (text: string) => {
     let processedText = text;
 
+    // Support des liens [texte](url) - DOIT être traité en premier
+    processedText = processedText.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+
     // Support du gras inline avec **texte**
     processedText = processedText.replace(
       /\*\*(.*?)\*\*/g,
