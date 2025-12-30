@@ -11,7 +11,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    User as UserIcon,
     Check,
     X,
     MoreHorizontal,
@@ -19,10 +18,11 @@ import {
     Trash2,
     Palette
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import DragHandle from '../drag-handle';
 import SvgIcon from '../svg-icon';
-import { SidebarNavigationItem, User } from '../../types';
+import { SidebarNavigationItem } from '../../types';
 
 interface NavigationListProps {
     items: SidebarNavigationItem[];
@@ -35,7 +35,6 @@ interface NavigationListProps {
     onDelete: (id: string, title: string) => void;
     onIconChange?: (id: string, iconName: string) => void;
     availableIcons?: Array<{ name: string; label: string }>;
-    user: User | null;
 }
 
 // Component for each draggable item
@@ -57,6 +56,7 @@ const SortableItem: React.FC<{
         transition,
         isDragging,
     } = useSortable({ id: item.id });
+    const { t } = useTranslation();
 
     const [isBeingEdited, setIsBeingEdited] = useState(false);
     const [editingTitle, setEditingTitle] = useState(item.label);
@@ -160,7 +160,7 @@ const SortableItem: React.FC<{
                                                 className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
                                             >
                                                 <Edit3 className="w-4 h-4" />
-                                                <span>Renommer</span>
+                                                <span>{t('pages.renamePage')}</span>
                                             </button>
                                             {onIconChange && availableIcons && (
                                                 <button
@@ -168,7 +168,7 @@ const SortableItem: React.FC<{
                                                     className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
                                                 >
                                                     <Palette className="w-4 h-4" />
-                                                    <span>Changer l'icône</span>
+                                                    <span>{t('pages.changeIcon')}</span>
                                                 </button>
                                             )}
                                             <button
@@ -179,13 +179,13 @@ const SortableItem: React.FC<{
                                                 className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-500 hover:text-white"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                                <span>Supprimer</span>
+                                                <span>{t('common.delete')}</span>
                                             </button>
                                         </>
                                     ) : (
                                         <div className="p-2">
                                             <div className="flex items-center justify-between mb-2 px-1">
-                                                <span className="text-xs font-semibold text-custom-text">Icônes</span>
+                                                <span className="text-xs font-semibold text-custom-text">{t('pages.icons')}</span>
                                                 <button onClick={() => setShowIconPicker(false)} className="text-custom-muted hover:text-custom-text">
                                                     <X className="w-3 h-3" />
                                                 </button>
@@ -229,6 +229,7 @@ const StaticItem: React.FC<{
     onIconChange?: (id: string, iconName: string) => void;
     availableIcons?: Array<{ name: string; label: string }>;
 }> = ({ item, isActive, canEdit, onNavigate, onRename, onDelete, onIconChange, availableIcons }) => {
+    const { t } = useTranslation();
     const [isBeingEdited, setIsBeingEdited] = useState(false);
     const [editingTitle, setEditingTitle] = useState(item.label);
     const [showMenu, setShowMenu] = useState(false);
@@ -321,7 +322,7 @@ const StaticItem: React.FC<{
                                                 className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
                                             >
                                                 <Edit3 className="w-4 h-4" />
-                                                <span>Renommer</span>
+                                                <span>{t('pages.renamePage')}</span>
                                             </button>
                                             {onIconChange && availableIcons && (
                                                 <button
@@ -329,7 +330,7 @@ const StaticItem: React.FC<{
                                                     className={`w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-custom-muted hover:bg-custom-bg hover:text-custom-text`}
                                                 >
                                                     <Palette className="w-4 h-4" />
-                                                    <span>Changer l'icône</span>
+                                                    <span>{t('pages.changeIcon')}</span>
                                                 </button>
                                             )}
                                             <button
@@ -340,13 +341,13 @@ const StaticItem: React.FC<{
                                                 className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors text-red-400 hover:bg-red-500 hover:text-white"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                                <span>Supprimer</span>
+                                                <span>{t('common.delete')}</span>
                                             </button>
                                         </>
                                     ) : (
                                         <div className="p-2">
                                             <div className="flex items-center justify-between mb-2 px-1">
-                                                <span className="text-xs font-semibold text-custom-text">Icônes</span>
+                                                <span className="text-xs font-semibold text-custom-text">{t('pages.icons')}</span>
                                                 <button onClick={() => setShowIconPicker(false)} className="text-custom-muted hover:text-custom-text">
                                                     <X className="w-3 h-3" />
                                                 </button>
@@ -390,9 +391,9 @@ const NavigationList: React.FC<NavigationListProps> = ({
     onRename,
     onDelete,
     onIconChange,
-    availableIcons,
-    user
+    availableIcons
 }) => {
+
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -410,20 +411,7 @@ const NavigationList: React.FC<NavigationListProps> = ({
         }
     };
 
-    const ProfilLink = () => (
-        <li>
-            <button
-                onClick={() => onNavigate('profile')}
-                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${currentPage === 'profile'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-custom-muted hover:bg-custom-surface hover:text-custom-text'
-                    }`}
-            >
-                <UserIcon className="w-5 h-5 flex-shrink-0" />
-                <span className="truncate text-sm">Mon Profil</span>
-            </button>
-        </li>
-    );
+
 
     if (canReorder) {
         return (
@@ -443,7 +431,7 @@ const NavigationList: React.FC<NavigationListProps> = ({
                                 availableIcons={availableIcons}
                             />
                         ))}
-                        {user && <ProfilLink />}
+                        {/* Profile link removed as requested */}
                     </ul>
                 </SortableContext>
             </DndContext>
@@ -465,7 +453,7 @@ const NavigationList: React.FC<NavigationListProps> = ({
                     availableIcons={availableIcons}
                 />
             ))}
-            {user && <ProfilLink />}
+            {/* Profile link removed as requested */}
         </ul>
     );
 };

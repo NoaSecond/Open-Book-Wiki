@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Edit3, Calendar, Trophy, Shield, UserCheck, Eye, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import { User } from '../types';
 import authService from '../services/auth-service';
@@ -23,6 +24,7 @@ interface EditingUserData {
 
 export const MembersPage: React.FC = () => {
   const { isAdmin } = useWiki();
+  const { t } = useTranslation();
   const [editingUserData, setEditingUserData] = useState<EditingUserData | null>(null);
   const [allUsers, setAllUsers] = useState<DisplayUser[]>([]);
 
@@ -48,10 +50,10 @@ export const MembersPage: React.FC = () => {
       <main className={`flex-1 p-6 content-scrollbar bg-custom-bg`}>
         <div className="text-center">
           <h1 className={`text-2xl font-bold mb-4 text-custom-text`}>
-            Accès refusé
+            {t('errors.forbidden')}
           </h1>
           <p className={`text-custom-muted`}>
-            Vous devez être administrateur pour accéder à cette page.
+            {t('errors.unauthorized')}
           </p>
         </div>
       </main>
@@ -141,7 +143,7 @@ export const MembersPage: React.FC = () => {
     <main className={`flex-1 p-6 content-scrollbar bg-custom-bg`}>
       <div className="max-w-6xl mx-auto">
         <h1 className={`text-3xl font-bold mb-8 text-custom-text`}>
-          Gestion des membres
+          {t('members.members')}
         </h1>
 
         <div className="space-y-6">
@@ -205,7 +207,7 @@ export const MembersPage: React.FC = () => {
 
                     <button
                       onClick={() => {
-                        if (window.confirm(`Êtes-vous sûr de vouloir supprimer le compte de ${user.username} ?`)) {
+                        if (window.confirm(t('pages.confirmDelete'))) {
                           handleDeleteUser(user.id);
                         }
                       }}
@@ -222,11 +224,11 @@ export const MembersPage: React.FC = () => {
               <div className={`mt-4 flex items-center space-x-6 text-sm text-custom-muted`}>
                 <div className="flex items-center space-x-1">
                   <Calendar className="w-4 h-4" />
-                  <span>Membre depuis le {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}</span>
+                  <span>{t('profile.joinedOn')} {user.joinDate ? DateUtils.formatDateShort(user.joinDate) : 'N/A'}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Trophy className="w-4 h-4" />
-                  <span>{user.contributions} contributions</span>
+                  <span>{user.contributions} {t('profile.contributions')}</span>
                 </div>
               </div>
 
@@ -247,14 +249,14 @@ export const MembersPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className={`p-6 rounded-lg shadow-xl w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto bg-custom-surface border border-custom-border`}>
             <h2 className={`text-xl font-bold mb-4 text-custom-text`}>
-              Modifier le profil de {editingUserData.username}
+              {t('profile.editProfile')}: {editingUserData.username}
             </h2>
 
             <div className="space-y-4">
               {/* Nom d'utilisateur */}
               <div>
                 <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
-                  Nom d'utilisateur
+                  {t('auth.username')}
                 </label>
                 <input
                   type="text"
@@ -269,7 +271,7 @@ export const MembersPage: React.FC = () => {
               {/* Email */}
               <div>
                 <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
-                  Email
+                  {t('auth.email')}
                 </label>
                 <input
                   type="email"
@@ -284,7 +286,7 @@ export const MembersPage: React.FC = () => {
               {/* Avatar URL */}
               <div>
                 <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
-                  URL de l'avatar
+                  {t('profile.avatar')} URL
                 </label>
                 <input
                   type="url"
@@ -300,7 +302,7 @@ export const MembersPage: React.FC = () => {
               {/* Nouveau mot de passe */}
               <div>
                 <label className={`block text-sm font-medium mb-1 text-custom-muted`}>
-                  Nouveau mot de passe (optionnel)
+                  {t('auth.password')} (Optionnel)
                 </label>
                 <input
                   type="password"
@@ -309,14 +311,14 @@ export const MembersPage: React.FC = () => {
                     prev ? { ...prev, password: e.target.value } : null
                   )}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-custom-bg border-custom-border text-custom-text placeholder-custom-muted`}
-                  placeholder="Laisser vide pour conserver l'actuel"
+                  placeholder={t('auth.password')}
                 />
               </div>
 
               {/* Tags */}
               <div>
                 <label className={`block text-sm font-medium mb-2 text-custom-muted`}>
-                  Rôles
+                  {t('members.role')}
                 </label>
                 <div className="space-y-2">
                   {availableTags.map((tag) => (
@@ -353,13 +355,13 @@ export const MembersPage: React.FC = () => {
                 onClick={() => setEditingUserData(null)}
                 className={`px-4 py-2 rounded-lg transition-colors bg-custom-bg text-custom-text hover:bg-custom-surface border border-custom-border`}
               >
-                Annuler
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSaveProfile}
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
               >
-                Sauvegarder
+                {t('common.save')}
               </button>
             </div>
           </div>

@@ -5,7 +5,7 @@ export const useWikiUI = () => {
     const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
     // Navigation
-    const [currentPage, setCurrentPage] = useState<string>('Accueil');
+    const [currentPage, setCurrentPage] = useState<string>('Home');
 
     // Modals
     const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);

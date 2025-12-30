@@ -60,7 +60,7 @@ export const useSidebarLogic = () => {
 
         for (const pageData of Object.values(wikiData)) {
             let iconName = pageData.icon || 'book-open';
-            if (pageData.title === 'Accueil' && !pageData.icon) {
+            if ((pageData.title === 'Accueil' || pageData.title === 'Home') && !pageData.icon) {
                 iconName = 'home';
             }
 
@@ -110,7 +110,7 @@ export const useSidebarLogic = () => {
         reorderPages(newOrder);
     };
 
-    const handleCreateCategory = async (name: string, availableIcons: any[], iconIndex: number) => {
+    const handleCreateCategory = async (name: string, availableIcons: { name: string }[], iconIndex: number) => {
         if (name.trim()) {
             const selectedIcon = availableIcons[iconIndex];
             const initialContent = `<!-- ICON:${selectedIcon.name} -->\n# ${name.trim()}\n\nContenu de la page...`;

@@ -173,3 +173,10 @@ export interface Comment {
   replies?: Comment[];
 }
 
+export interface SidebarNavigationItem {
+  id: string;
+  label: string;
+  title: string;
+  iconName: string;
+}
+

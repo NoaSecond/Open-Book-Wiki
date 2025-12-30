@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Download, FileText, Code, FileCode, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import authService from '../services/auth-service';
 import logger from '../utils/logger';
@@ -15,6 +16,7 @@ type ExportFormat = 'markdown' | 'html' | 'pdf';
 
 export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pageId, pageTitle }) => {
     const { isDarkMode } = useWiki();
+    const { t } = useTranslation();
     const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('markdown');
     const [isExporting, setIsExporting] = useState(false);
 
@@ -54,7 +56,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pageI
             onClose();
         } catch (error) {
             logger.error('Export error', error instanceof Error ? error.message : String(error));
-            alert('Erreur lors de l\'export. Veuillez réessayer.');
+            alert(t('export.exportError'));
         } finally {
             setIsExporting(false);
         }
@@ -63,22 +65,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pageI
     const formats = [
         {
             id: 'markdown' as ExportFormat,
-            name: 'Markdown',
-            description: 'Format texte avec syntaxe Markdown',
+            name: t('export.markdown'),
+            description: t('export.markdownDesc'),
             icon: FileText,
             extension: '.md'
         },
         {
             id: 'html' as ExportFormat,
-            name: 'HTML',
-            description: 'Page web autonome avec styles',
+            name: t('export.html'),
+            description: t('export.htmlDesc'),
             icon: Code,
             extension: '.html'
         },
         {
             id: 'pdf' as ExportFormat,
-            name: 'PDF',
-            description: 'Document PDF prêt à imprimer',
+            name: t('export.pdf'),
+            description: t('export.pdfDesc'),
             icon: FileCode,
             extension: '.pdf'
         }
@@ -91,7 +93,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pageI
                 <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-slate-700">
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                         <Download className="w-6 h-6" />
-                        Exporter la page
+                        {t('export.exportPage')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -104,7 +106,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pageI
                 {/* Content */}
                 <div className="p-6">
                     <p className="mb-6 text-gray-600 dark:text-slate-400">
-                        Choisissez le format d'export pour <strong>{pageTitle}</strong>
+                        {t('export.selectFormat')} <strong>{pageTitle}</strong>
                     </p>
 
                     <div className="space-y-3">
@@ -159,7 +161,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pageI
                         onClick={onClose}
                         className="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
-                        Annuler
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleExport}
@@ -167,7 +169,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, pageI
                         className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <Download className="w-4 h-4" />
-                        {isExporting ? 'Export en cours...' : 'Exporter'}
+                        {isExporting ? t('export.exporting') : t('export.export')}
                     </button>
                 </div>
             </div>

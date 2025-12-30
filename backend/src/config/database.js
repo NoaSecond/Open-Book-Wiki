@@ -111,6 +111,7 @@ class DatabaseManager {
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           is_protected BOOLEAN DEFAULT FALSE,
           comments_enabled BOOLEAN DEFAULT FALSE,
+          icon TEXT,
           FOREIGN KEY (author_id) REFERENCES users (id)
         )
       `);
@@ -230,6 +231,11 @@ class DatabaseManager {
         await this.db.run('ALTER TABLE wiki_pages ADD COLUMN comments_enabled BOOLEAN DEFAULT FALSE');
         logger.info('Added comments_enabled column to wiki_pages table');
       }
+
+      if (!wikiPagesColumns.includes('icon')) {
+        await this.db.run('ALTER TABLE wiki_pages ADD COLUMN icon TEXT');
+        logger.info('Added icon column to wiki_pages table');
+      }
     } catch (error) {
       logger.error('Error during database migration:', error);
       // Continue even if migration fails for non-critical columns
@@ -249,8 +255,8 @@ class DatabaseManager {
           password: 'admin123',
           isAdmin: true,
           avatar: '/avatars/avatar-openbookwiki.svg',
-          bio: 'Administrateur principal du wiki Open Book Wiki.',
-          tags: 'Administrateur'
+          bio: 'Main administrator of Open Book Wiki.',
+          tags: 'Administrator'
         });
 
         const newAdmin = await this.users.findUserByUsername('admin');
@@ -270,36 +276,36 @@ class DatabaseManager {
       }
 
       // Create test users if they don't exist
-      const contributorUser = await this.users.findUserByUsername('contributeur');
+      const contributorUser = await this.users.findUserByUsername('contributor');
       if (!contributorUser) {
         await this.users.createUser({
-          username: 'contributeur',
-          email: 'contributeur@openbookwiki.com',
+          username: 'contributor',
+          email: 'contributor@openbookwiki.com',
           password: 'contrib123',
           isAdmin: false,
           avatar: '/avatars/avatar-blue.svg',
-          bio: 'Utilisateur contributeur qui peut créer et modifier des articles.',
-          tags: 'Contributeur'
+          bio: 'Contributor user who can create and modify articles.',
+          tags: 'Contributor'
         });
 
         console.log('Test contributor user created successfully');
-        console.log('Login credentials: contributeur / contrib123');
+        console.log('Login credentials: contributor / contrib123');
       }
 
-      const visitorUser = await this.users.findUserByUsername('visiteur');
+      const visitorUser = await this.users.findUserByUsername('visitor');
       if (!visitorUser) {
         await this.users.createUser({
-          username: 'visiteur',
-          email: 'visiteur@openbookwiki.com',
+          username: 'visitor',
+          email: 'visitor@openbookwiki.com',
           password: 'visit123',
           isAdmin: false,
           avatar: '/avatars/avatar-green.svg',
-          bio: 'Utilisateur visiteur avec accès en lecture seule.',
-          tags: 'Visiteur'
+          bio: 'Visitor user with read-only access.',
+          tags: 'Visitor'
         });
 
         console.log('Test visitor user created successfully');
-        console.log('Login credentials: visiteur / visit123');
+        console.log('Login credentials: visitor / visit123');
       }
 
       // Check if default pages exist
@@ -311,152 +317,153 @@ class DatabaseManager {
 
         const defaultPages = [
           {
-            title: 'Accueil',
-            content: `# Bienvenue sur Open Book Wiki !
+            title: 'Home',
+            content: `# Welcome to Open Book Wiki!
 
-Votre wiki personnel est maintenant opérationnel ! 🎉
+Your personal wiki is now up and running! 🎉
 
-## Qu'est-ce qu'Open Book Wiki ?
+## What is Open Book Wiki?
 
-Open Book Wiki est une plateforme de documentation collaborative, simple et moderne. Elle vous permet de créer, organiser et partager vos connaissances facilement.
+Open Book Wiki is a simple and modern collaborative documentation platform. It allows you to easily create, organize, and share your knowledge.
 
-## Comment commencer ?
+## How to get started?
 
-### 1. 🔐 Authentification
-- Cliquez sur "Se connecter" dans le coin supérieur droit
-- Utilisez les identifiants : **admin** / **admin123**
-- Une fois connecté, vous aurez accès aux fonctionnalités d'édition
+### 1. 🔐 Authentication
+- Click on "Login" in the top right corner
+- Use the credentials: **admin** / **admin123**
+- Once logged in, you will have access to editing features
 
-### 2. ✏️ Créer du contenu
-- Cliquez sur "Modifier" en haut à droite de cette page pour l'éditer
-- Utilisez le bouton "+" dans la barre latérale pour créer de nouvelles pages
-- Organisez vos pages par catégories
+### 2. ✏️ Create content
+- Click on "Edit" at the top right of this page to edit it
+- Use the "+" button in the sidebar to create new pages
+- Organize your pages by categories
 
-### 3. 🎨 Personnalisation
-- Basculez entre mode sombre et clair avec l'interrupteur en haut
-- Accédez au panel d'administration pour gérer les utilisateurs
-- Configurez les paramètres selon vos besoins
+### 3. 🎨 Customization
+- Toggle between dark and light mode with the switch at the top
+- Access the admin panel to manage users
+- Configure settings according to your needs
 
-## Fonctionnalités principales
+## Main Features
 
-- ✏️ **Édition Markdown** : Syntaxe simple et puissante
-- 🔍 **Recherche** : Trouvez rapidement vos contenus
-- 👥 **Multi-utilisateurs** : Collaboration en équipe
-- 🔒 **Pages protégées** : Contrôlez l'accès au contenu sensible
-- 📊 **Suivi d'activité** : Historique des modifications
-- 🌙 **Mode sombre** : Interface adaptée à vos préférences
-- 📱 **Responsive** : Fonctionne sur tous les appareils
+- ✏️ **Markdown Editing**: Simple and powerful syntax
+- 🔍 **Search**: Quickly find your content
+- 👥 **Multi-user**: Team collaboration
+- 🔒 **Protected Pages**: Control access to sensitive content
+- 📊 **Activity Tracking**: Modification history
+- 🌙 **Dark Mode**: Interface tailored to your preferences
+- 📱 **Responsive**: Works on all devices
 
-## Syntaxe Markdown
+## Markdown Syntax
 
-Voici quelques exemples de syntaxe Markdown que vous pouvez utiliser :
+Here are some examples of Markdown syntax you can use:
 
 \`\`\`markdown
-# Titre de niveau 1
-## Titre de niveau 2
-### Titre de niveau 3
+# Level 1 Title
+## Level 2 Title
+### Level 3 Title
 
-**Texte en gras**
-*Texte en italique*
-\`Code en ligne\`
+**Bold text**
+*Italic text*
+\`Inline code\`
 
-- Liste à puces
-- Élément 2
-- Élément 3
+- Bullet point list
+- Item 2
+- Item 3
 
-1. Liste numérotée
-2. Élément 2
-3. Élément 3
+1. Numbered list
+2. Item 2
+3. Item 3
 
-[Lien vers une page](https://example.com)
+[Link to a page](https://example.com)
 
-> Citation
-> Sur plusieurs lignes
+> Quote
+> On multiple lines
 \`\`\`
 
-## Support et ressources
+## Support and Resources
 
-- 📖 [Documentation Markdown](https://www.markdownguide.org/)
-- 🐛 [Rapporter un bug](https://github.com/NoaSecond/Open-Book-Wiki/issues/new?labels=bug)
-- 💡 [Suggérer une amélioration](https://github.com/NoaSecond/Open-Book-Wiki/issues/new?labels=enhancement)
+- 📖 [Markdown Documentation](https://www.markdownguide.org/)
+- 🐛 [Report a bug](https://github.com/NoaSecond/Open-Book-Wiki/issues/new?labels=bug)
+- 💡 [Suggest an improvement](https://github.com/NoaSecond/Open-Book-Wiki/issues/new?labels=enhancement)
 
 ---
 
-*Bon wiki ! 🚀*`,
+*Happy wiki-ing! 🚀*`,
             authorId: adminUser.id,
-            isProtected: false
+            isProtected: false,
+            icon: 'home'
           },
           {
-            title: 'Démarrage',
-            content: `# Guide de démarrage rapide
+            title: 'Getting Started',
+            content: `# Quick Start Guide
 
-Ce guide vous aidera à prendre en main Open Book Wiki rapidement.
+This guide will help you get started with Open Book Wiki quickly.
 
-## Étape 1 : Connexion
+## Step 1: Login
 
-1. Cliquez sur le bouton "Se connecter" en haut à droite
-2. Saisissez vos identifiants :
-   - **Nom d'utilisateur** : admin
-   - **Mot de passe** : admin123
-3. Cliquez sur "Connexion"
+1. Click on the "Login" button in the top right
+2. Enter your credentials:
+   - **Username**: admin
+   - **Password**: admin123
+3. Click on "Login"
 
-## Étape 2 : Navigation
+## Step 2: Navigation
 
-### Barre latérale
-- **Accueil** : Page principale du wiki
-- **Catégories** : Organisez vos pages par thèmes
-- **Bouton +** : Créer une nouvelle page
+### Sidebar
+- **Home**: Main wiki page
+- **Categories**: Organize your pages by themes
+- **+ Button**: Create a new page
 
-### Barre supérieure
-- **Recherche** : Trouvez rapidement une page
-- **Mode sombre/clair** : Changez l'apparence
-- **Menu utilisateur** : Profil et déconnexion
+### Top Bar
+- **Search**: Quickly find a page
+- **Dark/Light Mode**: Change appearance
+- **User Menu**: Profile and logout
 
-## Étape 3 : Création de contenu
+## Step 3: Content Creation
 
-### Créer une nouvelle page
-1. Cliquez sur le bouton "+" dans la barre latérale
-2. Donnez un titre à votre page
-3. Rédigez le contenu en Markdown
-4. Cliquez sur "Sauvegarder"
+### Create a new page
+1. Click the "+" button in the sidebar
+2. Give your page a title
+3. Write content in Markdown
+4. Click "Save"
 
-### Modifier une page existante
-1. Naviguez vers la page à modifier
-2. Cliquez sur "Modifier" en haut à droite
-3. Apportez vos modifications
-4. Sauvegardez vos changements
+### Edit an existing page
+1. Navigate to the page you want to edit
+2. Click "Edit" at the top right
+3. Make your changes
+4. Save your changes
 
-## Étape 4 : Organisation
+## Step 4: Organization
 
-### Catégories
-Organisez vos pages en catégories logiques :
-- Documentation technique
-- Guides utilisateur
-- Procédures internes
+### Categories
+Organize your pages into logical categories:
+- Technical Documentation
+- User Guides
+- Internal Procedures
 - FAQ
-- Notes personnelles
+- Personal Notes
 
-### Pages protégées
-Certaines pages peuvent être protégées contre la modification par des utilisateurs non-autorisés.
+### Protected Pages
+Some pages can be protected from editing by unauthorized users.
 
-## Conseils d'utilisation
+## Usage Tips
 
-### Syntaxe Markdown utile
-- \`# Titre\` pour les titres principaux
-- \`## Sous-titre\` pour les sous-sections
-- \`**gras**\` pour mettre en évidence
-- \`\`code\`\` pour le code en ligne
-- \`- élément\` pour les listes
+### Useful Markdown Syntax
+- \`# Title\` for main headings
+- \`## Subtitle\` for sub-sections
+- \`**bold**\` for highlighting
+- \`\`code\`\` for inline code
+- \`- item\` for lists
 
-### Bonnes pratiques
-- Utilisez des titres clairs et descriptifs
-- Organisez le contenu avec des sous-sections
-- Ajoutez des liens entre les pages liées
-- Maintenez vos pages à jour
+### Best Practices
+- Use clear and descriptive titles
+- Organize content with sub-sections
+- Add links between related pages
+- Keep your pages updated
 
 ---
 
-Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
+You are now ready to use Open Book Wiki! 🎉`,
             authorId: adminUser.id,
             isProtected: false
           }
@@ -473,8 +480,8 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
           await this.activities.createActivity({
             userId: page.authorId,
             type: 'create',
-            title: 'Page "' + page.title + '" créée',
-            description: 'Création de la page par défaut "' + page.title + '"',
+            title: 'Page "' + page.title + '" created',
+            description: 'Creation of default page "' + page.title + '"',
             icon: 'book-open',
             metadata: {}
           });
@@ -488,10 +495,10 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
 
       if (tagCount.count === 0) {
         const defaultTags = [
-          { name: 'Administrateur', color: '#DC2626' }, // Rouge
-          { name: 'Contributeur', color: '#2563EB' },   // Bleu
-          { name: 'Visiteur', color: '#6B7280' },       // Gris
-          { name: 'Utilisateur non connecté', color: '#94A3B8' } // Ardoise
+          { name: 'Administrator', color: '#DC2626' }, // Red
+          { name: 'Contributor', color: '#2563EB' },   // Blue
+          { name: 'Visitor', color: '#6B7280' },       // Gray
+          { name: 'Unauthenticated User', color: '#94A3B8' } // Slate
         ];
 
         for (const tag of defaultTags) {
@@ -507,30 +514,30 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
       if (permissionCount.count === 0) {
         const defaultPermissions = [
           // Admin permissions
-          { name: 'admin_panel_access', description: 'Accès au panel d\'administration', category: 'admin' },
-          { name: 'user_management', description: 'Gestion des utilisateurs', category: 'admin' },
-          { name: 'tag_management', description: 'Gestion des tags', category: 'admin' },
-          { name: 'permission_management', description: 'Gestion des permissions', category: 'admin' },
-          { name: 'database_management', description: 'Gestion de la base de données', category: 'admin' },
-          { name: 'view_activity_admin', description: 'Voir l\'activité (admin)', category: 'admin' },
+          { name: 'admin_panel_access', description: 'Access to the administration panel', category: 'admin' },
+          { name: 'user_management', description: 'User management', category: 'admin' },
+          { name: 'tag_management', description: 'Tag management', category: 'admin' },
+          { name: 'permission_management', description: 'Permission management', category: 'admin' },
+          { name: 'database_management', description: 'Database management', category: 'admin' },
+          { name: 'view_activity_admin', description: 'View activity (admin)', category: 'admin' },
 
           // Pages
-          { name: 'create_pages', description: 'Créer des pages', category: 'pages' },
-          { name: 'edit_pages', description: 'Modifier des pages', category: 'pages' },
-          { name: 'delete_pages', description: 'Supprimer des pages', category: 'pages' },
-          { name: 'protect_pages', description: 'Protéger/déprotéger des pages', category: 'pages' },
-          { name: 'reorder_pages', description: 'Réorganiser les pages', category: 'pages' },
+          { name: 'create_pages', description: 'Create pages', category: 'pages' },
+          { name: 'edit_pages', description: 'Edit pages', category: 'pages' },
+          { name: 'delete_pages', description: 'Delete pages', category: 'pages' },
+          { name: 'protect_pages', description: 'Protect/unprotect pages', category: 'pages' },
+          { name: 'reorder_pages', description: 'Reorder pages', category: 'pages' },
 
           // Sections
-          { name: 'create_sections', description: 'Créer des sections', category: 'sections' },
-          { name: 'delete_sections', description: 'Supprimer des sections', category: 'sections' },
-          { name: 'edit_sections', description: 'Modifier des sections', category: 'sections' },
-          { name: 'reorder_sections', description: 'Réorganiser les sections', category: 'sections' },
+          { name: 'create_sections', description: 'Create sections', category: 'sections' },
+          { name: 'delete_sections', description: 'Delete sections', category: 'sections' },
+          { name: 'edit_sections', description: 'Edit sections', category: 'sections' },
+          { name: 'reorder_sections', description: 'Reorder sections', category: 'sections' },
 
           // User permissions
-          { name: 'edit_own_profile', description: 'Modifier son propre profil', category: 'user' },
-          { name: 'change_avatar', description: 'Changer son avatar', category: 'user' },
-          { name: 'view_activity', description: 'Voir l\'activité', category: 'user' }
+          { name: 'edit_own_profile', description: 'Edit own profile', category: 'user' },
+          { name: 'change_avatar', description: 'Change avatar', category: 'user' },
+          { name: 'view_activity', description: 'View activity', category: 'user' }
         ];
 
         for (const permission of defaultPermissions) {
@@ -548,9 +555,9 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
 
       if (tagPermissionCount.count === 0) {
         // Get tag and permission IDs
-        const adminTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Administrateur']);
-        const contributorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Contributeur']);
-        const visitorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Visiteur']);
+        const adminTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Administrator']);
+        const contributorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Contributor']);
+        const visitorTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Visitor']);
 
         const allPermissions = await this.db.all('SELECT id, name FROM permissions');
         const permissionMap = {};
@@ -599,7 +606,7 @@ Vous êtes maintenant prêt à utiliser Open Book Wiki ! 🎉`,
         }
 
         // Guest permissions (unauthenticated users)
-        const guestTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Utilisateur non connecté']);
+        const guestTag = await this.db.get('SELECT id FROM tags WHERE name = ?', ['Unauthenticated User']);
         if (guestTag) {
           const guestPermissions = [
             'view_activity'

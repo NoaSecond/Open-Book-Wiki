@@ -29,8 +29,8 @@ interface WikiContextType {
   refreshWikiData: () => Promise<void>;
   dataLoading: boolean;
   dataError: string | null;
-  addPage: (title: string, content?: string) => Promise<string | null>;
-  updatePage: (pageId: string, content: string) => Promise<void>;
+  addPage: (title: string, content?: string, icon?: string) => Promise<string | null>;
+  updatePage: (pageId: string, content: string, icon?: string) => Promise<void>;
   deletePage: (pageId: string) => Promise<void>;
   renamePage: (pageId: string, newTitle: string) => Promise<void>;
   enrichPageWithSections: (page: WikiPage) => WikiPage;
@@ -129,6 +129,21 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
 
   const getFirstNavigationPage = useCallback(() => {
     if (!data.wikiData || Object.keys(data.wikiData).length === 0) return null;
+
+    // Check for custom order
+    try {
+      const savedOrder = localStorage.getItem('wiki_pages_order');
+      if (savedOrder) {
+        const pageOrder = JSON.parse(savedOrder) as string[];
+        // Find first valid page ID in order
+        const firstValidId = pageOrder.find(id => data.wikiData[id]);
+        if (firstValidId) return firstValidId;
+      }
+    } catch (e) {
+      console.warn('Error reading page order', e);
+    }
+
+    // Fallback to first regular key
     return Object.keys(data.wikiData)[0];
   }, [data.wikiData]);
 
@@ -144,6 +159,19 @@ export const WikiProvider: React.FC<WikiProviderProps> = ({ children }) => {
     await auth.checkAuth();
     await data.refreshWikiData();
   };
+
+  // Automatically fetch first page if we are on default 'Home' and data loads
+  useEffect(() => {
+    if (!data.dataLoading && data.wikiData && Object.keys(data.wikiData).length > 0) {
+      // If current page is the generic 'Home' but we have a specific ID for it or another first page
+      if (ui.currentPage === 'Home') {
+        const firstPage = getFirstNavigationPage();
+        if (firstPage) {
+          ui.setCurrentPage(firstPage);
+        }
+      }
+    }
+  }, [data.dataLoading, data.wikiData, ui.currentPage, getFirstNavigationPage, ui.setCurrentPage]);
 
   const showRetry = (!auth.isBackendConnected && !auth.authLoading) || (data.dataError !== null && !data.dataLoading);
 

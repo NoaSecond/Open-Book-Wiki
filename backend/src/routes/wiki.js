@@ -240,7 +240,8 @@ router.post('/', requireAuth, requirePermission('create_pages'), async (req, res
       title,
       content,
       authorId: req.user.userId,
-      isProtected
+      isProtected,
+      icon: req.body.icon
     });
 
     // Create a page creation activity
@@ -311,7 +312,7 @@ router.put('/:id', requireAuth, requirePermission('edit_pages'), async (req, res
       }
     }
 
-    await db.wikiPages.updateWikiPage(page.id, content, req.user.userId);
+    await db.wikiPages.updateWikiPage(page.id, { content, icon: req.body.icon }, req.user.userId);
 
     // Create a page modification activity
     await db.activities.createActivity({

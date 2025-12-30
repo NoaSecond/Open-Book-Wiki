@@ -308,10 +308,10 @@ class AuthService {
       return { success: false, message: 'Erreur de connexion au serveur' };
     }
   }
-  async fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<any> {
+  async fetchWithAuth<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
     try {
       const url = this.configService.getApiUrl(endpoint);
-      const headers = { ...this.getHeaders(), ...(options.headers as any || {}) };
+      const headers = { ...this.getHeaders(), ...(options.headers as Record<string, string> || {}) };
 
       const response = await fetch(url, {
         ...options,

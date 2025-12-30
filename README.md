@@ -76,6 +76,18 @@ npm run dev
 - **Nom d'utilisateur :** `admin`
 - **Mot de passe :** `admin123`
 
+## Configuration (Optionnel)
+
+Vous pouvez configurer les ports et l'URL de l'API en modifiant les fichiers `.env` à la racine et dans le dossier `backend`.
+
+1. **Frontend** : Modifiez le fichier `.env` à la racine du projet.
+   - `VITE_PORT` : Port du serveur frontend (défaut : 5176)
+   - `VITE_API_URL` : URL de l'API backend (défaut : http://localhost:3001)
+
+2. **Backend** : Modifiez le fichier `backend/.env`.
+   - `PORT` : Port du serveur backend (défaut : 3001)
+   - `FRONTEND_URL` : URL du frontend pour CORS (défaut : http://localhost:5176)
+
 ## Scripts disponibles
 
 ### Frontend

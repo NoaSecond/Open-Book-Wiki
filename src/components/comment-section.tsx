@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Send, Trash2, Reply, X, User as UserIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import { Comment } from '../types';
 import authService from '../services/auth-service';
@@ -13,6 +14,7 @@ interface CommentSectionProps {
 
 export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
     const { isDarkMode, user, isBackendConnected } = useWiki();
+    const { t } = useTranslation();
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
         try {
             // Assuming public read access for now, or auth handled by cookie if needed. 
             // But my route backend checks nothing for GET except page existence.
-            const response = await authService.fetchWithAuth(`/comments/${pageId}`);
+            const response = await authService.fetchWithAuth<{ success: boolean; comments: Comment[] }>(`/comments/${pageId}`);
             if (response.success && response.comments) {
                 setComments(organizeComments(response.comments));
             }
@@ -75,7 +77,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
 
         setSubmitting(true);
         try {
-            const response = await authService.fetchWithAuth('/comments', {
+            const response = await authService.fetchWithAuth<{ success: boolean }>(`/comments`, {
                 method: 'POST',
                 body: JSON.stringify({
                     pageId,
@@ -97,10 +99,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
     };
 
     const handleDelete = async (commentId: number) => {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) return;
+        if (!confirm(t('comments.confirmDelete'))) return;
 
         try {
-            const response = await authService.fetchWithAuth(`/comments/${commentId}`, {
+            const response = await authService.fetchWithAuth<{ success: boolean }>(`/comments/${commentId}`, {
                 method: 'DELETE'
             });
 
@@ -147,7 +149,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
                                 <button
                                     onClick={() => setReplyTo(comment)}
                                     className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors text-blue-500"
-                                    title="Répondre"
+                                    title={t('comments.replyTo')}
                                 >
                                     <Reply className="w-4 h-4" />
                                 </button>
@@ -155,7 +157,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
                                     <button
                                         onClick={() => handleDelete(comment.id)}
                                         className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors text-red-500"
-                                        title="Supprimer"
+                                        title={t('common.delete')}
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -186,7 +188,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
     return (
         <div className="mt-8 border-t pt-8 border-gray-200 dark:border-slate-700">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" /> Commentaires
+                <MessageSquare className="w-5 h-5" /> {t('comments.comments')}
             </h3>
 
             {/* Add Comment Form */}
@@ -194,7 +196,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
                 <div className={`mb-8 p-4 rounded-lg border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                     {replyTo && (
                         <div className="flex items-center justify-between mb-2 text-sm bg-blue-50 dark:bg-blue-900/20 p-2 rounded text-blue-600 dark:text-blue-400">
-                            <span>Réponse à <strong>{replyTo.username}</strong></span>
+                            <span>{t('comments.replyTo')} <strong>{replyTo.username}</strong></span>
                             <button onClick={() => setReplyTo(null)} className="hover:text-blue-800"><X className="w-4 h-4" /></button>
                         </div>
                     )}
@@ -202,7 +204,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
                         <textarea
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            placeholder={replyTo ? "Votre réponse..." : "Ajouter un commentaire..."}
+                            placeholder={replyTo ? t('comments.yourReply') : t('comments.addComment')}
                             className={`w-full p-3 rounded-lg border min-h-[100px] mb-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDarkMode ? 'bg-slate-900 border-slate-600' : 'bg-white border-gray-300'
                                 }`}
                         />
@@ -212,23 +214,23 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ pageId }) => {
                                 disabled={submitting || !newComment.trim()}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                <Send className="w-4 h-4" /> Envoyer
+                                <Send className="w-4 h-4" /> {t('comments.send')}
                             </button>
                         </div>
                     </form>
                 </div>
             ) : (
                 <div className="mb-8 text-center p-6 bg-gray-50 dark:bg-slate-800 rounded-lg border border-dashed border-gray-300 dark:border-slate-700">
-                    <p className="text-gray-500 dark:text-slate-400">Connectez-vous pour participer à la discussion.</p>
+                    <p className="text-gray-500 dark:text-slate-400">{t('comments.loginToComment')}</p>
                 </div>
             )}
 
             {/* List */}
             <div className="space-y-4">
                 {loading ? (
-                    <div className="text-center py-4 opacity-70">Chargement des commentaires...</div>
+                    <div className="text-center py-4 opacity-70">{t('common.loading')}</div>
                 ) : comments.length === 0 ? (
-                    <div className="text-center py-4 opacity-50 italic">Aucun commentaire pour le moment. Soyez le premier !</div>
+                    <div className="text-center py-4 opacity-50 italic">{t('comments.noComments')}</div>
                 ) : (
                     comments.map(comment => (
                         <CommentItem key={comment.id} comment={comment} />

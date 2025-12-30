@@ -93,7 +93,7 @@ class WikiService {
     }
   }
 
-  async createPage(title: string, content: string, isPrivate: boolean = false): Promise<WikiPage | null> {
+  async createPage(title: string, content: string, isPrivate: boolean = false, icon?: string): Promise<WikiPage | null> {
     try {
       logger.debug('Création d\'une nouvelle page', { title, isPrivate });
 
@@ -103,7 +103,8 @@ class WikiService {
         body: JSON.stringify({
           title,
           content,
-          isPrivate
+          isPrivate,
+          icon
         })
       });
 
@@ -125,7 +126,7 @@ class WikiService {
     }
   }
 
-  async updatePage(pageId: string | number, content: string): Promise<boolean> {
+  async updatePage(pageId: string | number, content: string, icon?: string): Promise<boolean> {
     try {
       logger.debug('Mise à jour de la page', { pageId });
 
@@ -133,7 +134,8 @@ class WikiService {
         method: 'PUT',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
-          content
+          content,
+          icon
         })
       });
 

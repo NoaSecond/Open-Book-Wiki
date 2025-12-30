@@ -11,10 +11,10 @@ class WikiPageRepository extends BaseRepository {
      * @returns {Promise<number>} Page ID
      */
     async createWikiPage(pageData) {
-        const { title, content, authorId, isProtected = false } = pageData;
+        const { title, content, authorId, isProtected = false, icon } = pageData;
         const result = await this.db.run(
-            'INSERT INTO wiki_pages (title, content, author_id, is_protected) VALUES (?, ?, ?, ?)',
-            [title, content, authorId, isProtected]
+            'INSERT INTO wiki_pages (title, content, author_id, is_protected, icon) VALUES (?, ?, ?, ?, ?)',
+            [title, content, authorId, isProtected, icon]
         );
 
         return result.lastID;
@@ -48,7 +48,7 @@ class WikiPageRepository extends BaseRepository {
      * @param {string} content 
      * @param {number} userId - ID of user making the change (for history)
      */
-    async updateWikiPage(id, content, userId) {
+    async updateWikiPage(id, { content, icon }, userId) {
         // Archive current version before updating
         const currentPage = await this.db.get('SELECT * FROM wiki_pages WHERE id = ?', [id]);
 
@@ -59,11 +59,25 @@ class WikiPageRepository extends BaseRepository {
             );
         }
 
-        await this.db.run(
-            'UPDATE wiki_pages SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [content, id]
-        );
+        let query = 'UPDATE wiki_pages SET updated_at = CURRENT_TIMESTAMP';
+        const params = [];
+
+        if (content !== undefined) {
+            query += ', content = ?';
+            params.push(content);
+        }
+
+        if (icon !== undefined) {
+            query += ', icon = ?';
+            params.push(icon);
+        }
+
+        query += ' WHERE id = ?';
+        params.push(id);
+
+        await this.db.run(query, params);
     }
+
 
     /**
      * Get history for a page

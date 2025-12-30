@@ -52,7 +52,8 @@ export const Header: React.FC = () => {
                       setCurrentPage(firstPageId);
                       logger.debug('🏠 Navigation vers la première page:', firstPageId);
                     } else {
-                      setCurrentPage('home');
+                      // Fallback si aucune page trouvée, mais normalement getFirstNavigationPage s'en charge
+                      setCurrentPage('Home');
                       logger.debug('🏠 Navigation vers l\'accueil (fallback)');
                     }
                   }}

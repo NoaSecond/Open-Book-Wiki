@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Activity as ActivityIcon, Users, Database, Tag, Shield, Settings } from 'lucide-react';
 import { useWiki } from '../context/wiki-context';
 import type { Tag as TagType, Permission, User, WikiPage, Activity } from '../types';
@@ -15,15 +16,14 @@ import { AdminDatabaseTab } from './admin/admin-database-tab';
 import { AdminTagsTab } from './admin/admin-tags-tab';
 import { AdminPermissionsTab } from './admin/admin-permissions-tab';
 import { AdminCustomizationTab } from './admin/admin-customization-tab';
-import { UserCreationModal } from './admin/user-creation-modal';
-
-
+import { UserCreationModal, UserCreationData } from './admin/user-creation-modal';
 
 export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: () => void }> = ({
   isOpenFromMenu = false,
   onClose
 }) => {
   const { isDarkMode, isAdmin, user, setUser, adminActiveTab, setAdminActiveTab, hasPermission } = useWiki();
+  const { t } = useTranslation();
   const configService = getConfigService();
   const [isOpen, setIsOpen] = useState(isOpenFromMenu);
 
@@ -32,20 +32,20 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   const canAccessAdmin = hasPermission('admin_panel_access') || isAdmin();
 
   // Define tabs with their required permissions
-  const allTabs = [
-    { id: 'users', label: 'Users', icon: Users, permission: 'user_management' },
-    { id: 'activity', label: 'Activity', icon: ActivityIcon, permission: 'view_activity_admin' },
-    { id: 'database', label: 'Database', icon: Database, permission: 'database_management' },
-    { id: 'tags', label: 'Tags', icon: Tag, permission: 'tag_management' },
-    { id: 'permissions', label: 'Permissions', icon: Shield, permission: 'permission_management' },
-    { id: 'customization', label: 'Customization', icon: Settings, permission: 'admin_panel_access' }
-  ];
+  const allTabs = useMemo(() => [
+    { id: 'users', label: t('admin.tabs.users'), icon: Users, permission: 'user_management' },
+    { id: 'activity', label: t('admin.tabs.activity'), icon: ActivityIcon, permission: 'view_activity_admin' },
+    { id: 'database', label: t('admin.tabs.database'), icon: Database, permission: 'database_management' },
+    { id: 'tags', label: t('admin.tabs.tags'), icon: Tag, permission: 'tag_management' },
+    { id: 'permissions', label: t('admin.tabs.permissions'), icon: Shield, permission: 'permission_management' },
+    { id: 'customization', label: t('admin.tabs.customization'), icon: Settings, permission: 'admin_panel_access' }
+  ], [t]);
 
   // Filter available tabs
   const availableTabs = useMemo(() => {
     if (isAdmin()) return allTabs;
     return allTabs.filter(tab => hasPermission(tab.permission));
-  }, [isAdmin, hasPermission]);
+  }, [isAdmin, hasPermission, allTabs]);
 
   // Use adminActiveTab from context instead of local state for consistency
   const activeTab = adminActiveTab as 'users' | 'activity' | 'database' | 'tags' | 'permissions' | 'customization';
@@ -175,6 +175,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           setActivityLogs(logs);
         } catch (error) {
           console.error('Erreur lors du chargement des logs:', error);
+          logger.error(t('admin.errors.loadingLogs'));
         }
       };
 
@@ -185,6 +186,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           setAllUsers(users);
         } catch (error) {
           console.error('Erreur lors du chargement des utilisateurs:', error);
+          logger.error(t('admin.errors.loadingUsers'));
         }
       };
 
@@ -208,7 +210,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
             setDbStats(prev => ({ ...prev, activities: activitiesResult.activities }));
           }
         } catch (error) {
-          logger.error('Erreur lors du chargement des données BDD', { error: error instanceof Error ? error.message : String(error) });
+          logger.error(t('admin.errors.loadingDatabase'), { error: error instanceof Error ? error.message : String(error) });
         }
       };
 
@@ -228,6 +230,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           }
         } catch (error) {
           console.error('Erreur lors du chargement des tags:', error);
+          logger.error(t('admin.errors.loadingTags'));
         }
       };
 
@@ -261,6 +264,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
           }
         } catch (error) {
           console.error('Erreur lors du chargement des permissions:', error);
+          logger.error(t('admin.errors.loadingPermissions'));
         }
       };
 
@@ -270,7 +274,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
       loadTags();
       loadPermissions();
     }
-  }, [isOpen, configService]);
+  }, [isOpen, configService, t]);
 
   // Fonction pour ouvrir la modal de profil utilisateur
   const handleEditUser = (user: User) => {
@@ -281,7 +285,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
   // Fonction pour sauvegarder les modifications de profil utilisateur
   const handleSaveUserProfile = async (userData: Partial<User>) => {
     try {
-      if (!userData.id) throw new Error("ID utilisateur manquant");
+      if (!userData.id) throw new Error(t('admin.errors.missingUserId'));
 
       const success = await authService.updateUser(userData.id, {
         username: userData.username,
@@ -308,29 +312,29 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         setIsProfileModalOpen(false);
         setSelectedUser(null);
       } else {
-        throw new Error('Erreur lors de la sauvegarde');
+        throw new Error(t('common.saveError'));
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du profil utilisateur:', error);
+      console.error(t('admin.errors.userProfileSave'), error);
       throw error;
     }
   };
 
-  const handleCreateUserAdmin = async (userData: any) => {
+  const handleCreateUserAdmin = async (userData: UserCreationData) => {
     try {
       const result = await authService.createUserAdmin(userData);
       if (result.success) {
-        logger.success('Utilisateur créé avec succès');
+        logger.success(t('admin.success.userCreated'));
         // Recharger la liste
         const users = await authService.getAllUsers();
         setAllUsers(users);
         setDbStats(prev => ({ ...prev, users: users }));
         setIsCreateUserModalOpen(false);
       } else {
-        throw new Error(result.message || 'Erreur lors de la création');
+        throw new Error(result.message || t('admin.errors.userCreation'));
       }
     } catch (error) {
-      logger.error('Erreur création utilisateur', error instanceof Error ? error.message : String(error));
+      logger.error(t('admin.errors.userCreation'), error instanceof Error ? error.message : String(error));
       throw error;
     }
   };
@@ -373,17 +377,17 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         setIsAddingTag(false);
       } else {
         const errorData = await response.json();
-        alert('Erreur:' + errorData.message);
+        alert(t('common.error') + ': ' + errorData.message);
       }
     } catch (error) {
-      console.error('Erreur lors de la création du tag:', error);
-      alert('Erreur lors de la création du tag');
+      console.error(t('admin.errors.tagCreation'), error);
+      alert(t('admin.errors.tagCreation'));
     }
   };
 
   const handleUpdateTag = async (tag: TagType) => {
     try {
-      const response = await fetch(configService.getApiUrl(`/ tags/${tag.id} `), {
+      const response = await fetch(configService.getApiUrl(`/tags/${tag.id}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
@@ -409,21 +413,21 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         setEditingTag(null);
       } else {
         const errorData = await response.json();
-        alert('Erreur:' + errorData.message);
+        alert(t('common.error') + ': ' + errorData.message);
       }
     } catch (error) {
-      console.error('Erreur lors de la modification du tag:', error);
-      alert('Erreur lors de la modification du tag');
+      console.error(t('admin.errors.tagUpdate'), error);
+      alert(t('admin.errors.tagUpdate'));
     }
   };
 
   const handleDeleteTag = async (tagId: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce tag ?')) {
+    if (!confirm(t('admin.confirm.deleteTag'))) {
       return;
     }
 
     try {
-      const response = await fetch(configService.getApiUrl(`/ tags/${tagId} `), {
+      const response = await fetch(configService.getApiUrl(`/tags/${tagId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
@@ -446,17 +450,17 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         }
       } else {
         const errorData = await response.json();
-        alert('Erreur:' + errorData.message);
+        alert(t('common.error') + ': ' + errorData.message);
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression du tag:', error);
-      alert('Erreur lors de la suppression du tag');
+      console.error(t('admin.errors.tagDeletion'), error);
+      alert(t('admin.errors.tagDeletion'));
     }
   };
 
   const handleUpdateTagPermissions = async (tagId: number, permissionIds: number[]) => {
     try {
-      const response = await fetch(configService.getApiUrl(`/ permissions/tags/${tagId} `), {
+      const response = await fetch(configService.getApiUrl(`/permissions/tags/${tagId}`), {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('wiki_token')} `,
@@ -486,17 +490,17 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         }
       } else {
         const errorData = await response.json();
-        alert('Erreur:' + errorData.message);
+        alert(t('common.error') + ': ' + errorData.message);
       }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour des permissions:', error);
-      alert('Erreur lors de la mise à jour des permissions');
+      console.error(t('admin.errors.permissionsUpdate'), error);
+      alert(t('admin.errors.permissionsUpdate'));
     }
   };
 
   const handleTagSelectionForPermissions = (newTag: TagType) => {
     if (hasUnsavedPermissionChanges) {
-      if (confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment changer de tag sans sauvegarder ?')) {
+      if (confirm(t('admin.confirm.unsavedChanges'))) {
         setSelectedTagForPermissions(newTag);
         setHasUnsavedPermissionChanges(false);
       }
@@ -532,7 +536,7 @@ export const SimpleAdminPanel: React.FC<{ isOpenFromMenu?: boolean; onClose?: ()
         <div className={`flex items-center justify-between p-4 border-b border-custom-border`}>
           <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
-            Admin Panel
+            {t('admin.adminPanel')}
           </h1>
           <button
             onClick={handleClose}

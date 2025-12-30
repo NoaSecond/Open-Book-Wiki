@@ -5,7 +5,10 @@
         "delete": "Supprimer",
         "edit": "Modifier",
         "create": "Créer",
-        "search": "Rechercher",
+        "search": "Rechercher...",
+        "resultsFor": "Résultats de recherche pour",
+        "resultCount": "résultat(s)",
+        "noResults": "Aucun résultat trouvé pour",
         "loading": "Chargement...",
         "error": "Erreur",
         "success": "Succès",
@@ -17,7 +20,12 @@
         "yes": "Oui",
         "no": "Non",
         "or": "ou",
-        "and": "et"
+        "and": "et",
+        "preview": "Aperçu",
+        "tip": "Astuce",
+        "saving": "Sauvegarde en cours...",
+        "unknown": "Inconnu",
+        "comingSoon": "Disponible prochainement"
     },
     "navigation": {
         "home": "Accueil",
@@ -46,7 +54,7 @@
         "createPage": "Créer une page",
         "editPage": "Modifier la page",
         "deletePage": "Supprimer la page",
-        "renamePage": "Renommer la page",
+        "renamePage": "Renommer",
         "protectPage": "Protéger la page",
         "unprotectPage": "Déprotéger la page",
         "enableComments": "Activer les commentaires",
@@ -64,7 +72,17 @@
         "confirmDeleteSection": "Êtes-vous sûr de vouloir supprimer cette section ?",
         "createdBy": "Créé par",
         "lastModified": "Dernière modification",
-        "views": "vues"
+        "views": "vues",
+        "changeIcon": "Changer l'icône",
+        "icons": "Icônes",
+        "notFound": "Page non trouvée",
+        "notFoundDesc": "La page demandée n'existe pas.",
+        "addNewSection": "Ajouter une nouvelle section",
+        "sectionTitlePlaceholder": "Titre de la section...",
+        "modified": "Modifié",
+        "by": "Par",
+        "copyLink": "Copier le lien",
+        "copied": "Copié !"
     },
     "editor": {
         "editingPage": "Modification",
@@ -73,7 +91,10 @@
         "titlePlaceholder": "Entrez le titre...",
         "saveChanges": "Enregistrer les modifications",
         "cancelEdit": "Annuler",
-        "markdownSupport": "Markdown supporté"
+        "markdownSupport": "Markdown supporté",
+        "markdownEditor": "Éditeur Markdown",
+        "markdownHelp": "Utilisez la syntaxe Markdown pour formater votre contenu",
+        "previewHelp": "Voici comment votre contenu apparaîtra sur la page"
     },
     "comments": {
         "comments": "Commentaires",
@@ -112,7 +133,8 @@
         "noHistory": "Aucun historique disponible",
         "confirmRestore": "Êtes-vous sûr de vouloir restaurer cette version ?",
         "restoreSuccess": "Version restaurée avec succès",
-        "restoreError": "Erreur lors de la restauration"
+        "restoreError": "Erreur lors de la restauration de la version",
+        "selectVersion": "Sélectionnez une version pour voir son contenu"
     },
     "auth": {
         "login": "Connexion",
@@ -146,7 +168,9 @@
         "recentActivity": "Activité récente",
         "updateProfile": "Mettre à jour le profil",
         "updateSuccess": "Profil mis à jour avec succès",
-        "updateError": "Erreur lors de la mise à jour du profil"
+        "updateError": "Erreur lors de la mise à jour du profil",
+        "bioPlaceholder": "Biographie de l'utilisateur...",
+        "noBio": "Aucune biographie renseignée"
     },
     "members": {
         "members": "Membres",
@@ -157,7 +181,11 @@
         "noMembers": "Aucun membre trouvé",
         "memberSince": "Membre depuis",
         "role": "Rôle",
-        "permissions": "Permissions"
+        "permissions": "Permissions",
+        "tags": "Tags utilisateur",
+        "noTags": "Aucun tag attribué",
+        "createUser": "Créer un nouvel utilisateur",
+        "adminPrivileges": "Privilèges administrateur"
     },
     "permissions": {
         "viewPages": "Voir les pages",
@@ -200,5 +228,37 @@
         "commentDeleted": "Commentaire supprimé avec succès",
         "profileUpdated": "Profil mis à jour avec succès",
         "settingsSaved": "Paramètres enregistrés avec succès"
+    },
+    "admin": {
+        "adminPanel": "Panneau d'administration",
+        "tabs": {
+            "users": "Utilisateurs",
+            "activity": "Activité",
+            "database": "Base de données",
+            "tags": "Tags",
+            "permissions": "Permissions",
+            "customization": "Personnalisation"
+        },
+        "errors": {
+            "missingUserId": "ID utilisateur manquant",
+            "userProfileSave": "Erreur lors de la sauvegarde du profil utilisateur",
+            "userCreation": "Erreur création utilisateur",
+            "tagCreation": "Erreur lors de la création du tag",
+            "tagDeletion": "Erreur lors de la suppression du tag",
+            "tagUpdate": "Erreur lors de la modification du tag",
+            "permissionsUpdate": "Erreur lors de la mise à jour des permissions",
+            "loadingLogs": "Erreur lors du chargement des logs",
+            "loadingUsers": "Erreur lors du chargement des utilisateurs",
+            "loadingDatabase": "Erreur lors du chargement des données BDD",
+            "loadingTags": "Erreur lors du chargement des tags",
+            "loadingPermissions": "Erreur lors du chargement des permissions"
+        },
+        "success": {
+            "userCreated": "Utilisateur créé avec succès"
+        },
+        "confirm": {
+            "deleteTag": "Êtes-vous sûr de vouloir supprimer ce tag ?",
+            "unsavedChanges": "Vous avez des modifications non sauvegardées. Voulez-vous vraiment changer de tag sans sauvegarder ?"
+        }
     }
 }

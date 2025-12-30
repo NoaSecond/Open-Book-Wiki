@@ -15,16 +15,30 @@ export const useWikiData = (isBackendConnected: boolean) => {
     const [loadingStep, setLoadingStep] = useState<string>('');
     const [dataError, setDataError] = useState<string | null>(null);
 
+    // Initial load redirection logic
+    useEffect(() => {
+        // If we have data, are not loading, and current page is 'Home' (default), 
+        // try to redirect to the actual ID of the first page to ensure consistent navigation
+        const pageIds = Object.keys(wikiData);
+        if (!dataLoading && pageIds.length > 0) {
+            // This logic is a bit tricky with `useWikiData` not knowing `setCurrentPage`. 
+            // We'll rely on the consumer (Context/App) to handle the initial redirect based on `getFirstNavigationPage`.
+            // But `getFirstNavigationPage` relies on `wikiData` capable of keys order.
+        }
+    }, [wikiData, dataLoading]);
+
     // --- Helper Functions ---
 
     const enrichPageWithSections = useCallback((page: WikiPage): WikiPage => {
         const content = page.content || '';
 
         // Extract icon if present
+        // Extract icon if present (legacy support)
         const iconMatch = content.match(/<!-- ICON:([^-]+) -->/);
-        const icon = iconMatch ? iconMatch[1].trim() : undefined;
+        // Use DB icon if available, otherwise fallback to legacy comment
+        const finalIcon = page.icon || (iconMatch ? iconMatch[1].trim() : undefined);
 
-        if (page.sections) return { ...page, icon };
+        if (page.sections) return { ...page, icon: finalIcon };
 
         const sections: WikiSection[] = [];
         const sectionRegex = /<!-- SECTION:([^:]+):([\s\S]*?)\s*-->([\s\S]*?)<!-- END_SECTION:\1 -->/g;
@@ -68,7 +82,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
             }
         }
 
-        return { ...page, sections, icon };
+        return { ...page, sections, icon: finalIcon };
     }, []);
 
     // --- Actions ---
@@ -119,10 +133,10 @@ export const useWikiData = (isBackendConnected: boolean) => {
         }
     }, [isBackendConnected, enrichPageWithSections]);
 
-    const addPage = useCallback(async (title: string, content?: string): Promise<string | null> => {
+    const addPage = useCallback(async (title: string, content?: string, icon?: string): Promise<string | null> => {
         try {
             const defaultContent = '# ' + title + '\n\nContenu de la page...';
-            const newPage = await wikiService.createPage(title, content || defaultContent, false);
+            const newPage = await wikiService.createPage(title, content || defaultContent, false, icon);
             if (newPage) {
                 await refreshWikiData();
                 return newPage.id.toString();
@@ -182,7 +196,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
         }
     }, [refreshWikiData]);
 
-    const updatePage = useCallback(async (pageId: string, content: string): Promise<void> => {
+    const updatePage = useCallback(async (pageId: string, content: string, icon?: string): Promise<void> => {
         try {
             // Logic for section updates vs full page updates
             if (pageId.includes(':')) {
@@ -196,9 +210,9 @@ export const useWikiData = (isBackendConnected: boolean) => {
                 // We use $1 for the opening tag (group 1) and $3 for the closing tag (group 3)
                 const updatedContent = page.content.replace(sectionRegex, `$1\n${content}\n$3`);
 
-                await wikiService.updatePage(page.id.toString(), updatedContent);
+                await wikiService.updatePage(page.id.toString(), updatedContent, icon);
             } else {
-                await wikiService.updatePage(pageId, content);
+                await wikiService.updatePage(pageId, content, icon);
             }
             await refreshWikiData();
         } catch (error) {

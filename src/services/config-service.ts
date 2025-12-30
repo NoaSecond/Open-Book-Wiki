@@ -146,7 +146,7 @@ class ConfigService {
           modes.forEach(mode => {
             Object.keys(this.defaultConfig.theme[mode]).forEach(key => {
               if (config.theme[mode][key] === undefined) {
-                config.theme[mode][key] = (this.defaultConfig.theme[mode] as any)[key];
+                config.theme[mode][key] = (this.defaultConfig.theme[mode] as Record<string, string>)[key];
                 needsUpdate = true;
               }
             });
@@ -193,7 +193,7 @@ class ConfigService {
         },
         features: { ...this.defaultConfig.features, ...(parsed.features || {}) }
       };
-    } catch (e) {
+    } catch {
       return this.defaultConfig;
     }
   }
