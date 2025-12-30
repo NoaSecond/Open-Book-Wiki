@@ -6,22 +6,6 @@
   An interactive and modern open source wiki, built with React, TypeScript and Tailwind CSS.
 </div>
 
-## 🛠️ Technologies Used
-
-### Frontend
-- **Framework**: React 18 + TypeScript
-- **Styling**: Tailwind CSS
-- **Build Tool**: Vite
-- **Icons**: Lucide React
-- **Linting**: ESLint
-
-### Backend
-- **Runtime**: Node.js + Express
-- **Database**: SQLite
-- **Authentication**: JWT + bcrypt
-- **Security**: Helmet, CORS, Rate Limiting
-- **Documentation**: Swagger / OpenAPI
-
 ## API Documentation
 
 The backend API is fully documented with Swagger. You can explore endpoints, data schemas, and test requests directly from your browser.
@@ -87,39 +71,6 @@ You can configure ports and the API URL by modifying the `.env` files at the roo
 2. **Backend**: Modify the `backend/.env` file.
    - `PORT`: Backend server port (default: 3001)
    - `FRONTEND_URL`: Frontend URL for CORS (default: http://localhost:5176)
-
-## Available Scripts
-
-### Frontend
-- `npm run dev`: Starts the frontend development server
-- `npm run build`: Builds the application for production
-- `npm run preview`: Previews the production version
-- `npm run lint`: Checks code with ESLint
-- `npm run backend`: Starts only the backend
-- `npm run start`: Alias for `npm run dev`
-
-### Backend
-- `npm start`: Starts the backend server (from backend/ folder)
-
-### Content
-The wiki content can be modified via the edit interface or by directly modifying components in the `src/components/` folder.
-
-## Contribution
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes using **Gitmoji** (`git commit -m '✨ Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Gitmoji Convention
-
-This project uses [Gitmoji](https://gitmoji.dev/) for expressive commit messages.
-Install the Gitmoji extension for easier usage:
-```bash
-npm install -g gitmoji-cli
-gitmoji -c
-```
 
 ## License
 
