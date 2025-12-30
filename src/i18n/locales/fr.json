@@ -25,7 +25,8 @@
         "tip": "Astuce",
         "saving": "Sauvegarde en cours...",
         "unknown": "Inconnu",
-        "comingSoon": "Disponible prochainement"
+        "comingSoon": "Disponible prochainement",
+        "noContent": "Aucun contenu disponible"
     },
     "navigation": {
         "home": "Accueil",
@@ -48,7 +49,12 @@
         "createPage": "Créer une page",
         "noPages": "Aucune page pour le moment",
         "recentActivity": "Activité récente",
-        "noActivity": "Aucune activité récente"
+        "noActivity": "Aucune activité récente",
+        "pageSections": "Sections de la page",
+        "contribute": "Contribuer",
+        "contributeDesc": "Aidez à améliorer ce wiki en ajoutant du contenu et en corrigeant les erreurs.",
+        "deleteCategory": "Supprimer la catégorie",
+        "confirmDeleteCategory": "Êtes-vous sûr de vouloir supprimer la catégorie \"{{title}}\" ? Cette action est irréversible et supprimera tout son contenu."
     },
     "pages": {
         "createPage": "Créer une page",
@@ -82,7 +88,8 @@
         "modified": "Modifié",
         "by": "Par",
         "copyLink": "Copier le lien",
-        "copied": "Copié !"
+        "copied": "Copié !",
+        "mainContent": "Contenu principal"
     },
     "editor": {
         "editingPage": "Modification",
@@ -94,7 +101,8 @@
         "markdownSupport": "Markdown supporté",
         "markdownEditor": "Éditeur Markdown",
         "markdownHelp": "Utilisez la syntaxe Markdown pour formater votre contenu",
-        "previewHelp": "Voici comment votre contenu apparaîtra sur la page"
+        "previewHelp": "Voici comment votre contenu apparaîtra sur la page",
+        "editSection": "Éditer cette section"
     },
     "comments": {
         "comments": "Commentaires",
@@ -206,6 +214,8 @@
         "pageUnprotected": "Page déprotégée",
         "commentAdded": "Commentaire ajouté",
         "userRegistered": "Utilisateur inscrit",
+        "recentModifications": "Dernières modifications",
+        "noRecentModifications": "Aucune modification récente",
         "noActivity": "Aucune activité récente"
     },
     "errors": {
@@ -260,5 +270,23 @@
             "deleteTag": "Êtes-vous sûr de vouloir supprimer ce tag ?",
             "unsavedChanges": "Vous avez des modifications non sauvegardées. Voulez-vous vraiment changer de tag sans sauvegarder ?"
         }
+    },
+    "icons": {
+        "home": "Maison",
+        "book": "Livre",
+        "code": "Code",
+        "star": "Étoile",
+        "heart": "Cœur",
+        "coffee": "Café",
+        "music": "Musique",
+        "camera": "Caméra",
+        "gamepad": "Jeu",
+        "palette": "Palette",
+        "mountain": "Montagne",
+        "compass": "Boussole",
+        "trophy": "Trophée",
+        "shield": "Bouclier",
+        "zap": "Éclair",
+        "globe": "Globe"
     }
 }

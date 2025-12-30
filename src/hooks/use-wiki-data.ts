@@ -57,7 +57,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
 
         if (sections.length === 0) {
             const mainContentMatch = content.match(/<!-- SECTION:main-content:([\s\S]*?)\s*-->/);
-            const defaultTitle = mainContentMatch ? mainContentMatch[1].trim() : 'Contenu principal';
+            const defaultTitle = mainContentMatch ? mainContentMatch[1].trim() : 'Main Content';
             const defaultSection = {
                 id: 'main-content',
                 title: defaultTitle,
@@ -73,7 +73,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
                 if (mainContent) {
                     sections.unshift({
                         id: 'main-content',
-                        title: 'Contenu principal',
+                        title: 'Main Content',
                         content: mainContent,
                         lastModified: page.updated_at,
                         author: page.author_username || 'Unknown'
@@ -186,10 +186,37 @@ export const useWikiData = (isBackendConnected: boolean) => {
             const page = await wikiService.getPage(pageId);
             if (!page) throw new Error('Page not found');
 
-            const sectionRegex = new RegExp(`<!-- SECTION:${sectionId}:(.*?)\\s*-->`, 'g');
-            const updatedContent = page.content.replace(sectionRegex, `<!-- SECTION:${sectionId}:${newTitle} -->`);
+            const markerRegex = new RegExp(`<!-- SECTION:${sectionId}:(.*?)\\s*-->`);
 
-            await wikiService.updatePage(page.id.toString(), updatedContent);
+            if (markerRegex.test(page.content)) {
+                // Existing logic for explicit sections: just update expectation
+                // Use a non-global regex for the first replacement to be safe/precise or keep strict structure
+                const updatedContent = page.content.replace(
+                    new RegExp(`(<!-- SECTION:${sectionId}:)(.*?)( -->)`),
+                    `$1${newTitle}$3`
+                );
+                await wikiService.updatePage(page.id.toString(), updatedContent);
+            } else if (sectionId === 'main-content') {
+                // Handle implicit main content (missing markers)
+                const firstSectionMatch = page.content.match(/<!-- SECTION:[^:]+:([\s\S]*?)\s*-->/);
+
+                if (firstSectionMatch && typeof firstSectionMatch.index === 'number') {
+                    // Content before the first section
+                    const preContent = page.content.substring(0, firstSectionMatch.index);
+                    const restContent = page.content.substring(firstSectionMatch.index);
+
+                    const newMainSection = `<!-- SECTION:main-content:${newTitle} -->\n${preContent}\n<!-- END_SECTION:main-content -->\n\n`;
+                    const updatedContent = newMainSection + restContent;
+                    await wikiService.updatePage(page.id.toString(), updatedContent);
+                } else {
+                    // No other sections, wrap entire content
+                    const newMainSection = `<!-- SECTION:main-content:${newTitle} -->\n${page.content}\n<!-- END_SECTION:main-content -->`;
+                    await wikiService.updatePage(page.id.toString(), newMainSection);
+                }
+            } else {
+                logger.warn('Could not rename section: markers not found', sectionId);
+            }
+
             await refreshWikiData();
         } catch (error) {
             logger.error('❌ Erreur renommage section', error instanceof Error ? error.message : String(error));

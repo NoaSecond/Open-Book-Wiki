@@ -60,7 +60,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 
                 <div className="mb-6">
                     <label className={`block text-sm font-medium mb-3 text-custom-muted`}>
-                        {t('common.create')}:
+                        {t('pages.icons')}:
                     </label>
                     <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto content-scrollbar pr-1">
                         {availableIcons.map((iconData, index) => (

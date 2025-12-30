@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import { useWiki } from '../context/wiki-context';
 import { useSidebarLogic } from '../hooks/use-sidebar-logic';
@@ -14,10 +15,11 @@ export const Sidebar: React.FC = () => {
   const {
     currentPage,
     setCurrentPage,
-    user,
+
     hasPermission,
     wikiData
   } = useWiki();
+  const { t } = useTranslation();
 
   const {
     appVersion,
@@ -40,23 +42,23 @@ export const Sidebar: React.FC = () => {
   } = useSidebarLogic();
 
   const availableIcons = useMemo(() => [
-    { name: 'home', label: 'Maison' },
-    { name: 'book-open', label: 'Livre' },
-    { name: 'code', label: 'Code' },
-    { name: 'star', label: 'Étoile' },
-    { name: 'heart', label: 'Cœur' },
-    { name: 'coffee', label: 'Café' },
-    { name: 'music', label: 'Musique' },
-    { name: 'camera', label: 'Caméra' },
-    { name: 'gamepad', label: 'Jeu' },
-    { name: 'palette', label: 'Palette' },
-    { name: 'mountain', label: 'Montagne' },
-    { name: 'compass', label: 'Boussole' },
-    { name: 'trophy', label: 'Trophée' },
-    { name: 'shield', label: 'Bouclier' },
-    { name: 'zap', label: 'Éclair' },
-    { name: 'globe', label: 'Globe' }
-  ], []);
+    { name: 'home', label: t('icons.home') },
+    { name: 'book-open', label: t('icons.book') },
+    { name: 'code', label: t('icons.code') },
+    { name: 'star', label: t('icons.star') },
+    { name: 'heart', label: t('icons.heart') },
+    { name: 'coffee', label: t('icons.coffee') },
+    { name: 'music', label: t('icons.music') },
+    { name: 'camera', label: t('icons.camera') },
+    { name: 'gamepad', label: t('icons.gamepad') },
+    { name: 'palette', label: t('icons.palette') },
+    { name: 'mountain', label: t('icons.mountain') },
+    { name: 'compass', label: t('icons.compass') },
+    { name: 'trophy', label: t('icons.trophy') },
+    { name: 'shield', label: t('icons.shield') },
+    { name: 'zap', label: t('icons.zap') },
+    { name: 'globe', label: t('icons.globe') }
+  ], [t]);
 
   return (
     <aside className={`w-64 h-full flex flex-col border-r transition-colors duration-300 bg-custom-sidebar border-custom-border`}>
@@ -77,7 +79,7 @@ export const Sidebar: React.FC = () => {
           onDelete={handleDeletePage}
           onIconChange={handleUpdateIcon}
           availableIcons={availableIcons}
-          user={user}
+
         />
 
         {/* Current page sections */}
@@ -85,13 +87,13 @@ export const Sidebar: React.FC = () => {
           const currentPageData = (wikiData[currentPage] || Object.values(wikiData).find(p => p.title === currentPage)) as WikiPage;
           const sections = currentPageData.sections || [{
             id: 'main-content',
-            title: 'Contenu principal'
+            title: 'Main Content'
           } as WikiSection];
 
           return sections.length > 0 ? (
             <div className={`mb-6 p-3 rounded-lg transition-colors duration-300 bg-custom-surface/50`}>
               <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 text-custom-text`}>
-                Sections de la page
+                {t('sidebar.pageSections')}
               </h3>
               <ul className="space-y-1">
                 {sections.map((section: WikiSection) => (
@@ -119,10 +121,10 @@ export const Sidebar: React.FC = () => {
 
         <div className={`mt-4 mb-6 p-4 bg-primary/20 rounded-lg border border-primary/30 transition-colors duration-300`}>
           <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 text-primary`}>
-            Contribuer
+            {t('sidebar.contribute')}
           </h3>
           <p className={`text-xs transition-colors duration-300 text-custom-text/80`}>
-            Aidez à améliorer ce wiki en ajoutant du contenu et en corrigeant les erreurs.
+            {t('sidebar.contributeDesc')}
           </p>
         </div>
       </div>
@@ -141,9 +143,9 @@ export const Sidebar: React.FC = () => {
         isOpen={deletionState.isOpen}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
-        title="Supprimer la catégorie"
-        message={`Êtes-vous sûr de vouloir supprimer la catégorie "${deletionState.title}" ? Cette action est irréversible et supprimera tout son contenu.`}
-        confirmText="Supprimer"
+        title={t('sidebar.deleteCategory')}
+        message={t('sidebar.confirmDeleteCategory', { title: deletionState.title })}
+        confirmText={t('common.delete')}
         type="danger"
       />
     </aside>
