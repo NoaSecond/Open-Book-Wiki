@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableSection from './sortable-section';
 import { ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useWiki } from '../context/wiki-context';
 import DateUtils from '../utils/dateUtils';
 import logger from '../utils/logger';
 import { MarkdownRenderer } from './markdown-renderer';
+import { WikiSection } from '../types';
 
 export interface CollapsibleSectionsProps {
   sections: Array<{
@@ -36,11 +37,11 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const handleDragEnd = async (event: any) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      const oldIndex = orderedSections.indexOf(active.id);
-      const newIndex = orderedSections.indexOf(over.id);
+      const oldIndex = orderedSections.indexOf(String(active.id));
+      const newIndex = orderedSections.indexOf(String(over.id));
       const newOrder = arrayMove(orderedSections, oldIndex, newIndex);
       setOrderedSections(newOrder);
 
@@ -50,7 +51,7 @@ export const CollapsibleSections: React.FC<CollapsibleSectionsProps> = ({ sectio
       if (!page || !Array.isArray(page.sections)) return;
       // On prend le contenu de chaque section dans le bon ordre
       const newContent = newOrder.map((sectionId) => {
-        const s = page.sections!.find((sec: any) => sec.id === sectionId);
+        const s = page.sections!.find((sec: WikiSection) => sec.id === sectionId);
         if (!s) return '';
         // On suppose que chaque section a bien les balises SECTION/END_SECTION
         return `<!-- SECTION:${s.id}:${s.title} -->\n${s.content}\n<!-- END_SECTION:${s.id} -->`;

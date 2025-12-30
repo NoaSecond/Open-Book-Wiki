@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, Clock } from 'lucide-react';
 import { useWiki } from '../../context/wiki-context';
 import activityService, { ActivityLog } from '../../services/activity-service';
@@ -9,6 +10,7 @@ interface ActivityListProps {
 
 const ActivityList: React.FC<ActivityListProps> = ({ recentActivities }) => {
     const { hasPermission } = useWiki();
+    const { t } = useTranslation();
 
     if (!hasPermission('view_activity')) {
         return null;
@@ -17,7 +19,7 @@ const ActivityList: React.FC<ActivityListProps> = ({ recentActivities }) => {
     return (
         <div className={`mt-8 p-4 rounded-lg transition-colors duration-300 bg-custom-surface border border-custom-border shadow-sm`}>
             <h3 className={`text-sm font-semibold mb-2 transition-colors duration-300 text-custom-text`}>
-                Dernières modifications
+                {t('activity.recentModifications')}
             </h3>
             <div className="space-y-2">
                 {recentActivities.map((log: ActivityLog) => (
@@ -45,7 +47,7 @@ const ActivityList: React.FC<ActivityListProps> = ({ recentActivities }) => {
                 ))}
                 {recentActivities.length === 0 && (
                     <div className={`text-xs transition-colors duration-300 text-custom-muted italic`}>
-                        Aucune modification récente
+                        {t('activity.noRecentModifications')}
                     </div>
                 )}
             </div>

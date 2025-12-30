@@ -65,12 +65,12 @@ class Logger {
     if (config) {
       this.config = { ...this.config, ...config };
     }
-    
+
     // Detect environment
     if (process.env.NODE_ENV === 'production') {
       this.config.level = LogLevel.ERROR;
     }
-    
+
     this.info('🚀 Logger système initialisé', { config: this.config });
   }
 
@@ -80,16 +80,16 @@ class Logger {
 
   private formatTimestamp(): string {
     if (!this.config.timestamp) return '';
-    
+
     const now = new Date();
-    const time = now.toLocaleTimeString('fr-FR', { 
+    const time = now.toLocaleTimeString('fr-FR', {
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
     const ms = now.getMilliseconds().toString().padStart(3, '0');
-    
+
     return `[${time}.${ms}]`;
   }
 
@@ -97,7 +97,7 @@ class Logger {
     const timestamp = this.formatTimestamp();
     const levelEmoji = this.config.emojis ? (emoji || this.emojis[LogLevel[level].toLowerCase() as keyof typeof this.emojis]) : '';
     const componentPart = component ? `[${component}]` : '';
-    
+
     return `${timestamp} ${levelEmoji} ${componentPart} ${message}`;
   }
 
@@ -250,7 +250,7 @@ class Logger {
       'color: #6B7280; font-size: 14px;',
       'color: #10B981; font-size: 12px;'
     ];
-    
+
     console.log('%c🌟 ' + appName, styles[0]);
     console.log('%c📦 Version: ' + version, styles[1]);
     console.log('%c🌍 Environment: ' + env, styles[2]);

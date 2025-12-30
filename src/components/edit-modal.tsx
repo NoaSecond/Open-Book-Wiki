@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, Eye } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import { MarkdownRenderer } from './markdown-renderer';
 import logger from '../utils/logger';
@@ -15,9 +16,11 @@ export const EditModal: React.FC = () => {
     renameSectionTitle,
     isDarkMode
   } = useWiki();
+  const { t } = useTranslation();
 
   const [content, setContent] = useState('');
   const [sectionTitle, setSectionTitle] = useState('');
+  const [pageIcon, setPageIcon] = useState('');
   const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
@@ -39,6 +42,7 @@ export const EditModal: React.FC = () => {
         if (page?.content) {
           setContent(page.content);
           setSectionTitle(page.title);
+          setPageIcon(page.icon || '');
         }
       }
     }
@@ -72,7 +76,7 @@ export const EditModal: React.FC = () => {
         }
 
         // Puis sauvegarder le contenu
-        await updatePage(editingPageTitle, content);
+        await updatePage(editingPageTitle, content, pageIcon);
         logger.info('✅ Section sauvegardée', editingPageTitle);
 
         setIsEditModalOpen(false);
@@ -89,6 +93,7 @@ export const EditModal: React.FC = () => {
     setEditingPageTitle(null);
     setContent('');
     setSectionTitle('');
+    setPageIcon('');
   };
 
   if (!isEditModalOpen || !editingPageTitle) {
@@ -102,10 +107,10 @@ export const EditModal: React.FC = () => {
       const mainPage = wikiData[mainPageId];
       if (mainPage?.sections) {
         const section = mainPage.sections.find(s => s.id === sectionId);
-        return section ? `${mainPage.title} - ${section.title}` : 'Section inconnue';
+        return section ? `${mainPage.title} - ${section.title}` : t('errors.notFound');
       }
     }
-    return wikiData[editingPageTitle]?.title || 'Page inconnue';
+    return wikiData[editingPageTitle]?.title || t('errors.notFound');
   };
 
   return (
@@ -114,7 +119,7 @@ export const EditModal: React.FC = () => {
         {/* Header */}
         <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
           <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Modifier : {getEditingTitle()}
+            {t('common.edit')} : {getEditingTitle()}
           </h2>
           <div className="flex items-center space-x-3">
             <button
@@ -125,21 +130,21 @@ export const EditModal: React.FC = () => {
                 }`}
             >
               <Eye className="w-4 h-4" />
-              <span>{isPreview ? 'Éditer' : 'Aperçu'}</span>
+              <span>{isPreview ? t('common.edit') : t('common.preview')}</span>
             </button>
             <button
               onClick={handleSave}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
             >
               <Save className="w-4 h-4" />
-              <span>Enregistrer</span>
+              <span>{t('common.save')}</span>
             </button>
             <button
               onClick={handleCancel}
               className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
             >
               <X className="w-4 h-4" />
-              <span>Annuler</span>
+              <span>{t('common.cancel')}</span>
             </button>
           </div>
         </div>
@@ -149,7 +154,7 @@ export const EditModal: React.FC = () => {
           <div className={`p-4 border-b ${isDarkMode ? 'border-slate-700 bg-slate-750' : 'border-gray-200 bg-gray-50'}`}>
             <div className="flex items-center space-x-4">
               <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                Titre de la section :
+                {t('pages.sectionTitle')}:
               </label>
               <input
                 type="text"
@@ -159,7 +164,29 @@ export const EditModal: React.FC = () => {
                   ? 'bg-slate-700 border-slate-600 text-white'
                   : 'bg-white border-gray-300 text-gray-900'
                   } focus:outline-none focus:ring-2 focus:ring-cyan-500`}
-                placeholder="Entrez le titre de la section..."
+                placeholder={t('pages.sectionTitle')}
+              />
+            </div>
+          </div>
+
+        )}
+
+        {/* Page Icon Editor (only for main pages) */}
+        {editingPageTitle && !editingPageTitle.includes(':') && (
+          <div className={`p-4 border-b ${isDarkMode ? 'border-slate-700 bg-slate-750' : 'border-gray-200 bg-gray-50'}`}>
+            <div className="flex items-center space-x-4">
+              <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                {t('pages.icon') || 'Icon'}:
+              </label>
+              <input
+                type="text"
+                value={pageIcon}
+                onChange={(e) => setPageIcon(e.target.value)}
+                className={`flex-1 px-3 py-2 rounded-lg border ${isDarkMode
+                  ? 'bg-slate-700 border-slate-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                placeholder="icon-name (e.g. file-plus, home)"
               />
             </div>
           </div>
@@ -171,9 +198,9 @@ export const EditModal: React.FC = () => {
           {!isPreview && (
             <div className="w-full p-6">
               <div className="mb-4">
-                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Éditeur Markdown</h3>
+                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t('editor.markdownEditor')}</h3>
                 <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                  Utilisez la syntaxe Markdown pour formater votre contenu.
+                  {t('editor.markdownHelp')}
                 </p>
               </div>
               <textarea
@@ -183,7 +210,7 @@ export const EditModal: React.FC = () => {
                   ? 'bg-slate-900 text-white border-slate-600'
                   : 'bg-gray-50 text-gray-900 border-gray-300'
                   }`}
-                placeholder="Tapez votre contenu ici..."
+                placeholder={t('editor.contentPlaceholder')}
               />
             </div>
           )}
@@ -192,9 +219,9 @@ export const EditModal: React.FC = () => {
           {isPreview && (
             <div className="w-full p-6 overflow-y-auto content-scrollbar">
               <div className="mb-4">
-                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Aperçu</h3>
+                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t('common.preview')}</h3>
                 <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                  Voici comment votre contenu apparaîtra sur la page.
+                  {t('editor.previewHelp')}
                 </p>
               </div>
               <div className={`rounded-lg p-6 border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
@@ -208,14 +235,14 @@ export const EditModal: React.FC = () => {
         <div className={`p-6 border-t ${isDarkMode ? 'border-slate-700 bg-slate-750' : 'border-gray-200 bg-gray-50'}`}>
           <div className={`flex items-center justify-between text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
             <div>
-              <p>💡 <strong>Astuce :</strong> Utilisez # pour les titres, ## pour les sous-titres, et - pour les listes</p>
+              <p>💡 <strong>{t('common.tip')} :</strong> {t('editor.markdownHelp')}</p>
             </div>
             <div>
-              Dernière modification : {new Date().toLocaleString()}
+              {t('pages.lastModified')} : {new Date().toLocaleString()}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };

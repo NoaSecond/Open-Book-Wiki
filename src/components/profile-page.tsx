@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Calendar, Edit3, Save, X, Award, Tag, Shield, UserCheck, Eye } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import { AvatarEditor } from './avatar-editor';
 import { DateUtils } from '../utils/dateUtils';
@@ -7,6 +8,7 @@ import { getConfigService } from '../services/config-service';
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUser, isDarkMode } = useWiki();
+  const { t } = useTranslation();
   const configService = getConfigService();
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
@@ -85,8 +87,8 @@ export const ProfilePage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <User className={`w-16 h-16 mx-auto mb-4 text-custom-muted`} />
-            <h2 className={`text-2xl font-bold mb-2 text-custom-text`}>Profil non disponible</h2>
-            <p className="text-custom-muted">Vous devez être connecté pour voir votre profil.</p>
+            <h2 className={`text-2xl font-bold mb-2 text-custom-text`}>{t('profile.profile')}</h2>
+            <p className="text-custom-muted">{t('auth.loginError')}</p>
           </div>
         </div>
       </div>
@@ -147,7 +149,7 @@ export const ProfilePage: React.FC = () => {
                 <button
                   onClick={() => setShowAvatarEditor(true)}
                   className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary hover:bg-primary-hover rounded-full flex items-center justify-center text-white transition-colors border-2 border-custom-sidebar shadow-md"
-                  title="Changer la photo de profil"
+                  title={t('profile.editProfile')}
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
@@ -163,7 +165,7 @@ export const ProfilePage: React.FC = () => {
                       value={formData.username}
                       onChange={handleChange}
                       className={`text-2xl font-bold rounded px-3 py-1 w-full max-w-md border focus:outline-none focus:ring-2 focus:ring-primary bg-custom-bg text-custom-text border-custom-border`}
-                      placeholder="Nom d'utilisateur"
+                      placeholder={t('auth.username')}
                     />
                     <input
                       type="email"
@@ -174,7 +176,7 @@ export const ProfilePage: React.FC = () => {
                         ? 'bg-slate-700 text-slate-300 border-slate-600'
                         : 'bg-gray-100 text-gray-700 border-gray-300'
                         }`}
-                      placeholder="Email"
+                      placeholder={t('auth.email')}
                     />
                   </div>
                 ) : (
@@ -190,11 +192,11 @@ export const ProfilePage: React.FC = () => {
                 <div className={`flex items-center space-x-4 mt-3 text-sm text-custom-muted`}>
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
-                    Membre depuis {currentUser.joinDate ? DateUtils.formatDateShort(currentUser.joinDate) : 'N/A'}
+                    {t('profile.joinedOn')} {currentUser.joinDate ? DateUtils.formatDateShort(currentUser.joinDate) : 'N/A'}
                   </span>
                   <span className="flex items-center">
                     <Award className="w-4 h-4 mr-1" />
-                    {currentUser.contributions || 0} contributions
+                    {currentUser.contributions || 0} {t('profile.contributions')}
                   </span>
                 </div>
 
@@ -225,7 +227,7 @@ export const ProfilePage: React.FC = () => {
                     className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                   >
                     <Save className="w-4 h-4" />
-                    <span>Sauvegarder</span>
+                    <span>{t('common.save')}</span>
                   </button>
                   <button
                     onClick={handleCancel}
@@ -235,7 +237,7 @@ export const ProfilePage: React.FC = () => {
                       }`}
                   >
                     <X className="w-4 h-4" />
-                    <span>Annuler</span>
+                    <span>{t('common.cancel')}</span>
                   </button>
                 </>
               ) : (
@@ -244,7 +246,7 @@ export const ProfilePage: React.FC = () => {
                   className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors shadow-sm"
                 >
                   <Edit3 className="w-4 h-4" />
-                  <span>Modifier le profil</span>
+                  <span>{t('profile.editProfile')}</span>
                 </button>
               )}
             </div>
@@ -253,7 +255,7 @@ export const ProfilePage: React.FC = () => {
 
         {/* Biographie */}
         <div className={`rounded-lg p-6 mb-6 bg-custom-surface border border-custom-border shadow-sm`}>
-          <h2 className={`text-xl font-semibold mb-4 text-custom-text`}>À propos</h2>
+          <h2 className={`text-xl font-semibold mb-4 text-custom-text`}>{t('profile.bio')}</h2>
           {isEditing ? (
             <textarea
               name="bio"
@@ -264,14 +266,14 @@ export const ProfilePage: React.FC = () => {
                 ? 'bg-slate-700 text-white border-slate-600'
                 : 'bg-gray-100 text-gray-900 border-gray-300'
                 }`}
-              placeholder="Parlez-nous de vous..."
+              placeholder={t('profile.bio')}
             />
           ) : (
             <div className="text-custom-text">
               {currentUser.bio ? (
                 <p className="whitespace-pre-wrap">{currentUser.bio}</p>
               ) : (
-                <p className={`italic text-custom-muted`}>Aucune biographie renseignée.</p>
+                <p className={`italic text-custom-muted`}>{t('profile.bio')}</p>
               )}
             </div>
           )}
@@ -281,21 +283,21 @@ export const ProfilePage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className={`rounded-lg p-6 text-center bg-custom-surface border border-custom-border shadow-sm`}>
             <div className="text-3xl font-bold text-primary mb-2">{currentUser.contributions || 0}</div>
-            <div className="text-custom-muted">Contributions</div>
+            <div className="text-custom-muted">{t('profile.contributions')}</div>
           </div>
 
           <div className={`rounded-lg p-6 text-center bg-custom-surface border border-custom-border shadow-sm`}>
             <div className="text-3xl font-bold text-secondary mb-2">
               {Math.floor(Math.random() * 50) + 10}
             </div>
-            <div className="text-custom-muted">Articles édités</div>
+            <div className="text-custom-muted">{t('pages.editPage')}</div>
           </div>
 
           <div className={`rounded-lg p-6 text-center bg-custom-surface border border-custom-border shadow-sm`}>
             <div className="text-3xl font-bold text-accent mb-2">
               {currentUser.joinDate ? DateUtils.formatDateShort(currentUser.joinDate) : 'N/A'}
             </div>
-            <div className="text-custom-muted">Membre depuis</div>
+            <div className="text-custom-muted">{t('profile.joinedOn')}</div>
           </div>
         </div>
       </div>

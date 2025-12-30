@@ -15,16 +15,30 @@ export const useWikiData = (isBackendConnected: boolean) => {
     const [loadingStep, setLoadingStep] = useState<string>('');
     const [dataError, setDataError] = useState<string | null>(null);
 
+    // Initial load redirection logic
+    useEffect(() => {
+        // If we have data, are not loading, and current page is 'Home' (default), 
+        // try to redirect to the actual ID of the first page to ensure consistent navigation
+        const pageIds = Object.keys(wikiData);
+        if (!dataLoading && pageIds.length > 0) {
+            // This logic is a bit tricky with `useWikiData` not knowing `setCurrentPage`. 
+            // We'll rely on the consumer (Context/App) to handle the initial redirect based on `getFirstNavigationPage`.
+            // But `getFirstNavigationPage` relies on `wikiData` capable of keys order.
+        }
+    }, [wikiData, dataLoading]);
+
     // --- Helper Functions ---
 
     const enrichPageWithSections = useCallback((page: WikiPage): WikiPage => {
         const content = page.content || '';
 
         // Extract icon if present
+        // Extract icon if present (legacy support)
         const iconMatch = content.match(/<!-- ICON:([^-]+) -->/);
-        const icon = iconMatch ? iconMatch[1].trim() : undefined;
+        // Use DB icon if available, otherwise fallback to legacy comment
+        const finalIcon = page.icon || (iconMatch ? iconMatch[1].trim() : undefined);
 
-        if (page.sections) return { ...page, icon };
+        if (page.sections) return { ...page, icon: finalIcon };
 
         const sections: WikiSection[] = [];
         const sectionRegex = /<!-- SECTION:([^:]+):([\s\S]*?)\s*-->([\s\S]*?)<!-- END_SECTION:\1 -->/g;
@@ -43,7 +57,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
 
         if (sections.length === 0) {
             const mainContentMatch = content.match(/<!-- SECTION:main-content:([\s\S]*?)\s*-->/);
-            const defaultTitle = mainContentMatch ? mainContentMatch[1].trim() : 'Contenu principal';
+            const defaultTitle = mainContentMatch ? mainContentMatch[1].trim() : 'Main Content';
             const defaultSection = {
                 id: 'main-content',
                 title: defaultTitle,
@@ -59,7 +73,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
                 if (mainContent) {
                     sections.unshift({
                         id: 'main-content',
-                        title: 'Contenu principal',
+                        title: 'Main Content',
                         content: mainContent,
                         lastModified: page.updated_at,
                         author: page.author_username || 'Unknown'
@@ -68,7 +82,7 @@ export const useWikiData = (isBackendConnected: boolean) => {
             }
         }
 
-        return { ...page, sections, icon };
+        return { ...page, sections, icon: finalIcon };
     }, []);
 
     // --- Actions ---
@@ -119,10 +133,10 @@ export const useWikiData = (isBackendConnected: boolean) => {
         }
     }, [isBackendConnected, enrichPageWithSections]);
 
-    const addPage = useCallback(async (title: string, content?: string): Promise<string | null> => {
+    const addPage = useCallback(async (title: string, content?: string, icon?: string): Promise<string | null> => {
         try {
             const defaultContent = '# ' + title + '\n\nContenu de la page...';
-            const newPage = await wikiService.createPage(title, content || defaultContent, false);
+            const newPage = await wikiService.createPage(title, content || defaultContent, false, icon);
             if (newPage) {
                 await refreshWikiData();
                 return newPage.id.toString();
@@ -172,17 +186,44 @@ export const useWikiData = (isBackendConnected: boolean) => {
             const page = await wikiService.getPage(pageId);
             if (!page) throw new Error('Page not found');
 
-            const sectionRegex = new RegExp(`<!-- SECTION:${sectionId}:(.*?)\\s*-->`, 'g');
-            const updatedContent = page.content.replace(sectionRegex, `<!-- SECTION:${sectionId}:${newTitle} -->`);
+            const markerRegex = new RegExp(`<!-- SECTION:${sectionId}:(.*?)\\s*-->`);
 
-            await wikiService.updatePage(page.id.toString(), updatedContent);
+            if (markerRegex.test(page.content)) {
+                // Existing logic for explicit sections: just update expectation
+                // Use a non-global regex for the first replacement to be safe/precise or keep strict structure
+                const updatedContent = page.content.replace(
+                    new RegExp(`(<!-- SECTION:${sectionId}:)(.*?)( -->)`),
+                    `$1${newTitle}$3`
+                );
+                await wikiService.updatePage(page.id.toString(), updatedContent);
+            } else if (sectionId === 'main-content') {
+                // Handle implicit main content (missing markers)
+                const firstSectionMatch = page.content.match(/<!-- SECTION:[^:]+:([\s\S]*?)\s*-->/);
+
+                if (firstSectionMatch && typeof firstSectionMatch.index === 'number') {
+                    // Content before the first section
+                    const preContent = page.content.substring(0, firstSectionMatch.index);
+                    const restContent = page.content.substring(firstSectionMatch.index);
+
+                    const newMainSection = `<!-- SECTION:main-content:${newTitle} -->\n${preContent}\n<!-- END_SECTION:main-content -->\n\n`;
+                    const updatedContent = newMainSection + restContent;
+                    await wikiService.updatePage(page.id.toString(), updatedContent);
+                } else {
+                    // No other sections, wrap entire content
+                    const newMainSection = `<!-- SECTION:main-content:${newTitle} -->\n${page.content}\n<!-- END_SECTION:main-content -->`;
+                    await wikiService.updatePage(page.id.toString(), newMainSection);
+                }
+            } else {
+                logger.warn('Could not rename section: markers not found', sectionId);
+            }
+
             await refreshWikiData();
         } catch (error) {
             logger.error('❌ Erreur renommage section', error instanceof Error ? error.message : String(error));
         }
     }, [refreshWikiData]);
 
-    const updatePage = useCallback(async (pageId: string, content: string): Promise<void> => {
+    const updatePage = useCallback(async (pageId: string, content: string, icon?: string): Promise<void> => {
         try {
             // Logic for section updates vs full page updates
             if (pageId.includes(':')) {
@@ -196,9 +237,9 @@ export const useWikiData = (isBackendConnected: boolean) => {
                 // We use $1 for the opening tag (group 1) and $3 for the closing tag (group 3)
                 const updatedContent = page.content.replace(sectionRegex, `$1\n${content}\n$3`);
 
-                await wikiService.updatePage(page.id.toString(), updatedContent);
+                await wikiService.updatePage(page.id.toString(), updatedContent, icon);
             } else {
-                await wikiService.updatePage(pageId, content);
+                await wikiService.updatePage(pageId, content, icon);
             }
             await refreshWikiData();
         } catch (error) {

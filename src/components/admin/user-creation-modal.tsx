@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 import { Mail, Save, X, Shield, UserCheck, Eye, Tag, UserPlus, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../../context/wiki-context';
 import type { Tag as TagType } from '../../types';
+
+export interface UserCreationData {
+    username: string;
+    email: string;
+    password?: string;
+    isAdmin: boolean;
+    tags: string[];
+    bio: string;
+}
 
 interface UserCreationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (userData: any) => Promise<void>;
+    onSave: (userData: UserCreationData) => Promise<void>;
     availableTags?: TagType[];
 }
 
@@ -17,6 +27,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
     availableTags = []
 }) => {
     const { isDarkMode } = useWiki();
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -95,7 +106,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                         <UserPlus className="w-6 h-6 text-primary" />
                         <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
                             }`}>
-                            Create New User
+                            {t('members.createUser')}
                         </h1>
                     </div>
                     <button
@@ -118,7 +129,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Username
+                                {t('auth.username')}
                             </label>
                             <input
                                 type="text"
@@ -129,12 +140,12 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                                     ? 'bg-gray-700 border-gray-600 text-white'
                                     : 'bg-white border-gray-300 text-gray-900'
                                     }`}
-                                placeholder="johndoe"
+                                placeholder={t('auth.username')}
                             />
                         </div>
                         <div className="space-y-1">
                             <label className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Email
+                                {t('auth.email')}
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -147,7 +158,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
                                         }`}
-                                    placeholder="john@example.com"
+                                    placeholder={t('auth.email')}
                                 />
                             </div>
                         </div>
@@ -155,7 +166,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
 
                     <div className="space-y-1">
                         <label className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            Password
+                            {t('auth.password')}
                         </label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -168,7 +179,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                                     ? 'bg-gray-700 border-gray-600 text-white'
                                     : 'bg-white border-gray-300 text-gray-900'
                                     }`}
-                                placeholder="••••••••"
+                                placeholder={t('auth.password')}
                             />
                         </div>
                     </div>
@@ -183,13 +194,13 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                             className="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded"
                         />
                         <label htmlFor="isAdmin" className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            Administrator Privileges
+                            {t('members.adminPrivileges')}
                         </label>
                     </div>
 
                     <div className="space-y-3">
                         <label className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            User Tags
+                            {t('members.tags')}
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {availableTags.map((tagObj) => (
@@ -215,7 +226,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
 
                     <div className="space-y-1">
                         <label className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            Biography (Optional)
+                            {t('profile.bio')}
                         </label>
                         <textarea
                             name="bio"
@@ -226,7 +237,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                                 ? 'bg-gray-700 text-white border-gray-600'
                                 : 'bg-white text-gray-900 border-gray-300'
                                 }`}
-                            placeholder="Tell us about this user..."
+                            placeholder={t('profile.bioPlaceholder')}
                         />
                     </div>
                 </div>
@@ -241,7 +252,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                             } disabled:opacity-50`}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleSave}
@@ -249,7 +260,7 @@ export const UserCreationModal: React.FC<UserCreationModalProps> = ({
                         className="px-6 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                     >
                         <Save className="w-4 h-4" />
-                        <span>{isLoading ? 'Creating...' : 'Create User'}</span>
+                        <span>{isLoading ? t('common.saving') : t('common.create')}</span>
                     </button>
                 </div>
             </div>

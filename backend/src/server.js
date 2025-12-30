@@ -15,6 +15,8 @@ const activityRoutes = require('./routes/activities');
 const wikiRoutes = require('./routes/wiki');
 const tagsRoutes = require('./routes/tags');
 const permissionsRoutes = require('./routes/permissions');
+const commentRoutes = require('./routes/comments');
+const exportRoutes = require('./routes/export');
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +44,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
+// Performance monitoring
+const performanceMonitor = require('./middleware/performanceMonitor');
+app.use(performanceMonitor);
 
 // Rate limiting middleware
 const limiter = rateLimit({
@@ -77,6 +83,8 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/wiki', wikiRoutes);
 app.use('/api/tags', tagsRoutes);
 app.use('/api/permissions', permissionsRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/export', exportRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -101,6 +109,11 @@ app.get('/', (req, res) => {
   });
 });
 
+// Swagger Documentation
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -109,19 +122,21 @@ app.use('*', (req, res) => {
   });
 });
 
+const logger = require('./utils/logger');
+
+// ... (imports)
+
+const errorHandler = require('./middleware/errorHandler');
+
+// ... (previous code)
+
 // Global error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error'
-  });
-});
+app.use(errorHandler);
 
 // Initialize database and start server
 async function startServer() {
   try {
-    console.log('🚀 Initializing database...');
+    logger.info('🚀 Initializing database...');
     await dbManager.connect();
     await dbManager.initializeTables();
 
@@ -129,31 +144,33 @@ async function startServer() {
     app.listen(PORT, () => {
       const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
       const host = process.env.HOST || 'localhost';
-      console.log(`✅ Server started on ${protocol}://${host}:${PORT}`);
-      console.log(`📊 API Interface available at ${protocol}://${host}:${PORT}`);
-      console.log(`🔗 Frontend expected at ${process.env.FRONTEND_URL || `http://${host}:5176`}`);
+      logger.info(`✅ Server started on ${protocol}://${host}:${PORT}`);
+      logger.info(`📊 API Interface available at ${protocol}://${host}:${PORT}`);
+      logger.info(`🔗 Frontend expected at ${process.env.FRONTEND_URL || `http://${host}:5176`}`);
     });
 
   } catch (error) {
-    console.error('❌ Error during server startup:', error);
+    logger.error('❌ Error during server startup:', error);
     process.exit(1);
   }
 }
 
 // Graceful shutdown handling
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Stopping server...');
+  logger.info('\n🛑 Stopping server...');
   await dbManager.close();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n🛑 Stopping server...');
+  logger.info('\n🛑 Stopping server...');
   await dbManager.close();
   process.exit(0);
 });
 
-// Start server
-startServer();
+// Start server if run directly
+if (require.main === module) {
+  startServer();
+}
 
-module.exports = app;
+module.exports = { app, dbManager, startServer };

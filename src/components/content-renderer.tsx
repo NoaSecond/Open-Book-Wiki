@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
 import { useWiki } from '../context/wiki-context';
 import { MarkdownRenderer } from './markdown-renderer';
@@ -21,6 +22,7 @@ interface ContentRendererProps {
 
 export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageId, searchTerm }) => {
   const { isDarkMode, setIsEditModalOpen, setEditingPageTitle, canContribute } = useWiki();
+  const { t } = useTranslation();
 
   // Parser le contenu en sections basées sur les titres Markdown
   const parseSections = (text: string): Section[] => {
@@ -66,7 +68,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
     if (sections.length === 0) {
       sections.push({
         id: 'section-0',
-        title: 'Contenu principal',
+        title: 'Main Content',
         content: text,
         level: 1,
         anchor: 'contenu-principal'
@@ -103,7 +105,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
   if (sections.length === 0) {
     return (
       <div className={`text-center py-8 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-        <p>Aucun contenu disponible</p>
+        <p>{t('common.noContent')}</p>
       </div>
     );
   }
@@ -154,7 +156,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ content, pageI
                     ? 'hover:bg-slate-600 text-slate-400 hover:text-white'
                     : 'hover:bg-gray-200 text-gray-500 hover:text-gray-700'
                     }`}
-                  title="Éditer cette section"
+                  title={t('editor.editSection')}
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>

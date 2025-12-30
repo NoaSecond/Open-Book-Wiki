@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, LogOut, Settings, Grid3X3, Sun, Moon } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Grid3X3, Sun, Moon, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 
 export const UserMenu: React.FC = () => {
   const { user, logout, isDarkMode, setCurrentPage, isAdmin, setIsAdminPanelOpen, toggleDarkMode, hasPermission } = useWiki();
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [availableTags] = useState<Array<{ name: string, color: string }>>([]);
 
@@ -25,6 +27,12 @@ export const UserMenu: React.FC = () => {
 
   const handleToggleTheme = () => {
     toggleDarkMode();
+    setIsOpen(false);
+  };
+
+  const handleChangeLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'fr' : 'en';
+    i18n.changeLanguage(newLang);
     setIsOpen(false);
   };
 
@@ -117,7 +125,7 @@ export const UserMenu: React.FC = () => {
                   }`}
               >
                 <Settings className="w-4 h-4" />
-                <span>Profile</span>
+                <span>{t('navigation.profile')}</span>
               </button>
 
               <button
@@ -128,7 +136,18 @@ export const UserMenu: React.FC = () => {
                   }`}
               >
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                <span>{isDarkMode ? t('header.lightMode') : t('header.darkMode')}</span>
+              </button>
+
+              <button
+                onClick={handleChangeLanguage}
+                className={`w-full flex items-center space-x-3 px-4 py-2 text-left transition-colors ${isDarkMode
+                  ? 'hover:bg-slate-700 text-white'
+                  : 'hover:bg-gray-100 text-gray-900'
+                  }`}
+              >
+                <Languages className="w-4 h-4" />
+                <span>{t('header.language')}: {i18n.language.toUpperCase()}</span>
               </button>
 
               {(isAdmin() || hasPermission('admin_panel_access')) && (
@@ -140,7 +159,7 @@ export const UserMenu: React.FC = () => {
                     }`}
                 >
                   <Grid3X3 className="w-4 h-4" />
-                  <span>Admin Panel</span>
+                  <span>{t('navigation.settings')}</span>
                 </button>
               )}
 
@@ -152,7 +171,7 @@ export const UserMenu: React.FC = () => {
                   }`}
               >
                 <LogOut className="w-4 h-4" />
-                <span>Logout</span>
+                <span>{t('navigation.logout')}</span>
               </button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Save, X, Shield, UserCheck, Eye, Tag, Edit3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWiki } from '../context/wiki-context';
 import { AvatarEditor } from './avatar-editor';
 import type { User as UserType, Tag as TagType } from '../types';
@@ -22,6 +23,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   availableTags = []
 }) => {
   const { isDarkMode } = useWiki();
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [formData, setFormData] = useState({
@@ -132,7 +134,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           }`}>
           <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
-            Profil de {user.username}
+            {t('profile.profile')} {user.username}
           </h1>
           <button
             onClick={onClose}
@@ -164,7 +166,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <button
                   onClick={() => setShowAvatarEditor(true)}
                   className="absolute -bottom-1 -right-1 w-6 h-6 bg-cyan-600 hover:bg-cyan-700 rounded-full flex items-center justify-center text-white transition-colors"
-                  title="Changer l'avatar"
+                  title={t('profile.editProfile')}
                 >
                   <Edit3 className="w-3 h-3" />
                 </button>
@@ -184,7 +186,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       ? 'bg-slate-700 text-white border-slate-600'
                       : 'bg-gray-100 text-gray-900 border-gray-300'
                       }`}
-                    placeholder="Nom d'utilisateur"
+                    placeholder={t('auth.username')}
                   />
                   <input
                     type="email"
@@ -195,7 +197,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       ? 'bg-slate-700 text-slate-300 border-slate-600'
                       : 'bg-gray-100 text-gray-700 border-gray-300'
                       }`}
-                    placeholder="Email"
+                    placeholder={t('auth.email')}
                   />
                 </div>
               ) : (
@@ -211,7 +213,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               )}
 
               <div className={`text-sm mt-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                Contributions: {user.contributions || 0}
+                {t('profile.contributions')}: {user.contributions || 0}
               </div>
             </div>
           </div>
@@ -219,7 +221,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           {/* Tags */}
           <div className="mb-6">
             <h3 className={`font-medium mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Tags utilisateur
+              {t('members.tags')}
             </h3>
             <div className="space-y-2">
               {isEditing ? (
@@ -262,7 +264,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     ))
                   ) : (
                     <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                      Aucun tag attribué
+                      {t('members.noTags')}
                     </span>
                   )}
                 </div>
@@ -273,7 +275,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           {/* Bio */}
           <div className="mb-6">
             <h3 className={`font-medium mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Biographie
+              {t('profile.bio')}
             </h3>
             {isEditing ? (
               <textarea
@@ -285,7 +287,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   ? 'bg-slate-700 text-white border-slate-600'
                   : 'bg-gray-100 text-gray-900 border-gray-300'
                   }`}
-                placeholder="Biographie de l'utilisateur..."
+                placeholder={t('profile.bioPlaceholder')}
               />
             ) : (
               <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'
@@ -294,7 +296,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <p className="whitespace-pre-wrap">{user.bio}</p>
                 ) : (
                   <p className={`italic ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                    Aucune biographie renseignée.
+                    {t('profile.noBio')}
                   </p>
                 )}
               </div>
@@ -313,7 +315,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
                     } disabled:opacity-50`}
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleSave}
@@ -321,7 +323,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{isLoading ? 'Sauvegarde...' : 'Sauvegarder'}</span>
+                  <span>{isLoading ? t('common.saving') : t('common.save')}</span>
                 </button>
               </>
             ) : (
@@ -330,7 +332,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center space-x-2"
               >
                 <Edit3 className="w-4 h-4" />
-                <span>Modifier</span>
+                <span>{t('common.edit')}</span>
               </button>
             )}
           </div>
